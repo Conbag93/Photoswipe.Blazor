@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["PhotoSwipe.Sample.styles.css"]" />
+    <link rel="stylesheet" href="_content/PhotoSwipe.Blazor/css/photoswipe.css" />
+    <ImportMap />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <script src="_framework/blazor.web.js" autostart="false"></script>
+    <script>
+        Blazor.start().then(() => {
+            import('/_content/PhotoSwipe.Blazor/photoswipe.lib.module.js').then(module => {
+                if (module.afterStarted) {
+                    module.afterStarted();
+                }
+            }).catch(error => {
+                console.error('Failed to load PhotoSwipe module:', error);
+            });
+        }).catch(error => {
+            console.error('Failed to start Blazor:', error);
+        });
+    </script>
+</body>
+
+</html>

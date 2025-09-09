@@ -1,0 +1,54 @@
+.photoswipe-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.photoswipe-item {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    aspect-ratio: 1;
+    text-decoration: none;
+}
+
+.photoswipe-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.photoswipe-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s ease;
+}
+
+.photoswipe-item:hover img {
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .photoswipe-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .photoswipe-item {
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .photoswipe-gallery {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        padding: 6px;
+    }
+}

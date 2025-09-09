@@ -1,0 +1,44 @@
+.photoswipe-trigger {
+    display: inline-block;
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    width: 150px;
+    height: 150px;
+}
+
+.photoswipe-trigger:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.photoswipe-trigger img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s ease;
+}
+
+.photoswipe-trigger:hover img {
+    opacity: 0.9;
+}
+
+.photoswipe-trigger:focus {
+    outline: 2px solid #007acc;
+    outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+    .photoswipe-trigger {
+        width: 120px;
+        height: 120px;
+        margin: 3px;
+        border-radius: 6px;
+    }
+}

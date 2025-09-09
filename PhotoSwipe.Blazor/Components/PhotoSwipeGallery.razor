@@ -1,0 +1,189 @@
+@using PhotoSwipe.Blazor.Models
+@using PhotoSwipe.Blazor.Services
+@using Microsoft.Extensions.Logging
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject ILogger<PhotoSwipeGallery> Logger
+@inject ILogger<PhotoSwipeInterop> InteropLogger
+
+<div id="@ElementId" class="photoswipe-gallery">
+    @if (ItemTemplate != null && Items != null)
+    {
+        @foreach (var item in Items)
+        {
+            <a href="@item.Src" 
+               data-pswp-width="@item.Width" 
+               data-pswp-height="@item.Height"
+               data-pswp-caption="@item.Caption"
+               class="photoswipe-item"
+               @onclick="@(() => HandleItemClick(Items.ToList().IndexOf(item)))"
+               @onclick:preventDefault="true">
+                @ItemTemplate(item)
+            </a>
+        }
+    }
+    else if (Items != null)
+    {
+        @foreach (var item in Items)
+        {
+            <a href="@item.Src" 
+               data-pswp-width="@item.Width" 
+               data-pswp-height="@item.Height"
+               data-pswp-caption="@item.Caption"
+               class="photoswipe-item"
+               @onclick="@(() => HandleItemClick(Items.ToList().IndexOf(item)))"
+               @onclick:preventDefault="true">
+                <img src="@(item.ThumbnailUrl ?? item.Src)" 
+                     alt="@item.Alt" 
+                     class="@item.ThumbnailClass" />
+            </a>
+        }
+    }
+    else
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public IEnumerable<PhotoSwipeItem>? Items { get; set; }
+    [Parameter] public PhotoSwipeOptions? Options { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment<PhotoSwipeItem>? ItemTemplate { get; set; }
+    
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
+
+    public string ElementId { get; private set; } = string.Empty;
+    private PhotoSwipeInterop? _interop;
+    private string? _instanceId;
+    private IEnumerable<PhotoSwipeItem>? _previousItems;
+
+    protected override void OnInitialized()
+    {
+        ElementId = Id ?? $"photoswipe-{Guid.NewGuid():N}";
+        _interop = new PhotoSwipeInterop(JS, InteropLogger);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        Logger.LogDebug("🔄 OnAfterRenderAsync called for {ElementId}, firstRender: {FirstRender}, interop: {HasInterop}", ElementId, firstRender, _interop != null);
+        
+        if (firstRender && _interop != null)
+        {
+            try
+            {
+                Logger.LogInformation("🚀 Initializing PhotoSwipe for element {ElementId}", ElementId);
+                _instanceId = await _interop.InitializeLightboxAsync(ElementId, Options);
+                Logger.LogInformation("✅ PhotoSwipe initialized with instance ID: {InstanceId}", _instanceId);
+                
+                // Add event handlers if delegates are present
+                if (OnOpen.HasDelegate)
+                {
+                    await _interop.AddEventHandlerAsync(_instanceId, "openPswp", OnOpen);
+                    Logger.LogDebug("📡 Added OnOpen event handler");
+                }
+                
+                if (OnClose.HasDelegate)
+                {
+                    await _interop.AddEventHandlerAsync(_instanceId, "closePswp", OnClose);
+                    Logger.LogDebug("📡 Added OnClose event handler");
+                }
+                
+                if (OnChange.HasDelegate)
+                {
+                    await _interop.AddEventHandlerAsync(_instanceId, "change", OnChange);
+                    Logger.LogDebug("📡 Added OnChange event handler");
+                }
+
+                _previousItems = Items;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "❌ Error in OnAfterRenderAsync for {ElementId}: {Error}", ElementId, ex.Message);
+            }
+        }
+        else if (!firstRender && _interop != null && _instanceId != null)
+        {
+            // Check if Items collection has changed
+            if (HasItemsChanged())
+            {
+                try
+                {
+                    Logger.LogInformation("🔄 Items collection changed, refreshing PhotoSwipe for {ElementId}", ElementId);
+                    await _interop.RefreshGalleryAsync(_instanceId);
+                    _previousItems = Items;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "❌ Error refreshing PhotoSwipe for {ElementId}: {Error}", ElementId, ex.Message);
+                }
+            }
+        }
+    }
+
+    public async Task OpenAsync(int index = 0)
+    {
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.OpenGalleryAsync(_instanceId, index);
+        }
+    }
+
+    public async Task UpdateOptionsAsync(PhotoSwipeOptions options)
+    {
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.UpdateOptionsAsync(_instanceId, options);
+        }
+    }
+
+    public async Task RefreshAsync()
+    {
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.RefreshGalleryAsync(_instanceId);
+            _previousItems = Items;
+        }
+    }
+
+    private async Task HandleItemClick(int index)
+    {
+        Logger.LogInformation("🎯 HandleItemClick called for index {Index}", index);
+        await OpenAsync(index);
+    }
+
+    private bool HasItemsChanged()
+    {
+        if (Items == null && _previousItems == null)
+            return false;
+        
+        if (Items == null || _previousItems == null)
+            return true;
+        
+        // For dynamic collections (like Lists), compare count and sequence
+        var currentItems = Items.ToList();
+        var previousItems = _previousItems.ToList();
+        
+        if (currentItems.Count != previousItems.Count)
+            return true;
+        
+        // Compare item sources (basic change detection)
+        return !currentItems.Select(i => i.Src).SequenceEqual(previousItems.Select(i => i.Src));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.DestroyAsync(_instanceId);
+        }
+        
+        if (_interop != null)
+        {
+            await _interop.DisposeAsync();
+        }
+    }
+}

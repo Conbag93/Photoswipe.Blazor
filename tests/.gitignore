@@ -1,0 +1,19 @@
+# Playwright test artifacts
+test-results/
+playwright-report/
+
+# Node modules
+node_modules/
+
+# Test screenshots and videos
+screenshots/
+*.png
+*.webm
+*.mp4
+
+# Coverage reports
+coverage/
+
+# Temporary files
+*.tmp
+*.log

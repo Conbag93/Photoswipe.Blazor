@@ -1,0 +1,87 @@
+@page "/photoswipe-demo"
+@using PhotoSwipe.Blazor.Components
+@using PhotoSwipe.Blazor.Models
+@rendermode InteractiveServer
+
+<PageTitle>PhotoSwipe Demo - Basic Gallery</PageTitle>
+
+<h1>PhotoSwipe Blazor Demo - Basic Gallery Test</h1>
+
+<div class="demo-section" data-testid="basic-gallery">
+    <h2>Basic Gallery (DOM-based like Vanilla JS)</h2>
+    <p>This should work exactly like the vanilla JS basic gallery - clicking thumbnails opens the lightbox at the correct image.</p>
+    
+    <PhotoSwipeGallery Items="@basicImages" Options="@basicOptions" />
+</div>
+
+<style>
+    .demo-section {
+        margin: 2rem 0;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+    
+    .demo-section p {
+        color: #666;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+@code {
+    // Using the same images as the vanilla JS demo for consistency
+    private readonly List<PhotoSwipeItem> basicImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg",
+            Width = 1875,
+            Height = 2500,
+            Alt = "Beach",
+            Caption = "Beautiful beach landscape"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-200.jpg",
+            Width = 1669,
+            Height = 2500,
+            Alt = "Stairs",
+            Caption = "Modern architectural stairs"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-200.jpg",
+            Width = 2500,
+            Height = 1666,
+            Alt = "Red Chair",
+            Caption = "Vibrant red chair against colorful wall"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-200.jpg",
+            Width = 2500,
+            Height = 1875,
+            Alt = "Lake",
+            Caption = "Serene lake reflection"
+        }
+    };
+
+    private readonly PhotoSwipeOptions basicOptions = new()
+    {
+        // Keep it simple - same as vanilla JS basic gallery
+        ShowHideAnimationType = "fade",
+        ShowAnimationDuration = 333,
+        HideAnimationDuration = 333,
+        BackgroundOpacity = 0.8,
+        Loop = true,
+        AllowPanToNext = true,
+        EscKey = true,
+        ArrowKeys = true,
+        Spacing = 0.1
+    };
+}

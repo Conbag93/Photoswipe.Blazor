@@ -1,0 +1,16 @@
+{
+  "name": "photoswipe-blazor",
+  "version": "1.0.0",
+  "description": "PhotoSwipe integration for Blazor",
+  "private": true,
+  "scripts": {
+    "install-photoswipe": "npm install",
+    "copy-assets": "npm run copy-js && npm run copy-css",
+    "copy-js": "cp node_modules/photoswipe/dist/photoswipe.esm.min.js wwwroot/js/ && cp node_modules/photoswipe/dist/photoswipe-lightbox.esm.min.js wwwroot/js/",
+    "copy-css": "cp node_modules/photoswipe/dist/photoswipe.css wwwroot/css/",
+    "build": "npm run copy-assets"
+  },
+  "dependencies": {
+    "photoswipe": "^5.4.4"
+  }
+}

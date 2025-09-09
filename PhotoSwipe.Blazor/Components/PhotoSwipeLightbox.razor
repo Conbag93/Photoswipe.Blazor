@@ -1,0 +1,90 @@
+@using PhotoSwipe.Blazor.Models
+@using PhotoSwipe.Blazor.Services
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@if (Items != null && Items.Any())
+{
+    <div>
+        @foreach (var (item, index) in Items.Select((item, index) => (item, index)))
+        {
+            @if (TriggerTemplate != null)
+            {
+                <div @onclick="() => OpenLightboxAsync(index)">
+                    @TriggerTemplate(item)
+                </div>
+            }
+            else
+            {
+                <button type="button" @onclick="() => OpenLightboxAsync(index)" class="photoswipe-trigger">
+                    <img src="@(item.ThumbnailUrl ?? item.Src)" alt="@item.Alt" class="@item.ThumbnailClass" />
+                </button>
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IEnumerable<PhotoSwipeItem>? Items { get; set; }
+    [Parameter] public PhotoSwipeOptions? Options { get; set; }
+    [Parameter] public RenderFragment<PhotoSwipeItem>? TriggerTemplate { get; set; }
+    
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
+
+    private PhotoSwipeInterop? _interop;
+    private string? _instanceId;
+
+    protected override void OnInitialized()
+    {
+        _interop = new PhotoSwipeInterop(JS);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _interop != null && Items != null)
+        {
+            var elementId = $"photoswipe-lightbox-{Guid.NewGuid():N}";
+            _instanceId = await _interop.InitializeGalleryAsync(elementId, Items, Options);
+            
+            if (OnOpen.HasDelegate)
+                await _interop.AddEventHandlerAsync(_instanceId, "openPswp", OnOpen);
+            
+            if (OnClose.HasDelegate)
+                await _interop.AddEventHandlerAsync(_instanceId, "closePswp", OnClose);
+            
+            if (OnChange.HasDelegate)
+                await _interop.AddEventHandlerAsync(_instanceId, "change", OnChange);
+        }
+    }
+
+    public async Task OpenLightboxAsync(int index = 0)
+    {
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.OpenGalleryAsync(_instanceId, index);
+        }
+    }
+
+    public async Task UpdateOptionsAsync(PhotoSwipeOptions options)
+    {
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.UpdateOptionsAsync(_instanceId, options);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.DestroyAsync(_instanceId);
+        }
+        
+        if (_interop != null)
+        {
+            await _interop.DisposeAsync();
+        }
+    }
+}
