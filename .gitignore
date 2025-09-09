@@ -46,3 +46,8 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Development screenshots and temporary assets
+.playwright-mcp/
+*.screenshot.png
+*-debug.png

@@ -34,53 +34,57 @@
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
 
     private PhotoSwipeInterop? _interop;
-    private string? _instanceId;
 
     protected override void OnInitialized()
     {
         _interop = new PhotoSwipeInterop(JS);
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && _interop != null && Items != null)
-        {
-            var elementId = $"photoswipe-lightbox-{Guid.NewGuid():N}";
-            _instanceId = await _interop.InitializeGalleryAsync(elementId, Items, Options);
-            
-            if (OnOpen.HasDelegate)
-                await _interop.AddEventHandlerAsync(_instanceId, "openPswp", OnOpen);
-            
-            if (OnClose.HasDelegate)
-                await _interop.AddEventHandlerAsync(_instanceId, "closePswp", OnClose);
-            
-            if (OnChange.HasDelegate)
-                await _interop.AddEventHandlerAsync(_instanceId, "change", OnChange);
-        }
-    }
-
     public async Task OpenLightboxAsync(int index = 0)
     {
-        if (_interop != null && _instanceId != null)
+        if (_interop == null || Items == null || !Items.Any()) return;
+
+        try
         {
-            await _interop.OpenGalleryAsync(_instanceId, index);
+            // Generate unique instance ID for each open operation
+            var instanceId = $"photoswipe-data-{Guid.NewGuid():N}";
+
+            // Set up event handlers before creating the instance
+            if (OnOpen.HasDelegate)
+            {
+                await _interop.AddEventHandlerAsync(instanceId, "openPswp", OnOpen);
+            }
+            
+            if (OnClose.HasDelegate)
+            {
+                await _interop.AddEventHandlerAsync(instanceId, "closePswp", OnClose);
+            }
+            
+            if (OnChange.HasDelegate)
+            {
+                await _interop.AddEventHandlerAsync(instanceId, "change", OnChange);
+            }
+
+            // Create and open PhotoSwipe instance using data-based approach
+            await _interop.CreateFromDataAsync(instanceId, Items, Options, index);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error opening PhotoSwipe lightbox: {ex.Message}");
         }
     }
 
     public async Task UpdateOptionsAsync(PhotoSwipeOptions options)
     {
-        if (_interop != null && _instanceId != null)
-        {
-            await _interop.UpdateOptionsAsync(_instanceId, options);
-        }
+        // Update options for future opens
+        Options = options;
+        await Task.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_interop != null && _instanceId != null)
-        {
-            await _interop.DestroyAsync(_instanceId);
-        }
+        // PhotoSwipeLightbox uses on-demand instances that are cleaned up automatically
+        // No persistent instance to destroy
         
         if (_interop != null)
         {

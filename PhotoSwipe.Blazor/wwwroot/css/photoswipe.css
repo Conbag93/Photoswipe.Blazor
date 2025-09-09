@@ -418,3 +418,16 @@ div.pswp__img--placeholder,
 .pswp--one-slide .pswp__counter {
   display: none;
 }
+
+/* AspectRatio Fix - Prevent image stretching and maintain proper proportions */
+.pswp__img {
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  image-rendering: auto;
+}
+
+/* Ensure placeholder images also maintain aspect ratio */
+div.pswp__img--placeholder {
+  object-fit: contain !important;
+}

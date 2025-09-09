@@ -6,7 +6,7 @@
 @inject ILogger<PhotoSwipeGallery> Logger
 @inject ILogger<PhotoSwipeInterop> InteropLogger
 
-<div id="@ElementId" class="photoswipe-gallery">
+<div id="@ElementId" class="photoswipe-gallery @CssClass">
     @if (ItemTemplate != null && Items != null)
     {
         @foreach (var item in Items)
@@ -14,10 +14,10 @@
             <a href="@item.Src" 
                data-pswp-width="@item.Width" 
                data-pswp-height="@item.Height"
-               data-pswp-caption="@item.Caption"
-               class="photoswipe-item"
-               @onclick="@(() => HandleItemClick(Items.ToList().IndexOf(item)))"
-               @onclick:preventDefault="true">
+               data-caption="@item.Caption"
+               data-pswp-srcset="@item.SrcSet"
+               data-enhance-nav="false"
+               class="photoswipe-item">
                 @ItemTemplate(item)
             </a>
         }
@@ -29,10 +29,10 @@
             <a href="@item.Src" 
                data-pswp-width="@item.Width" 
                data-pswp-height="@item.Height"
-               data-pswp-caption="@item.Caption"
-               class="photoswipe-item"
-               @onclick="@(() => HandleItemClick(Items.ToList().IndexOf(item)))"
-               @onclick:preventDefault="true">
+               data-caption="@item.Caption"
+               data-pswp-srcset="@item.SrcSet"
+               data-enhance-nav="false"
+               class="photoswipe-item">
                 <img src="@(item.ThumbnailUrl ?? item.Src)" 
                      alt="@item.Alt" 
                      class="@item.ThumbnailClass" />
@@ -47,6 +47,7 @@
 
 @code {
     [Parameter] public string? Id { get; set; }
+    [Parameter] public string? CssClass { get; set; }
     [Parameter] public IEnumerable<PhotoSwipeItem>? Items { get; set; }
     [Parameter] public PhotoSwipeOptions? Options { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
@@ -149,11 +150,6 @@
         }
     }
 
-    private async Task HandleItemClick(int index)
-    {
-        Logger.LogInformation("🎯 HandleItemClick called for index {Index}", index);
-        await OpenAsync(index);
-    }
 
     private bool HasItemsChanged()
     {

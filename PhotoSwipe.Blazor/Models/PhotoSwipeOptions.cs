@@ -26,7 +26,7 @@ public class PhotoSwipeOptions
     public double? Spacing { get; set; } = 0.1;
 
     [JsonPropertyName("allowPanToNext")]
-    public bool? AllowPanToNext { get; set; } = true;
+    public bool? AllowPanToNext { get; set; } = false;
 
     [JsonPropertyName("loop")]
     public bool? Loop { get; set; } = true;

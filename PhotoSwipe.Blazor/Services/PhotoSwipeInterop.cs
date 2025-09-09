@@ -6,6 +6,15 @@ using System.Text.Json;
 
 namespace PhotoSwipe.Blazor.Services;
 
+/// <summary>
+/// PhotoSwipe JavaScript Interop Service
+/// 
+/// This service communicates with the JavaScript wrapper located at:
+/// wwwroot/photoswipe-simple.js (SINGLE SOURCE OF TRUTH)
+/// 
+/// All PhotoSwipe functionality must be modified in that JavaScript file.
+/// Do NOT create additional wrapper files.
+/// </summary>
 public class PhotoSwipeInterop : IAsyncDisposable
 {
     private readonly IJSRuntime _jsRuntime;
@@ -21,34 +30,34 @@ public class PhotoSwipeInterop : IAsyncDisposable
     }
 
     /// <summary>
-    /// Ensures PhotoSwipe is ready in the main page context before attempting to use it
+    /// Ensures PhotoSwipe simple wrapper is available
     /// </summary>
     private async Task EnsurePhotoSwipeReadyAsync()
     {
-        var maxAttempts = 50; // 5 seconds max wait
+        var maxAttempts = 30; // 3 seconds max wait
         var attempt = 0;
         
         while (attempt < maxAttempts)
         {
             try
             {
-                var isReady = await _jsRuntime.InvokeAsync<bool>("eval", "typeof window.PhotoSwipeManager !== 'undefined' && window.photoSwipeReady === true");
+                var isReady = await _jsRuntime.InvokeAsync<bool>("eval", "typeof window.PhotoSwipeBlazor !== 'undefined'");
                 if (isReady)
                 {
-                    _logger?.LogDebug("✅ PhotoSwipe ready in main page context (attempt {Attempt})", attempt + 1);
+                    _logger?.LogDebug("✅ PhotoSwipeBlazor wrapper ready (attempt {Attempt})", attempt + 1);
                     return;
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogDebug("⏳ PhotoSwipe not ready yet (attempt {Attempt}): {Error}", attempt + 1, ex.Message);
+                _logger?.LogDebug("⏳ PhotoSwipeBlazor not ready yet (attempt {Attempt}): {Error}", attempt + 1, ex.Message);
             }
             
             attempt++;
             await Task.Delay(100); // Wait 100ms between attempts
         }
         
-        var error = "PhotoSwipe not ready in main page context after maximum wait time. Ensure JavaScript initializers are properly configured.";
+        var error = "PhotoSwipeBlazor wrapper not ready. Ensure photoswipe-simple.js is loaded.";
         _logger?.LogError("❌ {Error}", error);
         throw new InvalidOperationException(error);
     }
@@ -66,22 +75,22 @@ public class PhotoSwipeInterop : IAsyncDisposable
         
         try
         {
-            _logger?.LogInformation("🚀 Initializing PhotoSwipe lightbox using MAIN PAGE CONTEXT for element {ElementId}", elementId);
+            _logger?.LogInformation("🚀 Initializing PhotoSwipe lightbox for element {ElementId}", elementId);
             
-            // Wait for PhotoSwipe to be ready in main page context
+            // Wait for PhotoSwipe wrapper to be ready
             await EnsurePhotoSwipeReadyAsync();
             
             _logger?.LogDebug("⚙️ Initializing lightbox with options: {Options}", options?.ToString() ?? "null");
             
-            // Call PhotoSwipeManager in main page context instead of isolated module
-            var instanceId = await _jsRuntime.InvokeAsync<string>(
-                "window.PhotoSwipeManager.initializeLightbox", elementId, options);
+            // Use simple wrapper approach following ViewerJsBlazor pattern
+            await _jsRuntime.InvokeAsync<object>(
+                "window.PhotoSwipeBlazor.create", elementId, options, _dotNetReference);
             
             var duration = DateTimeOffset.Now - startTime;
-            _logger?.LogInformation("✅ PhotoSwipe lightbox initialized successfully in MAIN PAGE CONTEXT for element {ElementId}, instance: {InstanceId} in {Duration}ms", 
-                elementId, instanceId, duration.TotalMilliseconds);
+            _logger?.LogInformation("✅ PhotoSwipe lightbox initialized successfully for element {ElementId} in {Duration}ms", 
+                elementId, duration.TotalMilliseconds);
                 
-            return instanceId;
+            return elementId; // Return elementId as the instance identifier
         }
         catch (Exception ex)
         {
@@ -114,26 +123,72 @@ public class PhotoSwipeInterop : IAsyncDisposable
         
         try
         {
-            _logger?.LogInformation("📊 Initializing PhotoSwipe gallery using MAIN PAGE CONTEXT for element {ElementId} with {ItemCount} items", elementId, itemList.Count);
+            _logger?.LogInformation("📊 Initializing PhotoSwipe gallery for element {ElementId} with {ItemCount} items", elementId, itemList.Count);
             
-            // Wait for PhotoSwipe to be ready in main page context
+            // Wait for PhotoSwipe to be ready
             await EnsurePhotoSwipeReadyAsync();
             
-            // Call PhotoSwipeManager in main page context instead of isolated module
-            var instanceId = await _jsRuntime.InvokeAsync<string>(
-                "window.PhotoSwipeManager.initializeGallery", elementId, itemList, options);
+            // Use simple wrapper approach following ViewerJsBlazor pattern
+            await _jsRuntime.InvokeAsync<object>(
+                "window.PhotoSwipeBlazor.create", elementId, options, _dotNetReference);
             
             var duration = DateTimeOffset.Now - startTime;
-            _logger?.LogInformation("✅ PhotoSwipe gallery initialized successfully in MAIN PAGE CONTEXT for element {ElementId}, instance: {InstanceId} with {ItemCount} items in {Duration}ms", 
-                elementId, instanceId, itemList.Count, duration.TotalMilliseconds);
+            _logger?.LogInformation("✅ PhotoSwipe gallery initialized successfully for element {ElementId} with {ItemCount} items in {Duration}ms", 
+                elementId, itemList.Count, duration.TotalMilliseconds);
                 
-            return instanceId;
+            return elementId; // Return elementId as the instance identifier
         }
         catch (Exception ex)
         {
             var duration = DateTimeOffset.Now - startTime;
             _logger?.LogError(ex, "❌ Error initializing PhotoSwipe gallery for element {ElementId} with {ItemCount} items after {Duration}ms: {Error}", 
                 elementId, itemList.Count, duration.TotalMilliseconds, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<string> CreateFromDataAsync(string instanceId, IEnumerable<PhotoSwipeItem> items, PhotoSwipeOptions? options = null, int openIndex = 0)
+    {
+        var startTime = DateTimeOffset.Now;
+        
+        if (string.IsNullOrEmpty(instanceId))
+        {
+            var error = "InstanceId cannot be null or empty";
+            _logger?.LogError("❌ {Error}", error);
+            throw new ArgumentException(error, nameof(instanceId));
+        }
+        
+        if (items == null)
+        {
+            var error = "Items cannot be null";
+            _logger?.LogError("❌ {Error}", error);
+            throw new ArgumentNullException(nameof(items), error);
+        }
+        
+        var itemList = items.ToList();
+        
+        try
+        {
+            _logger?.LogInformation("📊 Creating PhotoSwipe from data for instance {InstanceId} with {ItemCount} items", instanceId, itemList.Count);
+            
+            // Wait for PhotoSwipe to be ready
+            await EnsurePhotoSwipeReadyAsync();
+            
+            // Use data-based creation method
+            await _jsRuntime.InvokeAsync<object>(
+                "window.PhotoSwipeBlazor.createFromData", instanceId, itemList, options, _dotNetReference, openIndex);
+            
+            var duration = DateTimeOffset.Now - startTime;
+            _logger?.LogInformation("✅ PhotoSwipe data instance created successfully for {InstanceId} with {ItemCount} items in {Duration}ms", 
+                instanceId, itemList.Count, duration.TotalMilliseconds);
+                
+            return instanceId; // Return instanceId as the instance identifier
+        }
+        catch (Exception ex)
+        {
+            var duration = DateTimeOffset.Now - startTime;
+            _logger?.LogError(ex, "❌ Error creating PhotoSwipe from data for {InstanceId} with {ItemCount} items after {Duration}ms: {Error}", 
+                instanceId, itemList.Count, duration.TotalMilliseconds, ex.Message);
             throw;
         }
     }
@@ -156,15 +211,15 @@ public class PhotoSwipeInterop : IAsyncDisposable
         
         try
         {
-            _logger?.LogInformation("🎯 Opening PhotoSwipe gallery {InstanceId} at index {Index} using MAIN PAGE CONTEXT", instanceId, index);
+            _logger?.LogInformation("🎯 Opening PhotoSwipe gallery {InstanceId} at index {Index}", instanceId, index);
             
-            // Wait for PhotoSwipe to be ready in main page context
+            // Wait for PhotoSwipe to be ready
             await EnsurePhotoSwipeReadyAsync();
             
-            // Call PhotoSwipeManager in main page context
-            await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeManager.openLightbox", instanceId, index);
+            // Use simple wrapper open method
+            await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeBlazor.open", instanceId, index);
             
-            _logger?.LogDebug("✅ Gallery opened successfully in MAIN PAGE CONTEXT");
+            _logger?.LogDebug("✅ Gallery opened successfully");
         }
         catch (Exception ex)
         {
@@ -173,11 +228,11 @@ public class PhotoSwipeInterop : IAsyncDisposable
         }
     }
 
-    public async Task DestroyAsync(string instanceId)
+    public async Task DestroyAsync(string elementId)
     {
-        if (string.IsNullOrEmpty(instanceId))
+        if (string.IsNullOrEmpty(elementId))
         {
-            _logger?.LogWarning("⚠️ Attempted to destroy PhotoSwipe instance with null or empty instanceId");
+            _logger?.LogWarning("⚠️ Attempted to destroy PhotoSwipe instance with null or empty elementId");
             return;
         }
         
@@ -185,31 +240,31 @@ public class PhotoSwipeInterop : IAsyncDisposable
         
         try
         {
-            _logger?.LogInformation("🗑️ Destroying PhotoSwipe instance {InstanceId} using MAIN PAGE CONTEXT", instanceId);
+            _logger?.LogInformation("🗑️ Destroying PhotoSwipe instance for element {ElementId}", elementId);
             
-            // Call PhotoSwipeManager in main page context (no need to wait for ready during destruction)
-            await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeManager.destroy", instanceId);
+            // Use simple wrapper destroy method
+            await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeBlazor.destroy", elementId);
             
             // Clean up event handlers for this instance
-            var keysToRemove = _eventHandlers.Keys.Where(k => k.StartsWith($"{instanceId}-")).ToList();
+            var keysToRemove = _eventHandlers.Keys.Where(k => k.StartsWith($"{elementId}-")).ToList();
             foreach (var key in keysToRemove)
             {
                 _eventHandlers.Remove(key);
             }
             
             var duration = DateTimeOffset.Now - startTime;
-            _logger?.LogInformation("✅ PhotoSwipe instance {InstanceId} destroyed successfully in MAIN PAGE CONTEXT in {Duration}ms (removed {HandlerCount} event handlers)", 
-                instanceId, duration.TotalMilliseconds, keysToRemove.Count);
+            _logger?.LogInformation("✅ PhotoSwipe instance {ElementId} destroyed successfully in {Duration}ms (removed {HandlerCount} event handlers)", 
+                elementId, duration.TotalMilliseconds, keysToRemove.Count);
         }
         catch (JSDisconnectedException)
         {
             // This is expected when the circuit is being disposed - not an error
             var duration = DateTimeOffset.Now - startTime;
-            _logger?.LogDebug("🔌 PhotoSwipe instance {InstanceId} cleanup skipped due to circuit disconnection after {Duration}ms", 
-                instanceId, duration.TotalMilliseconds);
+            _logger?.LogDebug("🔌 PhotoSwipe instance {ElementId} cleanup skipped due to circuit disconnection after {Duration}ms", 
+                elementId, duration.TotalMilliseconds);
             
             // Still clean up local event handlers
-            var keysToRemove = _eventHandlers.Keys.Where(k => k.StartsWith($"{instanceId}-")).ToList();
+            var keysToRemove = _eventHandlers.Keys.Where(k => k.StartsWith($"{elementId}-")).ToList();
             foreach (var key in keysToRemove)
             {
                 _eventHandlers.Remove(key);
@@ -218,8 +273,8 @@ public class PhotoSwipeInterop : IAsyncDisposable
         catch (Exception ex)
         {
             var duration = DateTimeOffset.Now - startTime;
-            _logger?.LogError(ex, "❌ Error destroying PhotoSwipe instance {InstanceId} after {Duration}ms: {Error}", 
-                instanceId, duration.TotalMilliseconds, ex.Message);
+            _logger?.LogError(ex, "❌ Error destroying PhotoSwipe instance {ElementId} after {Duration}ms: {Error}", 
+                elementId, duration.TotalMilliseconds, ex.Message);
             throw;
         }
     }
@@ -227,7 +282,9 @@ public class PhotoSwipeInterop : IAsyncDisposable
     public async Task UpdateOptionsAsync(string instanceId, PhotoSwipeOptions options)
     {
         await EnsurePhotoSwipeReadyAsync();
-        await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeManager.updateOptions", instanceId, options);
+        // Options can't be updated on existing instance with simple wrapper
+        _logger?.LogWarning("⚠️ UpdateOptions not supported in simplified wrapper. Recreate instance instead.");
+        await Task.CompletedTask;
     }
 
     public async Task RefreshGalleryAsync(string instanceId)
@@ -243,13 +300,14 @@ public class PhotoSwipeInterop : IAsyncDisposable
         
         try
         {
-            _logger?.LogInformation("🔄 Refreshing PhotoSwipe gallery {InstanceId} using MAIN PAGE CONTEXT", instanceId);
+            _logger?.LogInformation("🔄 Refreshing PhotoSwipe gallery {InstanceId}", instanceId);
             
             await EnsurePhotoSwipeReadyAsync();
-            await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeManager.refreshGallery", instanceId);
+            // Simple wrapper doesn't support refresh - would need to recreate instance
+            _logger?.LogWarning("⚠️ RefreshGallery not supported in simplified wrapper. Recreate instance instead.");
             
             var duration = DateTimeOffset.Now - startTime;
-            _logger?.LogInformation("✅ PhotoSwipe gallery {InstanceId} refreshed successfully in MAIN PAGE CONTEXT in {Duration}ms", instanceId, duration.TotalMilliseconds);
+            _logger?.LogInformation("✅ PhotoSwipe gallery {InstanceId} refresh requested in {Duration}ms", instanceId, duration.TotalMilliseconds);
         }
         catch (Exception ex)
         {
@@ -264,10 +322,8 @@ public class PhotoSwipeInterop : IAsyncDisposable
     {
         await EnsurePhotoSwipeReadyAsync();
         var key = $"{instanceId}-{eventName}";
-        
         _eventHandlers[key] = eventCallback;
-        
-        await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeManager.addEventHandler", instanceId, eventName, _dotNetReference, nameof(HandleEvent));
+        // Event handlers are set up directly in photoswipe-simple.js
     }
 
     public async Task RemoveEventHandlerAsync(string instanceId, string eventName)
@@ -278,53 +334,59 @@ public class PhotoSwipeInterop : IAsyncDisposable
         if (_eventHandlers.ContainsKey(key))
         {
             _eventHandlers.Remove(key);
-            await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeManager.removeEventHandler", instanceId, eventName, nameof(HandleEvent));
+            // Event handlers are managed directly in photoswipe-simple.js
         }
     }
 
     public async Task CreateImageElementAsync(string containerId, PhotoSwipeItem item)
     {
         await EnsurePhotoSwipeReadyAsync();
-        await _jsRuntime.InvokeVoidAsync("window.PhotoSwipeManager.createImageElement", containerId, item);
+        // This method is not needed with our simple wrapper approach
+        await Task.CompletedTask;
     }
 
     [JSInvokable]
-    public async Task HandleEvent(PhotoSwipeEvent photoSwipeEvent)
+    public async Task OnOpen(PhotoSwipeEvent eventData)
     {
-        if (photoSwipeEvent == null)
-        {
-            _logger?.LogWarning("⚠️ Received null PhotoSwipeEvent");
-            return;
-        }
+        _logger?.LogDebug("📸 PhotoSwipe OnOpen event received");
         
-        var startTime = DateTimeOffset.Now;
+        var matchingHandler = _eventHandlers.FirstOrDefault(kvp => 
+            kvp.Key.EndsWith("-openPswp"));
         
-        try
+        if (matchingHandler.Key != null)
         {
-            _logger?.LogDebug("📡 Handling PhotoSwipe event {EventType} with index {Index}", photoSwipeEvent.Type, photoSwipeEvent.Index);
-            
-            // Find the appropriate event handler based on the event type
-            var matchingHandler = _eventHandlers.FirstOrDefault(kvp => 
-                kvp.Key.EndsWith($"-{photoSwipeEvent.Type}"));
-            
-            if (matchingHandler.Key != null)
-            {
-                var args = new PhotoSwipeEventArgs(photoSwipeEvent);
-                await matchingHandler.Value.InvokeAsync(args);
-                
-                var duration = DateTimeOffset.Now - startTime;
-                _logger?.LogDebug("✅ PhotoSwipe event {EventType} handled successfully in {Duration}ms", photoSwipeEvent.Type, duration.TotalMilliseconds);
-            }
-            else
-            {
-                _logger?.LogDebug("🤷 No handler found for PhotoSwipe event {EventType}", photoSwipeEvent.Type);
-            }
+            var args = new PhotoSwipeEventArgs(eventData);
+            await matchingHandler.Value.InvokeAsync(args);
         }
-        catch (Exception ex)
+    }
+
+    [JSInvokable]
+    public async Task OnClose(PhotoSwipeEvent eventData)
+    {
+        _logger?.LogDebug("🔒 PhotoSwipe OnClose event received");
+        
+        var matchingHandler = _eventHandlers.FirstOrDefault(kvp => 
+            kvp.Key.EndsWith("-closePswp"));
+        
+        if (matchingHandler.Key != null)
         {
-            var duration = DateTimeOffset.Now - startTime;
-            _logger?.LogError(ex, "❌ Error handling PhotoSwipe event {EventType} after {Duration}ms: {Error}", 
-                photoSwipeEvent?.Type, duration.TotalMilliseconds, ex.Message);
+            var args = new PhotoSwipeEventArgs(eventData);
+            await matchingHandler.Value.InvokeAsync(args);
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnChange(PhotoSwipeEvent eventData)
+    {
+        _logger?.LogDebug("🔄 PhotoSwipe OnChange event received with index {Index}", eventData.Index);
+        
+        var matchingHandler = _eventHandlers.FirstOrDefault(kvp => 
+            kvp.Key.EndsWith("-change"));
+        
+        if (matchingHandler.Key != null)
+        {
+            var args = new PhotoSwipeEventArgs(eventData);
+            await matchingHandler.Value.InvokeAsync(args);
         }
     }
 
@@ -332,9 +394,9 @@ public class PhotoSwipeInterop : IAsyncDisposable
     {
         try
         {
-            _logger?.LogDebug("🗑️ Disposing PhotoSwipeInterop (MAIN PAGE CONTEXT approach)");
+            _logger?.LogDebug("🗑️ Disposing PhotoSwipeInterop (simple wrapper approach)");
             
-            // No module to dispose since we're using global PhotoSwipeManager
+            // No module to dispose since we're using global PhotoSwipeBlazor
             // Clean up .NET references only
         }
         catch (Exception ex)
@@ -346,7 +408,7 @@ public class PhotoSwipeInterop : IAsyncDisposable
         {
             _dotNetReference?.Dispose();
             _eventHandlers.Clear();
-            _logger?.LogDebug("✅ PhotoSwipeInterop disposed successfully (MAIN PAGE CONTEXT approach)");
+            _logger?.LogDebug("✅ PhotoSwipeInterop disposed successfully (simple wrapper approach)");
         }
         
         return ValueTask.CompletedTask;

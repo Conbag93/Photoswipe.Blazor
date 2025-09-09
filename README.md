@@ -25,7 +25,9 @@ dotnet add package PhotoSwipe.Blazor
 
 ```csharp
 // Program.cs
-builder.Services.AddPhotoSwipe();
+using PhotoSwipe.Blazor.Services;
+
+builder.Services.AddScoped<PhotoSwipeInterop>();
 ```
 
 ### 3. Basic Gallery
@@ -68,6 +70,52 @@ dotnet run
 ```
 
 The sample app will be available at `http://localhost:5224`
+
+### Static Web Assets & Environment Configuration
+
+The PhotoSwipe.Blazor library uses static web assets to serve CSS and JavaScript files. Understanding how these work is crucial for development and deployment:
+
+**Development Environment:**
+- Static web assets are served directly from the library's `wwwroot` folder via `StaticWebAssetsLoader`
+- Requires `ASPNETCORE_ENVIRONMENT=Development` to enable the loader
+- Assets are available at `_content/PhotoSwipe.Blazor/` paths
+
+**Production Environment:**  
+- Static web assets are embedded into the consuming application during build
+- No special environment configuration needed
+- Assets are served from the host application's static file middleware
+
+**Example launchSettings.json:**
+```json
+{
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5173",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project", 
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:7173;http://localhost:5173",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SSL_CERT_DIR": "$HOME/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
+      }
+    }
+  }
+}
+```
+
+**Common Issues:**
+- **CSS/JS not loading:** Ensure `ASPNETCORE_ENVIRONMENT=Development` is set in development
+- **404 errors for assets:** Check that the PhotoSwipe.Blazor project has been built (`npm run build`)
+- **Certificate issues on Linux:** Set `SSL_CERT_DIR` environment variable (see HTTPS configuration above)
 
 ### Project Structure
 

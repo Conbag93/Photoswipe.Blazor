@@ -10,5 +10,6 @@ public class PhotoSwipeItem
     public string? Caption { get; set; }
     public string? Title { get; set; }
     public string? ThumbnailClass { get; set; }
+    public string? SrcSet { get; set; }
     public object? Data { get; set; }
 }

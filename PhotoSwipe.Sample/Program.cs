@@ -1,10 +1,20 @@
 using PhotoSwipe.Sample.Components;
+using PhotoSwipe.Blazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Enable static web assets for development (RCL assets)
+if (builder.Environment.IsDevelopment())
+{
+    builder.WebHost.UseStaticWebAssets();
+}
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Add PhotoSwipe services
+builder.Services.AddScoped<PhotoSwipeInterop>();
 
 var app = builder.Build();
 

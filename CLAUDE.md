@@ -36,16 +36,18 @@ dotnet build PhotoSwipe.Sample/PhotoSwipe.Sample.csproj
 ## Architecture Overview
 
 ### JavaScript Interop Pattern
-The library uses JavaScript module isolation with a custom interop layer:
+The library uses a simplified JavaScript wrapper pattern with direct PhotoSwipe integration:
 
-- **photoswipe-interop.js** - Custom wrapper that manages PhotoSwipe instances and provides .NET-friendly APIs
-- **PhotoSwipeInterop.cs** - C# service that communicates with JavaScript module using `IJSObjectReference`
-- **Instance Management** - JavaScript maintains a Map of PhotoSwipe instances by unique IDs to support multiple galleries
+- **photoswipe-simple.js** - Simple wrapper that creates PhotoSwipe instances using standard DOM-based initialization
+- **PhotoSwipeInterop.cs** - C# service that manages PhotoSwipe lifecycle through JavaScript interop
+- **DOM-based initialization** - PhotoSwipe reads gallery configuration directly from DOM elements with `data-pswp-*` attributes
 
 Key interop methods:
-- `initializeLightbox()` / `initializeGallery()` - Create PhotoSwipe instances
-- `addEventHandler()` / `removeEventHandler()` - Bidirectional event system
-- `destroy()` - Clean up resources and prevent memory leaks
+- `InitializeLightboxAsync()` - Creates PhotoSwipe Lightbox instances for DOM-based galleries
+- `OpenGalleryAsync()` - Programmatically opens gallery at specific index
+- `DestroyAsync()` - Cleans up PhotoSwipe instances and prevents memory leaks
+
+The approach resolves Blazor navigation conflicts by ensuring PhotoSwipe handles anchor tag clicks instead of Blazor's EventDelegator, using proper gallery selector configuration and navigation prevention techniques.
 
 ### Component Architecture
 
@@ -103,9 +105,10 @@ public async ValueTask DisposeAsync()
 
 ### Event Handling
 Events flow from JavaScript → PhotoSwipeInterop → Component via EventCallback:
-1. JavaScript calls `[JSInvokable] HandleEvent()` method
-2. PhotoSwipeInterop routes to appropriate EventCallback based on instance ID and event type
-3. Components receive strongly-typed PhotoSwipeEventArgs
+1. PhotoSwipe fires events (openPswp, closePswp, change) to JavaScript event handlers
+2. JavaScript calls `[JSInvokable]` methods (OnOpen, OnClose, OnChange) on PhotoSwipeInterop
+3. PhotoSwipeInterop routes events to component EventCallback handlers based on instance ID
+4. Components receive strongly-typed PhotoSwipeEventArgs
 
 ## Asset Management
 
@@ -129,7 +132,7 @@ The library uses PhotoSwipe 5.x with these key files:
 3. Update README.md with new option documentation
 
 ### Extending JavaScript Functionality
-1. Add method to photoswipe-interop.js
+1. Add method to photoswipe-simple.js
 2. Add corresponding C# method in PhotoSwipeInterop.cs
 3. Update components to use new functionality
 4. Ensure proper cleanup in destroy() method
