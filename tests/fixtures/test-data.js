@@ -3,12 +3,22 @@
 const testData = {
   urls: {
     home: '/',
-    photoswipeDemo: '/photoswipe-demo',
+    vanillaJsDemo: '/vanilla-js-demo',
+    basicPhotoswipeDemo: '/basic-photoswipe-demo',
+    extendedFeaturesDemo: '/extended-features-demo',
+    // Legacy aliases for backwards compatibility
+    photoswipeDemo: '/basic-photoswipe-demo',
+    photoswipeUploadDemo: '/extended-features-demo',
   },
   
   expectedTitles: {
     home: 'Home',
-    photoswipeDemo: /PhotoSwipe/,
+    vanillaJsDemo: /Vanilla JS/,
+    basicPhotoswipeDemo: /Basic PhotoSwipe Demo/,
+    extendedFeaturesDemo: /Extended Features Demo/,
+    // Legacy aliases
+    photoswipeDemo: /Basic PhotoSwipe Demo/,
+    photoswipeUploadDemo: /Extended Features Demo/,
   },
   
   selectors: {
@@ -18,6 +28,9 @@ const testData = {
     closeButton: '[data-pswp-close]',
     nextButton: '[data-pswp-next]',
     prevButton: '[data-pswp-prev]',
+    uploadArea: '.upload-area',
+    uploadGallery: '.photoswipe-upload-gallery',
+    fileInput: 'input[type="file"]',
   },
   
   timeouts: {

@@ -62,10 +62,30 @@ The approach resolves Blazor navigation conflicts by ensuring PhotoSwipe handles
 - Uses data array instead of DOM scanning
 - Supports custom trigger templates via `TriggerTemplate` RenderFragment
 
+**PhotoSwipeUploadGallery Component:**
+- Extends PhotoSwipeGallery with comprehensive upload functionality
+- Implements drag & drop and file input for image uploads
+- Supports Add/Replace modes for gallery management
+- Includes file validation (size, type) and error handling
+- Provides upload preview before confirmation
+- Integrates with ImageProcessingService for client-side image optimization
+- Manages upload state and progress indicators
+- Supports both read-only and upload-enabled modes
+
 ### Data Models
 - **PhotoSwipeItem** - Image data model with src, dimensions, thumbnails, and metadata
 - **PhotoSwipeOptions** - Strongly-typed configuration with JSON serialization attributes
 - **PhotoSwipeEvent** - Event data structure for JavaScript-to-.NET communication
+- **PhotoSwipeUploadMode** - Enum for upload behavior (Add/Replace)
+
+### Services
+- **PhotoSwipeInterop** - JavaScript interop service managing PhotoSwipe lifecycle
+- **ImageProcessingService** - Client-side image processing for uploads
+  - Resizes images to maximum dimensions
+  - Converts images to optimized formats
+  - Extracts image metadata (dimensions, size)
+  - Generates data URLs for preview
+  - Validates file types and sizes
 
 ### CSS Strategy
 - **CSS Isolation** - Each component has `.razor.css` files for scoped styling
@@ -137,6 +157,12 @@ The library uses PhotoSwipe 5.x with these key files:
 3. Update components to use new functionality
 4. Ensure proper cleanup in destroy() method
 
+### Adding Upload Features
+1. Extend PhotoSwipeUploadGallery with new upload options
+2. Update ImageProcessingService for additional processing needs
+3. Add validation rules in component properties
+4. Implement event callbacks for new interactions
+
 ### CSS Customization
 - Component-specific styles go in `.razor.css` files (scoped)
 - Global PhotoSwipe overrides should go in consuming app's CSS
@@ -144,14 +170,29 @@ The library uses PhotoSwipe 5.x with these key files:
 
 ## Sample Application Usage
 
-The PhotoSwipe.Sample project demonstrates:
-- Basic gallery with default templates
+The PhotoSwipe.Sample project demonstrates various features across multiple demo pages:
+
+### Demo Pages
+- **/photoswipe-demo** - Basic gallery with default templates, custom templates, lightbox triggers
+- **/photoswipe-upload-demo** - Comprehensive upload gallery demonstrations:
+  - Upload gallery with existing images (add/replace modes)
+  - Upload-only gallery starting empty
+  - Custom template upload gallery
+  - Drag & drop, file validation, and preview features
+- **/readonly-gallery-demo** - Read-only gallery with curated sample images
+- **/simple-photoswipe-demo** - Simple implementation examples
+- **/vanilla-js-demo** - Direct JavaScript PhotoSwipe integration
+
+### Key Features Demonstrated
+- Basic galleries with responsive layouts
 - Custom thumbnail templates with overlays
 - Lightbox triggers with custom styling
+- File upload with drag & drop
+- Upload modes (Add vs Replace)
+- File validation and error handling
+- Upload preview and confirmation
 - Event handling and state management
 - Responsive design across device sizes
-
-Navigate to `/photoswipe-demo` to see all features in action.
 
 ## Testing with Playwright
 
@@ -290,3 +331,4 @@ npx playwright test --ui  # Interactive mode for development
 2. View screenshots in `test-results/artifacts/`
 3. Use trace viewer: `npx playwright show-trace trace.zip`
 4. Run specific test with debug: `npx playwright test --debug test-name.spec.js`
+- If we try to run the program and the port is already in use, then use pkill -f Photoswipe to terminate the current process before trying again

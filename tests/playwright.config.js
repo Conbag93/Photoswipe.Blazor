@@ -39,13 +39,13 @@ module.exports = defineConfig({
     },
   ],
 
-  globalSetup: './utils/global-setup.js',
-  globalTeardown: './utils/global-teardown.js',
+  // globalSetup: './utils/global-setup.js',
+  // globalTeardown: './utils/global-teardown.js',
 
-  webServer: {
-    command: 'echo "PhotoSwipe sample app should be running at http://localhost:5224"',
-    url: 'http://localhost:5224',
-    reuseExistingServer: true,
-    timeout: 10000,
-  },
+  // webServer: {
+  //   command: 'echo "PhotoSwipe sample app should be running at http://localhost:3000"',
+  //   url: 'http://localhost:3000',
+  //   reuseExistingServer: true,
+  //   timeout: 10000,
+  // },
 });

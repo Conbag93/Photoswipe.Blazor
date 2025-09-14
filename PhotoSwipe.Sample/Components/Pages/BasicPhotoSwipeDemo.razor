@@ -1,17 +1,17 @@
-@page "/photoswipe-demo"
+@page "/basic-photoswipe-demo"
 @using PhotoSwipe.Blazor.Components
 @using PhotoSwipe.Blazor.Models
 @using PhotoSwipe.Blazor.Services
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<PageTitle>PhotoSwipe Blazor Demo</PageTitle>
+<PageTitle>Basic PhotoSwipe Demo</PageTitle>
 
 <div class="photoswipe-blazor-demo">
     <div class="demo-header">
-        <h1>📸 PhotoSwipe Blazor Component Demos</h1>
+        <h1>📸 Basic PhotoSwipe Blazor Component Demos</h1>
         <p class="lead">
-            This page showcases PhotoSwipe's capabilities using Blazor components with full .NET integration.
+            This demo showcases PhotoSwipe's capabilities using Blazor components with full .NET integration.
             Each demo below demonstrates different component usage patterns and features.
         </p>
     </div>
@@ -29,7 +29,7 @@
     <section class="demo-section">
         <div class="demo-info">
             <h2>📊 Array-Based Gallery (Button Triggered)</h2>
-            <p>Gallery initialized from a .NET data array using <code>PhotoSwipeLightbox</code> component. This approach provides more flexibility and is perfect for programmatic control.</p>
+            <p>Gallery initialized from a .NET data array using <code>PhotoSwipeInterop</code> directly. This approach provides more flexibility and is perfect for programmatic control.</p>
         </div>
         <div class="demo-controls">
             <button type="button" class="demo-btn" @onclick="OpenArrayGallery">🚀 Open Array Gallery (@arrayGalleryImages.Count() images)</button>
@@ -405,5 +405,4 @@
         await Task.CompletedTask;
         // This would require additional PhotoSwipe features for custom slide content
     }
-
 }

@@ -12,7 +12,7 @@ class PhotoSwipePage {
   }
 
   async goto() {
-    await this.page.goto('/photoswipe-demo');
+    await this.page.goto('/basic-photoswipe-demo');
     await this.page.waitForLoadState('networkidle');
   }
 

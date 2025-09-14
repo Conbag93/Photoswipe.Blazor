@@ -1,16 +1,26 @@
 # PhotoSwipe.Blazor
 
-A Blazor component library that provides a responsive image gallery using [PhotoSwipe](https://photoswipe.com/).
+A comprehensive Blazor component library that wraps [PhotoSwipe](https://photoswipe.com/) and extends it with upload capabilities, image processing, and enhanced gallery management features.
 
 ## Features
 
-- 🖼️ Responsive image galleries
-- ⚡ Lightweight and fast
+### Core Features
+- 🖼️ Responsive image galleries with lightbox
+- ⚡ Lightweight and fast performance
 - 📱 Mobile-friendly with touch support
 - 🎨 Customizable styling with CSS isolation
 - 🔧 Strongly-typed configuration
 - 🎯 Event handling support
 - ♿ Accessibility features
+
+### Extended Features  
+- 📤 Drag & drop file uploads
+- 🖼️ Client-side image processing and resizing
+- ✅ File validation (size, type)
+- 👁️ Upload preview before confirmation
+- 🔄 Add or replace gallery modes
+- 📊 Upload progress indicators
+- ⚠️ Comprehensive error handling
 
 ## Installation
 
@@ -177,6 +187,86 @@ The components use CSS isolation, but you can override styles globally:
 }
 ```
 
+## PhotoSwipeUploadGallery Component
+
+The `PhotoSwipeUploadGallery` extends the base gallery with comprehensive upload functionality:
+
+### Basic Upload Gallery
+
+```razor
+@using PhotoSwipe.Blazor.Components
+@using PhotoSwipe.Blazor.Models
+
+<PhotoSwipeUploadGallery 
+    Items="@images"
+    MaxFileSize="@(10 * 1024 * 1024)"  // 10MB limit
+    MaxFiles="20"
+    AllowMultiSelect="true"
+    OnItemsChanged="@OnGalleryChanged"
+    OnItemsUploaded="@OnItemsUploaded" />
+
+@code {
+    private List<PhotoSwipeItem> images = new();
+    
+    private void OnGalleryChanged(IEnumerable<PhotoSwipeItem> items)
+    {
+        images = items.ToList();
+        StateHasChanged();
+    }
+    
+    private void OnItemsUploaded(IEnumerable<PhotoSwipeItem> uploadedItems)
+    {
+        Console.WriteLine($"Uploaded {uploadedItems.Count()} new images");
+    }
+}
+```
+
+### Upload Gallery with Custom Templates
+
+```razor
+<PhotoSwipeUploadGallery 
+    Items="@images"
+    UploadMode="PhotoSwipeUploadMode.Add"
+    MaxFileSize="@(15 * 1024 * 1024)">
+    <ItemTemplate Context="item">
+        <div class="custom-upload-item">
+            <img src="@item.ThumbnailUrl" alt="@item.Alt" />
+            <div class="overlay">
+                <span>@item.Title</span>
+                <span>@($"{item.Width}×{item.Height}")</span>
+            </div>
+        </div>
+    </ItemTemplate>
+</PhotoSwipeUploadGallery>
+```
+
+### Upload Gallery Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Items` | `List<PhotoSwipeItem>` | Current gallery items |
+| `UploadMode` | `PhotoSwipeUploadMode` | Add or Replace mode |
+| `MaxFileSize` | `long` | Maximum file size in bytes |
+| `MaxFiles` | `int` | Maximum number of files per upload |
+| `AllowMultiSelect` | `bool` | Enable multiple file selection |
+| `AllowUploads` | `bool` | Enable/disable upload functionality |
+| `ReadOnly` | `bool` | Set gallery to read-only mode |
+| `ProcessImages` | `bool` | Enable client-side image processing |
+| `MaxImageWidth` | `int` | Maximum width for processed images |
+| `MaxImageHeight` | `int` | Maximum height for processed images |
+| `ImageQuality` | `double` | JPEG quality (0.0-1.0) |
+
+### Upload Gallery Events
+
+| Event | Type | Description |
+|-------|------|-------------|
+| `OnItemsChanged` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired when gallery items change |
+| `OnItemsUploaded` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired after successful upload |
+| `OnItemDeleted` | `EventCallback<PhotoSwipeItem>` | Fired when single item is deleted |
+| `OnItemsDeleted` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired when multiple items are deleted |
+| `OnUploadError` | `EventCallback<string>` | Fired on upload error |
+| `SelectedItemsChanged` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired when selection changes |
+
 ## Advanced Usage
 
 ### Programmatic Control
@@ -208,6 +298,33 @@ The components use CSS isolation, but you can override styles globally:
         });
         StateHasChanged();
     }
+}
+```
+
+### Upload Mode Control
+
+```razor
+<PhotoSwipeUploadGallery 
+    Items="@images"
+    UploadMode="@currentMode"
+    OnItemsChanged="@OnGalleryChanged">
+</PhotoSwipeUploadGallery>
+
+<div class="mode-selector">
+    <label>
+        <input type="radio" checked="@(currentMode == PhotoSwipeUploadMode.Add)" 
+               @onchange="@(() => currentMode = PhotoSwipeUploadMode.Add)" />
+        Add to Gallery
+    </label>
+    <label>
+        <input type="radio" checked="@(currentMode == PhotoSwipeUploadMode.Replace)" 
+               @onchange="@(() => currentMode = PhotoSwipeUploadMode.Replace)" />
+        Replace Gallery
+    </label>
+</div>
+
+@code {
+    private PhotoSwipeUploadMode currentMode = PhotoSwipeUploadMode.Add;
 }
 ```
 

@@ -1,16 +1,38 @@
 # PhotoSwipe Blazor
 
-A Blazor Server integration for PhotoSwipe 5, providing responsive image galleries and lightboxes with seamless .NET integration.
+A comprehensive Blazor wrapper and extension library for PhotoSwipe 5, providing not only responsive image galleries and lightboxes but also enhanced functionality for file uploads, image management, and interactive galleries.
+
+## Overview
+
+PhotoSwipe.Blazor is more than just a wrapper - it's a feature-rich Blazor component library that:
+- **Wraps PhotoSwipe** - Provides full PhotoSwipe 5 integration with Blazor-friendly APIs
+- **Extends Functionality** - Adds upload capabilities, image processing, and management features
+- **Simplifies Integration** - Offers strongly-typed C# models and seamless JavaScript interop
 
 ## Features
 
+### Core Gallery Features
 - **Responsive Image Galleries** - Mobile-first design with automatic grid layouts
 - **PhotoSwipe 5 Integration** - Full support for the latest PhotoSwipe version
-- **Blazor Server Components** - Native .NET integration with PhotoSwipeGallery and PhotoSwipeLightbox components  
+- **Blazor Server Components** - Native .NET integration with multiple component options
 - **Event Handling** - Bidirectional event system between JavaScript and .NET
 - **Customizable Templates** - Support for custom item and trigger templates
 - **CSS Isolation** - Scoped styling with CSS isolation support
 - **Memory Management** - Proper cleanup and disposal patterns
+
+### Extended Features
+- **File Upload Gallery** - Drag & drop and file input support for adding images
+- **Image Processing** - Client-side image resizing and optimization
+- **Upload Modes** - Add to existing gallery or replace entire gallery
+- **File Validation** - Size limits, type restrictions, and error handling
+- **Preview System** - Review uploads before confirming
+- **Progress Indicators** - Real-time upload and processing feedback
+
+## Components
+
+- **PhotoSwipeGallery** - Standard responsive image gallery with lightbox
+- **PhotoSwipeLightbox** - Programmatic lightbox triggers
+- **PhotoSwipeUploadGallery** - Extended gallery with upload capabilities
 
 ## Quick Start
 
@@ -119,9 +141,19 @@ The PhotoSwipe.Blazor library uses static web assets to serve CSS and JavaScript
 
 ### Project Structure
 
-- **PhotoSwipe.Blazor/** - Main Razor Class Library
-- **PhotoSwipe.Sample/** - Demo Blazor application
+- **PhotoSwipe.Blazor/** - Main Razor Class Library with gallery components and services
+- **PhotoSwipe.Sample/** - Demo Blazor application showcasing all features
 - **tests/** - Playwright end-to-end tests
+
+### Demo Pages
+
+The sample application includes several demo pages showcasing different features:
+
+- **/photoswipe-demo** - Basic PhotoSwipe gallery demonstrations
+- **/photoswipe-upload-demo** - Upload gallery with drag & drop, file validation, and preview
+- **/readonly-gallery-demo** - Read-only gallery with curated sample images
+- **/simple-photoswipe-demo** - Simple gallery implementation examples
+- **/vanilla-js-demo** - Direct JavaScript PhotoSwipe integration example
 
 ## Testing
 
@@ -191,6 +223,24 @@ test('should open lightbox when clicking image', async ({ page }) => {
 
 - **[Development Guide](CLAUDE.md)** - Architecture, patterns, and development conventions
 - **[PhotoSwipe Documentation](https://photoswipe.com/)** - Official PhotoSwipe docs
+
+## Roadmap
+
+While PhotoSwipe.Blazor already provides comprehensive gallery and upload functionality, we're planning additional features:
+
+### Planned Enhancements
+- **Edit Mode Toggle** - Dynamic switching between read-only and edit modes
+- **Selection UI** - Visual selection indicators with checkboxes/overlays
+- **Multi-Select Operations** - Bulk actions on selected items (delete, download, etc.)
+- **Unified Editable Gallery** - Single component combining all view/edit/upload features
+- **Drag & Drop Reordering** - Rearrange gallery items with drag and drop
+- **Advanced Keyboard Shortcuts** - Ctrl+Click, Shift+Click for selection
+
+### Future Considerations
+- Server-side image processing integration
+- Cloud storage provider integrations
+- Advanced image editing capabilities
+- Collaborative gallery features
 
 ## Contributing
 
