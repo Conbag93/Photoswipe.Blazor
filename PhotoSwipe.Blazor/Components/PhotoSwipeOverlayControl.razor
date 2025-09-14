@@ -1,0 +1,274 @@
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="photoswipe-overlay-control @GetPositionClass() @CssClass"
+     data-pswp-overlay-control="true"
+     data-pswp-control-type="@ControlType"
+     data-pswp-prevent-gallery="true"
+     style="@GetPositionStyle()"
+     @attributes="AdditionalAttributes">
+
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else if (!string.IsNullOrEmpty(Icon))
+    {
+        <button type="button"
+                class="overlay-control-button @ButtonCssClass"
+                @onclick="OnClick"
+                @onclick:preventDefault="PreventDefault"
+                @onclick:stopPropagation="StopPropagation"
+                disabled="@Disabled"
+                title="@Title"
+                aria-label="@(AriaLabel ?? Title)">
+            @if (Icon.StartsWith('<'))
+            {
+                @((MarkupString)Icon)
+            }
+            else
+            {
+                @Icon
+            }
+        </button>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Overlay control position options
+    /// </summary>
+    public enum OverlayPosition
+    {
+        TopLeft,
+        TopRight,
+        TopCenter,
+        BottomLeft,
+        BottomRight,
+        BottomCenter,
+        CenterLeft,
+        CenterRight,
+        Center,
+        Custom
+    }
+
+    /// <summary>
+    /// Direction to grow when multiple controls share the same position
+    /// </summary>
+    public enum GrowDirection
+    {
+        Right,
+        Left,
+        Down,
+        Up
+    }
+
+    /// <summary>
+    /// Position of the overlay control relative to the gallery item
+    /// </summary>
+    [Parameter] public OverlayPosition Position { get; set; } = OverlayPosition.TopRight;
+
+    /// <summary>
+    /// Type of control for semantic identification
+    /// </summary>
+    [Parameter] public string ControlType { get; set; } = "custom";
+
+    /// <summary>
+    /// Icon to display (can be text, emoji, or HTML markup)
+    /// </summary>
+    [Parameter] public string? Icon { get; set; }
+
+    /// <summary>
+    /// Custom child content (overrides Icon)
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
+    /// Click event handler
+    /// </summary>
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    /// <summary>
+    /// Whether to prevent default click behavior
+    /// </summary>
+    [Parameter] public bool PreventDefault { get; set; } = true;
+
+    /// <summary>
+    /// Whether to stop click event propagation
+    /// </summary>
+    [Parameter] public bool StopPropagation { get; set; } = true;
+
+    /// <summary>
+    /// Whether the control is disabled
+    /// </summary>
+    [Parameter] public bool Disabled { get; set; } = false;
+
+    /// <summary>
+    /// Tooltip text for the control
+    /// </summary>
+    [Parameter] public string? Title { get; set; }
+
+    /// <summary>
+    /// Accessibility label for screen readers
+    /// </summary>
+    [Parameter] public string? AriaLabel { get; set; }
+
+    /// <summary>
+    /// Additional CSS classes for the container
+    /// </summary>
+    [Parameter] public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Additional CSS classes for the button element
+    /// </summary>
+    [Parameter] public string? ButtonCssClass { get; set; }
+
+    /// <summary>
+    /// Custom offset from the edge (in CSS units like px, rem, etc.)
+    /// </summary>
+    [Parameter] public string? Offset { get; set; }
+
+    /// <summary>
+    /// Custom positioning styles
+    /// </summary>
+    [Parameter] public string? CustomPosition { get; set; }
+
+    /// <summary>
+    /// Spacing index for controls sharing the same position (0 = first, 1 = second, etc.)
+    /// </summary>
+    [Parameter] public int SpacingIndex { get; set; } = 0;
+
+    /// <summary>
+    /// Direction to grow when multiple controls share the same position
+    /// </summary>
+    [Parameter] public GrowDirection Direction { get; set; } = GrowDirection.Right;
+
+    /// <summary>
+    /// Gap between controls when multiple controls share the same position (in pixels)
+    /// </summary>
+    [Parameter] public int ControlGap { get; set; } = 4;
+
+    /// <summary>
+    /// Additional HTML attributes
+    /// </summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string GetPositionClass()
+    {
+        return Position switch
+        {
+            OverlayPosition.TopLeft => "position-top-left",
+            OverlayPosition.TopRight => "position-top-right",
+            OverlayPosition.TopCenter => "position-top-center",
+            OverlayPosition.BottomLeft => "position-bottom-left",
+            OverlayPosition.BottomRight => "position-bottom-right",
+            OverlayPosition.BottomCenter => "position-bottom-center",
+            OverlayPosition.CenterLeft => "position-center-left",
+            OverlayPosition.CenterRight => "position-center-right",
+            OverlayPosition.Center => "position-center",
+            OverlayPosition.Custom => "position-custom",
+            _ => "position-top-right"
+        };
+    }
+
+    private string? GetPositionStyle()
+    {
+        if (!string.IsNullOrEmpty(CustomPosition))
+        {
+            return CustomPosition;
+        }
+
+        // Calculate spacing offset based on spacing index and grow direction
+        var spacingOffset = SpacingIndex * (40 + ControlGap); // 40px is typical button width + gap
+        var spacingStyle = GetSpacingStyle(spacingOffset);
+
+        if (!string.IsNullOrEmpty(Offset))
+        {
+            var baseStyle = Position switch
+            {
+                OverlayPosition.TopLeft => $"top: {Offset}; left: {Offset};",
+                OverlayPosition.TopRight => $"top: {Offset}; right: {Offset};",
+                OverlayPosition.TopCenter => $"top: {Offset}; left: 50%; transform: translateX(-50%);",
+                OverlayPosition.BottomLeft => $"bottom: {Offset}; left: {Offset};",
+                OverlayPosition.BottomRight => $"bottom: {Offset}; right: {Offset};",
+                OverlayPosition.BottomCenter => $"bottom: {Offset}; left: 50%; transform: translateX(-50%);",
+                OverlayPosition.CenterLeft => $"top: 50%; left: {Offset}; transform: translateY(-50%);",
+                OverlayPosition.CenterRight => $"top: 50%; right: {Offset}; transform: translateY(-50%);",
+                OverlayPosition.Center => $"top: 50%; left: 50%; transform: translate(-50%, -50%);",
+                _ => null
+            };
+            return CombineStyles(baseStyle, spacingStyle);
+        }
+
+        // Apply spacing even without custom offset
+        if (SpacingIndex > 0)
+        {
+            var baseStyle = Position switch
+            {
+                OverlayPosition.TopLeft => "top: 12px; left: 12px;",
+                OverlayPosition.TopRight => "top: 12px; right: 12px;",
+                OverlayPosition.TopCenter => "top: 12px; left: 50%; transform: translateX(-50%);",
+                OverlayPosition.BottomLeft => "bottom: 12px; left: 12px;",
+                OverlayPosition.BottomRight => "bottom: 12px; right: 12px;",
+                OverlayPosition.BottomCenter => "bottom: 12px; left: 50%; transform: translateX(-50%);",
+                OverlayPosition.CenterLeft => "top: 50%; left: 12px; transform: translateY(-50%);",
+                OverlayPosition.CenterRight => "top: 50%; right: 12px; transform: translateY(-50%);",
+                OverlayPosition.Center => "top: 50%; left: 50%; transform: translate(-50%, -50%);",
+                _ => null
+            };
+            return CombineStyles(baseStyle, spacingStyle);
+        }
+
+        return null;
+    }
+
+    private string? GetSpacingStyle(int spacingOffset)
+    {
+        if (SpacingIndex == 0 || spacingOffset == 0) return null;
+
+        return (Position, Direction) switch
+        {
+            // Top positions
+            (OverlayPosition.TopLeft, GrowDirection.Right) => $"left: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.TopLeft, GrowDirection.Down) => $"top: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.TopRight, GrowDirection.Left) => $"right: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.TopRight, GrowDirection.Down) => $"top: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.TopCenter, GrowDirection.Right) => $"left: calc(50% + {spacingOffset / 2}px); transform: translateX(-50%);",
+            (OverlayPosition.TopCenter, GrowDirection.Left) => $"left: calc(50% - {spacingOffset / 2}px); transform: translateX(-50%);",
+            (OverlayPosition.TopCenter, GrowDirection.Down) => $"top: calc(12px + {spacingOffset}px);",
+
+            // Bottom positions
+            (OverlayPosition.BottomLeft, GrowDirection.Right) => $"left: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.BottomLeft, GrowDirection.Up) => $"bottom: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.BottomRight, GrowDirection.Left) => $"right: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.BottomRight, GrowDirection.Up) => $"bottom: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.BottomCenter, GrowDirection.Right) => $"left: calc(50% + {spacingOffset / 2}px); transform: translateX(-50%);",
+            (OverlayPosition.BottomCenter, GrowDirection.Left) => $"left: calc(50% - {spacingOffset / 2}px); transform: translateX(-50%);",
+            (OverlayPosition.BottomCenter, GrowDirection.Up) => $"bottom: calc(12px + {spacingOffset}px);",
+
+            // Center positions
+            (OverlayPosition.CenterLeft, GrowDirection.Right) => $"left: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.CenterLeft, GrowDirection.Up) => $"top: calc(50% - {spacingOffset / 2}px); transform: translateY(-50%);",
+            (OverlayPosition.CenterLeft, GrowDirection.Down) => $"top: calc(50% + {spacingOffset / 2}px); transform: translateY(-50%);",
+            (OverlayPosition.CenterRight, GrowDirection.Left) => $"right: calc(12px + {spacingOffset}px);",
+            (OverlayPosition.CenterRight, GrowDirection.Up) => $"top: calc(50% - {spacingOffset / 2}px); transform: translateY(-50%);",
+            (OverlayPosition.CenterRight, GrowDirection.Down) => $"top: calc(50% + {spacingOffset / 2}px); transform: translateY(-50%);",
+            (OverlayPosition.Center, GrowDirection.Right) => $"left: calc(50% + {spacingOffset / 2}px); transform: translate(-50%, -50%);",
+            (OverlayPosition.Center, GrowDirection.Left) => $"left: calc(50% - {spacingOffset / 2}px); transform: translate(-50%, -50%);",
+            (OverlayPosition.Center, GrowDirection.Up) => $"top: calc(50% - {spacingOffset / 2}px); transform: translate(-50%, -50%);",
+            (OverlayPosition.Center, GrowDirection.Down) => $"top: calc(50% + {spacingOffset / 2}px); transform: translate(-50%, -50%);",
+
+            _ => null
+        };
+    }
+
+    private string? CombineStyles(string? baseStyle, string? spacingStyle)
+    {
+        if (string.IsNullOrEmpty(baseStyle) && string.IsNullOrEmpty(spacingStyle)) return null;
+        if (string.IsNullOrEmpty(baseStyle)) return spacingStyle;
+        if (string.IsNullOrEmpty(spacingStyle)) return baseStyle;
+
+        return $"{baseStyle} {spacingStyle}";
+    }
+}

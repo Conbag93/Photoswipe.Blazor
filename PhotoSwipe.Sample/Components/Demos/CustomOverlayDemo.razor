@@ -1,0 +1,530 @@
+@using PhotoSwipe.Blazor.Components
+@using PhotoSwipe.Blazor.Models
+@rendermode InteractiveServer
+@inject ILogger<CustomOverlayDemo> Logger
+
+<!-- Custom Overlay Controls & Position Demo -->
+<div class="custom-overlay-section">
+    <h2>💖 Custom Overlay Controls & Smart Positioning Demo</h2>
+    <p>Showcase interactive overlay elements with smart positioning: heart favorites, thumbs up/down ratings, and custom actions. Test different positions and see how controls handle overlapping positions with intelligent spacing.</p>
+
+    <!-- Default Layout Gallery -->
+    <div class="demo-subsection">
+        <h3>🎯 Default Layout</h3>
+        <p>Basic overlay controls in fixed positions - heart (top-right), share (bottom-left), thumbs up/down (bottom-right stacked). The share button demonstrates using RenderFragment for rich content instead of simple emoji icons.</p>
+
+        <PhotoSwipeGallery
+            Id="custom-overlay-demo-gallery"
+            Items="@_galleryItems"
+            CssClass="custom-gallery"
+            Options="@_galleryOptions">
+            <ItemTemplate Context="item">
+                <div class="gallery-item-wrapper custom-demo-item">
+                    <a href="@item.Src"
+                       data-pswp-width="@item.Width"
+                       data-pswp-height="@item.Height"
+                       data-pswp-caption="@item.Caption"
+                       class="gallery-item">
+                        <img src="@item.ThumbnailUrl"
+                             alt="@item.Alt"
+                             class="gallery-image" />
+                    </a>
+
+                    <!-- Heart Toggle (Top-Left) -->
+                    <PhotoSwipeOverlayControl Position="@_heartPosition"
+                                            ControlType="heart"
+                                            Icon="@GetHeartIcon(item.Src)"
+                                            ButtonCssClass="@GetHeartButtonClass(item.Src)"
+                                            Title="@GetHeartTooltip(item.Src)"
+                                            OnClick="@(() => ToggleHeart(item.Src))"
+                                            SpacingIndex="@GetHeartSpacingIndex()"
+                                            Direction="@GetGrowDirectionForPosition(_heartPosition, "heart")"
+                                            ControlGap="@_controlGap" />
+
+                    <!-- Thumbs Up (Top-Right) -->
+                    <PhotoSwipeOverlayControl Position="@_thumbsUpPosition"
+                                            ControlType="rating"
+                                            Icon="👍"
+                                            ButtonCssClass="@GetThumbsUpButtonClass(item.Src)"
+                                            Title="@GetThumbsUpTooltip(item.Src)"
+                                            OnClick="@(() => ToggleThumbsUp(item.Src))"
+                                            SpacingIndex="@GetThumbsUpSpacingIndex()"
+                                            Direction="@GetGrowDirectionForPosition(_thumbsUpPosition, "thumbs-up")"
+                                            ControlGap="@_controlGap" />
+
+                    <!-- Thumbs Down (Top-Right) -->
+                    <PhotoSwipeOverlayControl Position="@_thumbsDownPosition"
+                                            ControlType="rating"
+                                            Icon="👎"
+                                            ButtonCssClass="@GetThumbsDownButtonClass(item.Src)"
+                                            Title="@GetThumbsDownTooltip(item.Src)"
+                                            OnClick="@(() => ToggleThumbsDown(item.Src))"
+                                            SpacingIndex="@GetThumbsDownSpacingIndex()"
+                                            Direction="@GetGrowDirectionForPosition(_thumbsDownPosition, "thumbs-down")"
+                                            ControlGap="@_controlGap" />
+
+                    <!-- Share Action with RenderFragment (demonstrates rich content) -->
+                    <PhotoSwipeOverlayControl Position="@_sharePosition"
+                                            ControlType="share"
+                                            Title="@GetShareTooltip(item.Src)"
+                                            OnClick="@(() => ShareImage(item))"
+                                            SpacingIndex="@GetShareSpacingIndex()"
+                                            Direction="@GetGrowDirectionForPosition(_sharePosition, "share")"
+                                            ControlGap="@_controlGap">
+                        <button type="button"
+                                class="overlay-control-button @GetShareButtonClass(item.Src)"
+                                style="@(GetShareButtonClass(item.Src).Contains("active") ? "background: #28a745; color: white;" : "")">
+                            @if (_sharedImages.Contains(item.Src))
+                            {
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                                </svg>
+                                <span style="margin-left: 4px; font-size: 12px;">Shared</span>
+                            }
+                            else
+                            {
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+                                </svg>
+                            }
+                        </button>
+                    </PhotoSwipeOverlayControl>
+                </div>
+            </ItemTemplate>
+        </PhotoSwipeGallery>
+    </div>
+
+    <!-- Interactive Position Demo -->
+    <div class="demo-subsection">
+        <h3>📍 Interactive Position Demo</h3>
+        <p>Configure positions dynamically and see how the smart spacing system handles overlapping controls.</p>
+
+        <!-- Smart Positioning Explanation -->
+        <div class="spacing-explanation">
+            <h4>🧠 How Intelligent Positioning Works:</h4>
+            <div class="explanation-content">
+                <p><strong>Each position has intelligent growth defaults</strong> that follow natural UI patterns:</p>
+                <ul>
+                    <li><strong>TopLeft:</strong> Grows rightward → [Heart] [Share]</li>
+                    <li><strong>TopRight:</strong> Grows leftward ← [Share] [Heart]</li>
+                    <li><strong>BottomLeft:</strong> Grows rightward → [Heart] [Share]</li>
+                    <li><strong>BottomRight:</strong> Grows leftward ← [Share] [Heart]</li>
+                    <li><strong>TopCenter:</strong> Stacks downward ↓ [Heart] above [Share]</li>
+                    <li><strong>BottomCenter:</strong> Stacks upward ↑ [Share] above [Heart]</li>
+                </ul>
+                <p><strong>Smart Benefits:</strong></p>
+                <ul>
+                    <li>✅ <strong>Natural layouts:</strong> Controls grow away from screen edges</li>
+                    <li>✅ <strong>No overlapping:</strong> TopRight buttons won't disappear when stacked up</li>
+                    <li>✅ <strong>Professional appearance:</strong> Matches user expectations</li>
+                    <li>✅ <strong>Complex layouts possible:</strong> Bottom toolbar + top corner actions simultaneously</li>
+                    <li>✅ <strong>Override capability:</strong> Manual growth direction overrides when needed</li>
+                    <li>✅ <strong>Rich content support:</strong> Use RenderFragment for custom HTML, SVG icons, and complex layouts</li>
+                </ul>
+                <p><strong>RenderFragment vs Icon String:</strong></p>
+                <ul>
+                    <li><strong>Icon parameter:</strong> Simple text/emoji/HTML strings (e.g. "❤️", "👍", "&lt;i class='fa-heart'&gt;&lt;/i&gt;")</li>
+                    <li><strong>ChildContent (RenderFragment):</strong> Full Razor markup with logic, SVG, styling, and dynamic content</li>
+                </ul>
+                <p><em>Try moving controls to different positions and overriding growth directions below to see both intelligent and custom spacing in action!</em></p>
+            </div>
+        </div>
+
+        <!-- Position Controls -->
+        <div class="position-controls">
+            <div class="control-group">
+                <label><strong>Heart Position:</strong></label>
+                <label class="radio-option">
+                    <input type="radio" name="heart-position" checked="@(_heartPosition == PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" @onchange="@(() => _heartPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" />
+                    Top Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="heart-position" checked="@(_heartPosition == PhotoSwipeOverlayControl.OverlayPosition.TopRight)" @onchange="@(() => _heartPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight)" />
+                    Top Right
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="heart-position" checked="@(_heartPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" @onchange="@(() => _heartPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" />
+                    Bottom Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="heart-position" checked="@(_heartPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" @onchange="@(() => _heartPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" />
+                    Bottom Right
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label><strong>Thumbs Up Position:</strong></label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-position" checked="@(_thumbsUpPosition == PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" @onchange="@(() => _thumbsUpPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" />
+                    Top Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-position" checked="@(_thumbsUpPosition == PhotoSwipeOverlayControl.OverlayPosition.TopRight)" @onchange="@(() => _thumbsUpPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight)" />
+                    Top Right
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-position" checked="@(_thumbsUpPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" @onchange="@(() => _thumbsUpPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" />
+                    Bottom Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-position" checked="@(_thumbsUpPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" @onchange="@(() => _thumbsUpPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" />
+                    Bottom Right
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label><strong>Thumbs Down Position:</strong></label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-position" checked="@(_thumbsDownPosition == PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" @onchange="@(() => _thumbsDownPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" />
+                    Top Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-position" checked="@(_thumbsDownPosition == PhotoSwipeOverlayControl.OverlayPosition.TopRight)" @onchange="@(() => _thumbsDownPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight)" />
+                    Top Right
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-position" checked="@(_thumbsDownPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" @onchange="@(() => _thumbsDownPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" />
+                    Bottom Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-position" checked="@(_thumbsDownPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" @onchange="@(() => _thumbsDownPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" />
+                    Bottom Right
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label><strong>Share Position:</strong></label>
+                <label class="radio-option">
+                    <input type="radio" name="share-position" checked="@(_sharePosition == PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" @onchange="@(() => _sharePosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" />
+                    Top Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="share-position" checked="@(_sharePosition == PhotoSwipeOverlayControl.OverlayPosition.TopRight)" @onchange="@(() => _sharePosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight)" />
+                    Top Right
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="share-position" checked="@(_sharePosition == PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" @onchange="@(() => _sharePosition = PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" />
+                    Bottom Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="share-position" checked="@(_sharePosition == PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" @onchange="@(() => _sharePosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" />
+                    Bottom Right
+                </label>
+            </div>
+
+            <!-- Custom Growth Direction Overrides -->
+            <div class="control-group">
+                <label><strong>Thumbs Up Growth Direction (Override):</strong></label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-growth" checked="@(!_thumbsUpGrowDirectionOverride.HasValue)" @onchange="@(() => _thumbsUpGrowDirectionOverride = null)" />
+                    Auto (Intelligent)
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-growth" checked="@(_thumbsUpGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Right)" @onchange="@(() => _thumbsUpGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Right)" />
+                    Right →
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-growth" checked="@(_thumbsUpGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Left)" @onchange="@(() => _thumbsUpGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Left)" />
+                    Left ←
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-growth" checked="@(_thumbsUpGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Down)" @onchange="@(() => _thumbsUpGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Down)" />
+                    Down ↓
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-up-growth" checked="@(_thumbsUpGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Up)" @onchange="@(() => _thumbsUpGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Up)" />
+                    Up ↑
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label><strong>Thumbs Down Growth Direction (Override):</strong></label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-growth" checked="@(!_thumbsDownGrowDirectionOverride.HasValue)" @onchange="@(() => _thumbsDownGrowDirectionOverride = null)" />
+                    Auto (Intelligent)
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-growth" checked="@(_thumbsDownGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Right)" @onchange="@(() => _thumbsDownGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Right)" />
+                    Right →
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-growth" checked="@(_thumbsDownGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Left)" @onchange="@(() => _thumbsDownGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Left)" />
+                    Left ←
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-growth" checked="@(_thumbsDownGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Down)" @onchange="@(() => _thumbsDownGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Down)" />
+                    Down ↓
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="thumbs-down-growth" checked="@(_thumbsDownGrowDirectionOverride == PhotoSwipeOverlayControl.GrowDirection.Up)" @onchange="@(() => _thumbsDownGrowDirectionOverride = PhotoSwipeOverlayControl.GrowDirection.Up)" />
+                    Up ↑
+                </label>
+            </div>
+
+        </div>
+
+
+
+        <!-- Rating Summary -->
+        @if (_heartedImages.Any() || _thumbsUpImages.Any() || _thumbsDownImages.Any())
+        {
+            <div class="rating-summary">
+                <h3>📊 Rating Summary</h3>
+                <div class="summary-stats">
+                    @if (_heartedImages.Any())
+                    {
+                        <div class="stat-item">
+                            <span class="stat-icon">💖</span>
+                            <span class="stat-label">Favorites:</span>
+                            <span class="stat-value">@_heartedImages.Count</span>
+                        </div>
+                    }
+                    @if (_thumbsUpImages.Any())
+                    {
+                        <div class="stat-item">
+                            <span class="stat-icon">👍</span>
+                            <span class="stat-label">Likes:</span>
+                            <span class="stat-value">@_thumbsUpImages.Count</span>
+                        </div>
+                    }
+                    @if (_thumbsDownImages.Any())
+                    {
+                        <div class="stat-item">
+                            <span class="stat-icon">👎</span>
+                            <span class="stat-label">Dislikes:</span>
+                            <span class="stat-value">@_thumbsDownImages.Count</span>
+                        </div>
+                    }
+                    @if (_sharedImages.Any())
+                    {
+                        <div class="stat-item">
+                            <span class="stat-icon">📤</span>
+                            <span class="stat-label">Shared:</span>
+                            <span class="stat-value">@_sharedImages.Count</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Gallery data
+    private List<PhotoSwipeItem> _galleryItems = new();
+
+    // Custom overlay control state
+    private HashSet<string> _heartedImages = new();
+    private HashSet<string> _thumbsUpImages = new();
+    private HashSet<string> _thumbsDownImages = new();
+    private HashSet<string> _sharedImages = new();
+
+    // Position demo state
+    private PhotoSwipeOverlayControl.OverlayPosition _heartPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight;
+    private PhotoSwipeOverlayControl.OverlayPosition _thumbsUpPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight;
+    private PhotoSwipeOverlayControl.OverlayPosition _thumbsDownPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight;
+    private PhotoSwipeOverlayControl.OverlayPosition _sharePosition = PhotoSwipeOverlayControl.OverlayPosition.BottomLeft;
+    private int _controlGap = 4; // Reduced default spacing for smaller gallery images
+
+    // Custom growth direction overrides for thumbs controls
+    private PhotoSwipeOverlayControl.GrowDirection? _thumbsUpGrowDirectionOverride = null;
+    private PhotoSwipeOverlayControl.GrowDirection? _thumbsDownGrowDirectionOverride = null;
+
+    // Position-specific growth directions - each position has intelligent defaults
+    private readonly Dictionary<PhotoSwipeOverlayControl.OverlayPosition, PhotoSwipeOverlayControl.GrowDirection> _positionGrowDirections = new()
+    {
+        [PhotoSwipeOverlayControl.OverlayPosition.TopLeft] = PhotoSwipeOverlayControl.GrowDirection.Right,      // Grow rightward from top-left
+        [PhotoSwipeOverlayControl.OverlayPosition.TopRight] = PhotoSwipeOverlayControl.GrowDirection.Left,      // Grow leftward from top-right
+        [PhotoSwipeOverlayControl.OverlayPosition.TopCenter] = PhotoSwipeOverlayControl.GrowDirection.Down,     // Stack downward from top-center
+        [PhotoSwipeOverlayControl.OverlayPosition.BottomLeft] = PhotoSwipeOverlayControl.GrowDirection.Right,   // Grow rightward from bottom-left
+        [PhotoSwipeOverlayControl.OverlayPosition.BottomRight] = PhotoSwipeOverlayControl.GrowDirection.Left,   // Grow leftward from bottom-right
+        [PhotoSwipeOverlayControl.OverlayPosition.BottomCenter] = PhotoSwipeOverlayControl.GrowDirection.Up,    // Stack upward from bottom-center
+        [PhotoSwipeOverlayControl.OverlayPosition.CenterLeft] = PhotoSwipeOverlayControl.GrowDirection.Down,    // Stack downward from center-left
+        [PhotoSwipeOverlayControl.OverlayPosition.CenterRight] = PhotoSwipeOverlayControl.GrowDirection.Down,   // Stack downward from center-right
+        [PhotoSwipeOverlayControl.OverlayPosition.Center] = PhotoSwipeOverlayControl.GrowDirection.Right        // Default to right from center
+    };
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.85,
+        ShowAnimationDuration = 350
+    };
+
+    protected override void OnInitialized()
+    {
+        // Initialize with sample images
+        InitializeGallery();
+        Logger.LogInformation("Custom Overlay Demo initialized");
+    }
+
+    private void InitializeGallery()
+    {
+        _galleryItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1018/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1018/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Mountain View",
+                Caption = "Scenic mountain landscape",
+                Title = "Mountain Peak"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1015/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1015/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Ocean Waves",
+                Caption = "Ocean waves at sunset",
+                Title = "Peaceful Ocean"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1019/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1019/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Forest Trail",
+                Caption = "Path through the forest",
+                Title = "Forest Walk"
+            }
+        };
+    }
+
+    // Custom overlay control methods
+    private void ToggleHeart(string itemSrc)
+    {
+        if (_heartedImages.Contains(itemSrc))
+        {
+            _heartedImages.Remove(itemSrc);
+        }
+        else
+        {
+            _heartedImages.Add(itemSrc);
+        }
+        StateHasChanged();
+        Logger.LogInformation("Heart toggled for item: {ItemSrc}, Hearted: {IsHearted}", itemSrc, _heartedImages.Contains(itemSrc));
+    }
+
+    private void ToggleThumbsUp(string itemSrc)
+    {
+        if (_thumbsUpImages.Contains(itemSrc))
+        {
+            _thumbsUpImages.Remove(itemSrc);
+        }
+        else
+        {
+            _thumbsUpImages.Add(itemSrc);
+            // Remove thumbs down if it exists (exclusive rating)
+            _thumbsDownImages.Remove(itemSrc);
+        }
+        StateHasChanged();
+        Logger.LogInformation("Thumbs up toggled for item: {ItemSrc}, Liked: {IsLiked}", itemSrc, _thumbsUpImages.Contains(itemSrc));
+    }
+
+    private void ToggleThumbsDown(string itemSrc)
+    {
+        if (_thumbsDownImages.Contains(itemSrc))
+        {
+            _thumbsDownImages.Remove(itemSrc);
+        }
+        else
+        {
+            _thumbsDownImages.Add(itemSrc);
+            // Remove thumbs up if it exists (exclusive rating)
+            _thumbsUpImages.Remove(itemSrc);
+        }
+        StateHasChanged();
+        Logger.LogInformation("Thumbs down toggled for item: {ItemSrc}, Disliked: {IsDisliked}", itemSrc, _thumbsDownImages.Contains(itemSrc));
+    }
+
+    private void ShareImage(PhotoSwipeItem item)
+    {
+        _sharedImages.Add(item.Src);
+        StateHasChanged();
+        Logger.LogInformation("Image shared: {Alt}", item.Alt);
+    }
+
+
+    // Helper methods for overlay control styling and state
+    private string GetHeartIcon(string itemSrc) => _heartedImages.Contains(itemSrc) ? "❤️" : "🖤";
+    private string GetHeartButtonClass(string itemSrc) => _heartedImages.Contains(itemSrc) ? "heart-active" : "heart-inactive";
+    private string GetHeartTooltip(string itemSrc) => _heartedImages.Contains(itemSrc) ? "Remove from favorites ❤️" : "Add to favorites 🖤";
+
+    private string GetThumbsUpButtonClass(string itemSrc) => _thumbsUpImages.Contains(itemSrc) ? "thumbs-active thumbs-up-active" : "thumbs-inactive";
+    private string GetThumbsUpTooltip(string itemSrc) => _thumbsUpImages.Contains(itemSrc) ? "Unlike this image 👍" : "Like this image 👍";
+
+    private string GetThumbsDownButtonClass(string itemSrc) => _thumbsDownImages.Contains(itemSrc) ? "thumbs-active thumbs-down-active" : "thumbs-inactive";
+    private string GetThumbsDownTooltip(string itemSrc) => _thumbsDownImages.Contains(itemSrc) ? "Remove dislike 👎" : "Dislike this image 👎";
+
+    private string GetShareIcon(string itemSrc) => _sharedImages.Contains(itemSrc) ? "✅" : "📤";
+    private string GetShareButtonClass(string itemSrc) => _sharedImages.Contains(itemSrc) ? "share-active" : "share-inactive";
+    private string GetShareTooltip(string itemSrc) => _sharedImages.Contains(itemSrc) ? "Already shared ✅" : "Share this image 📤";
+
+    // Smart spacing methods for default layout
+    private int GetHeartSpacingIndex()
+    {
+        var controlsAtPosition = GetControlsAtPosition(_heartPosition);
+        if (controlsAtPosition.Count == 1) return 0;
+        return controlsAtPosition.OrderBy(x => x).ToList().IndexOf("heart");
+    }
+
+    private int GetThumbsUpSpacingIndex()
+    {
+        var controlsAtPosition = GetControlsAtPosition(_thumbsUpPosition);
+        if (controlsAtPosition.Count == 1) return 0;
+        return controlsAtPosition.OrderBy(x => x).ToList().IndexOf("thumbs-up");
+    }
+
+    private int GetThumbsDownSpacingIndex()
+    {
+        var controlsAtPosition = GetControlsAtPosition(_thumbsDownPosition);
+        if (controlsAtPosition.Count == 1) return 0;
+        return controlsAtPosition.OrderBy(x => x).ToList().IndexOf("thumbs-down");
+    }
+
+    private int GetShareSpacingIndex()
+    {
+        var controlsAtPosition = GetControlsAtPosition(_sharePosition);
+        if (controlsAtPosition.Count == 1) return 0;
+        return controlsAtPosition.OrderBy(x => x).ToList().IndexOf("share");
+    }
+
+    private List<string> GetControlsAtPosition(PhotoSwipeOverlayControl.OverlayPosition position)
+    {
+        var controls = new List<string>();
+
+        if (_heartPosition == position) controls.Add("heart");
+        if (_thumbsUpPosition == position) controls.Add("thumbs-up");
+        if (_thumbsDownPosition == position) controls.Add("thumbs-down");
+        if (_sharePosition == position) controls.Add("share");
+
+        return controls;
+    }
+
+    // Get the intelligent growth direction for a specific position with override support
+    private PhotoSwipeOverlayControl.GrowDirection GetGrowDirectionForPosition(PhotoSwipeOverlayControl.OverlayPosition position, string controlType = "")
+    {
+        // Check for custom overrides for thumbs controls
+        if (controlType == "thumbs-up" && _thumbsUpGrowDirectionOverride.HasValue)
+        {
+            return _thumbsUpGrowDirectionOverride.Value;
+        }
+        if (controlType == "thumbs-down" && _thumbsDownGrowDirectionOverride.HasValue)
+        {
+            return _thumbsDownGrowDirectionOverride.Value;
+        }
+
+        // Use intelligent defaults based on position
+        return _positionGrowDirections.TryGetValue(position, out var direction)
+            ? direction
+            : PhotoSwipeOverlayControl.GrowDirection.Right; // Default fallback
+    }
+
+
+}
