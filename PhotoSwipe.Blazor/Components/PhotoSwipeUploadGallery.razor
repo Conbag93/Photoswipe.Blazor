@@ -9,7 +9,7 @@
 <div class="photoswipe-upload-gallery @CssClass">
     
     <!-- Upload Section -->
-    @if (!ReadOnly && AllowUploads)
+    @if (AllowAdd)
     {
         <div class="upload-section">
             <div class="upload-header">
@@ -124,7 +124,7 @@
                 <div class="mass-selection">
                     <button class="btn-select-all" @onclick="SelectAll">Select All</button>
                     <button class="btn-deselect-all" @onclick="DeselectAll">Deselect All</button>
-                    @if (_selectedItems.Any())
+                    @if (AllowDelete && _selectedItems.Any())
                     {
                         <button class="btn-delete-selected" @onclick="() => ShowDeleteConfirmation(_selectedItems.ToList())">Delete Selected (@_selectedItems.Count)</button>
                     }
@@ -144,37 +144,53 @@
         
         <ItemTemplate Context="item">
             <div class="gallery-item-wrapper">
-                <!-- Selection Overlay -->
+                <!-- Selection Overlay - Move data attributes to input elements for better Blazor event binding -->
                 @if (EnableSelection)
                 {
                     <div class="selection-overlay">
                         @if (AllowMultiSelect)
                         {
-                            <input type="checkbox" 
+                            <input type="checkbox"
                                    class="selection-checkbox"
                                    checked="@_selectedItems.Contains(item)"
-                                   @onchange="@(e => ToggleSelection(item, (bool)e.Value!))" />
+                                   @onchange="@(e => ToggleSelection(item, (bool)e.Value!))"
+                                   data-pswp-overlay-control="true"
+                                   data-pswp-control-type="selection"
+                                   data-pswp-prevent-gallery="true" />
                         }
                         else
                         {
                             <input type="radio"
                                    class="selection-radio"
-                                   name="single-select"
+                                   name="single-select-@_galleryElementId"
                                    checked="@(SelectedItem == item)"
-                                   @onchange="@(e => SelectSingle(item, !string.IsNullOrEmpty(e.Value?.ToString())))" />
+                                   @onchange="@(e => SelectSingle(item, !string.IsNullOrEmpty(e.Value?.ToString())))"
+                                   data-pswp-overlay-control="true"
+                                   data-pswp-control-type="selection"
+                                   data-pswp-prevent-gallery="true" />
                         }
                     </div>
                 }
-                
-                <!-- Delete Overlay -->
-                <div class="delete-overlay">
-                    <button class="btn-delete-item" 
-                            @onclick="@(() => ShowDeleteConfirmation(new List<PhotoSwipeItem> { item }))"
-                            title="Delete this image">
-                        ×
-                    </button>
-                </div>
-                
+
+                <!-- Delete Overlay using new PhotoSwipeOverlayControl -->
+                @if (AllowDelete)
+                {
+                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
+                                            ControlType="delete"
+                                            Icon="×"
+                                            Title="Delete this image"
+                                            AriaLabel="Delete image"
+                                            CssClass="delete-overlay-control"
+                                            ButtonCssClass="size-delete btn-delete-item"
+                                            OnClick="@(() => ShowDeleteConfirmation(new List<PhotoSwipeItem> { item }))" />
+                }
+
+                <!-- Custom Overlay Controls (for user extensibility) -->
+                @if (CustomOverlayControls != null)
+                {
+                    @CustomOverlayControls(item)
+                }
+
                 <!-- Item Content -->
                 @if (ItemTemplate != null)
                 {
@@ -194,7 +210,7 @@
     {
         <div class="empty-gallery">
             <p>No images in gallery.</p>
-            @if (!ReadOnly && AllowUploads)
+            @if (AllowAdd)
             {
                 <p>Upload some images to get started!</p>
             }
@@ -202,7 +218,7 @@
     }
     
     <!-- Delete Confirmation Modal -->
-    @if (_showDeleteConfirmation)
+    @if (AllowDelete && _showDeleteConfirmation)
     {
         <div class="delete-confirmation-modal">
             <div class="modal-content">
@@ -223,10 +239,11 @@
     [Parameter] public IEnumerable<PhotoSwipeItem>? Items { get; set; }
     [Parameter] public PhotoSwipeOptions? Options { get; set; }
     [Parameter] public RenderFragment<PhotoSwipeItem>? ItemTemplate { get; set; }
+    [Parameter] public RenderFragment<PhotoSwipeItem>? CustomOverlayControls { get; set; }
     
     // Upload parameters
-    [Parameter] public bool AllowUploads { get; set; } = true;
-    [Parameter] public bool ReadOnly { get; set; } = false;
+    [Parameter] public bool AllowAdd { get; set; } = true;
+    [Parameter] public bool AllowDelete { get; set; } = false;
     [Parameter] public PhotoSwipeUploadMode UploadMode { get; set; } = PhotoSwipeUploadMode.Add;
     [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
     [Parameter] public int MaxFiles { get; set; } = 20;
@@ -519,9 +536,10 @@
     {
         try
         {
-            // Remove from confirmed items
+            // Remove from both original and confirmed items
             foreach (var item in _itemsToDelete)
             {
+                _originalItems.Remove(item);
                 _confirmedItems.Remove(item);
                 _selectedItems.Remove(item);
             }

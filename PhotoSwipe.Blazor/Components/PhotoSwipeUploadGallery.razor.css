@@ -361,23 +361,61 @@
     cursor: pointer;
 }
 
+/* Overlay Control Integration Styles */
+.selection-overlay-control {
+    /* Use CSS custom properties for theming */
+    --pswp-overlay-bg: rgba(255, 255, 255, 0.9);
+    --pswp-overlay-bg-hover: rgba(255, 255, 255, 0.95);
+    --pswp-overlay-text: #333;
+    --pswp-overlay-border: rgba(0, 0, 0, 0.1);
+    --pswp-overlay-backdrop-blur: 2px;
+}
+
+.selection-overlay-control .selection-checkbox,
+.selection-overlay-control .selection-radio {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
+    transform: scale(1.2);
+}
+
+.selection-overlay-control .selection-checkbox:focus,
+.selection-overlay-control .selection-radio:focus {
+    outline: 2px solid rgba(13, 110, 253, 0.5);
+    outline-offset: 2px;
+}
+
+.delete-overlay-control {
+    /* Delete-specific theming already handled by data-attribute in base CSS */
+}
+
+.delete-overlay-control .btn-delete-item {
+    /* Additional styling specific to upload gallery delete buttons */
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* Selection overlay - Direct implementation for better Blazor event binding */
 .selection-overlay {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: var(--pswp-overlay-offset, 12px);
+    left: var(--pswp-overlay-offset, 12px);
     z-index: 10;
     background: rgba(255, 255, 255, 0.9);
-    border-radius: 4px;
+    border-radius: var(--pswp-overlay-border-radius, 8px);
     padding: 4px;
-    backdrop-filter: blur(2px);
-    pointer-events: none; /* Allow clicks to pass through to PhotoSwipe */
+    backdrop-filter: blur(var(--pswp-overlay-backdrop-blur, 2px));
+    pointer-events: none;
+    transition: var(--pswp-overlay-transition, all 0.2s ease);
 }
 
 .selection-checkbox, .selection-radio {
     width: 16px;
     height: 16px;
     cursor: pointer;
-    pointer-events: auto; /* Re-enable pointer events for interactive elements */
+    pointer-events: auto;
 }
 
 .delete-overlay {
@@ -385,7 +423,7 @@
     top: 8px;
     right: 8px;
     z-index: 10;
-    pointer-events: none; /* Allow clicks to pass through to PhotoSwipe */
+    pointer-events: none;
 }
 
 .btn-delete-item {
@@ -403,7 +441,7 @@
     line-height: 1;
     backdrop-filter: blur(2px);
     transition: all 0.2s ease;
-    pointer-events: auto; /* Re-enable pointer events for interactive elements */
+    pointer-events: auto;
 }
 
 .btn-delete-item:hover {

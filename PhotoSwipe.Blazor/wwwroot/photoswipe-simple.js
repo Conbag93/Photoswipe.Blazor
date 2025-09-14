@@ -55,17 +55,51 @@ window.PhotoSwipeBlazor = {
             lightbox.addFilter('clickedIndex', (clickedIndex, e) => {
                 const clickedElement = e.target;
 
-                // Don't open gallery if clicking on overlay elements (selection checkboxes, delete buttons, etc.)
-                if (clickedElement.matches('input[type="checkbox"], input[type="radio"], button')) {
-                    return -1; // Return -1 to prevent gallery opening
+                // ENHANCED: Handle interactive inputs specially - allow them to function but prevent gallery
+                // This fixes the regression where checkboxes/radio buttons stopped working
+                if (clickedElement.matches('input[type="checkbox"], input[type="radio"]')) {
+                    console.log('🚫 Gallery opening prevented: interactive input (but allowing input to function)');
+                    return -1; // Prevent gallery but don't interfere with input events
                 }
 
-                // Don't open gallery if clicking inside overlay containers
-                const overlayElement = clickedElement.closest('.selection-overlay, .delete-overlay');
-                if (overlayElement) {
+                // NEW: Check for data-attribute based controls (generic approach)
+                // This is for buttons and other non-input overlay controls
+                if (clickedElement.closest('[data-pswp-overlay-control="true"]') ||
+                    clickedElement.closest('[data-pswp-prevent-gallery="true"]')) {
+                    console.log('🚫 Gallery opening prevented: data-attribute overlay control detected');
                     return -1;
                 }
 
+                // LEGACY: Maintain backward compatibility for buttons
+                // This supports button elements specifically
+                if (clickedElement.matches('button')) {
+                    console.log('🚫 Gallery opening prevented: button element detected');
+                    return -1; // Return -1 to prevent gallery opening
+                }
+
+                // LEGACY: Don't open gallery if clicking inside specific overlay containers
+                const overlayElement = clickedElement.closest('.selection-overlay, .delete-overlay, .photoswipe-overlay-control');
+                if (overlayElement) {
+                    console.log('🚫 Gallery opening prevented: overlay container detected');
+                    return -1;
+                }
+
+                // ENHANCED: Additional safety checks for common overlay patterns
+                // Check for elements with specific data attributes that should prevent gallery opening
+                if (clickedElement.hasAttribute('data-prevent-gallery') ||
+                    clickedElement.closest('[data-prevent-gallery]')) {
+                    console.log('🚫 Gallery opening prevented: data-prevent-gallery attribute detected');
+                    return -1;
+                }
+
+                // Check for elements with overlay-control class (generic CSS class approach)
+                if (clickedElement.matches('.overlay-control, .overlay-control-button') ||
+                    clickedElement.closest('.overlay-control, .overlay-control-button')) {
+                    console.log('🚫 Gallery opening prevented: overlay-control class detected');
+                    return -1;
+                }
+
+                console.log('✅ Gallery opening allowed for clicked element:', clickedElement);
                 return clickedIndex;
             });
 
@@ -212,17 +246,17 @@ window.PhotoSwipeBlazor = {
 
             // Add event handlers for Blazor callbacks
             if (dotnetInstance) {
-                pswp.on('openPswp', (e) => {
+                pswp.on('openPswp', () => {
                     console.log('📸 PhotoSwipe opened (data mode)');
                     dotnetInstance.invokeMethodAsync('OnOpen', { index: pswp.currIndex || 0 });
                 });
 
-                pswp.on('close', (e) => {
+                pswp.on('close', () => {
                     console.log('🔒 PhotoSwipe closed (data mode)');
                     dotnetInstance.invokeMethodAsync('OnClose', { index: pswp.currIndex || 0 });
                 });
 
-                pswp.on('change', (e) => {
+                pswp.on('change', () => {
                     console.log(`🔄 PhotoSwipe change (data mode): ${pswp.currIndex}`);
                     dotnetInstance.invokeMethodAsync('OnChange', { index: pswp.currIndex || 0 });
                 });
