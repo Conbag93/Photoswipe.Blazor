@@ -1,3 +1,36 @@
+/* PhotoSwipe Overlay Control Custom Properties */
+:root {
+    /* Default overlay control theme - Enhanced sizing and spacing */
+    --pswp-overlay-bg: rgba(0, 0, 0, 0.7);
+    --pswp-overlay-bg-hover: rgba(0, 0, 0, 0.85);
+    --pswp-overlay-text: white;
+    --pswp-overlay-border: rgba(255, 255, 255, 0.2);
+    --pswp-overlay-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --pswp-overlay-backdrop-blur: 4px;
+    --pswp-overlay-size: 32px; /* Standard size */
+    --pswp-overlay-font-size: 16px; /* Increased from 14px */
+    --pswp-overlay-offset: 12px; /* Increased from 8px */
+    --pswp-overlay-border-radius: 8px; /* Increased from 6px */
+    --pswp-overlay-transition: all 0.2s ease;
+
+    /* Control type specific colors - Enhanced delete styling */
+    --pswp-overlay-delete-bg: #dc3545; /* Solid red instead of rgba */
+    --pswp-overlay-delete-bg-hover: #c82333; /* Darker red hover */
+    --pswp-overlay-selection-bg: rgba(13, 110, 253, 0.9);
+    --pswp-overlay-selection-bg-hover: rgba(11, 94, 215, 0.95);
+    --pswp-overlay-custom-bg: rgba(108, 117, 125, 0.9);
+    --pswp-overlay-custom-bg-hover: rgba(90, 98, 104, 0.95);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    :root {
+        --pswp-overlay-size: 44px; /* Increased for better mobile touch */
+        --pswp-overlay-font-size: 18px; /* Larger on mobile */
+        --pswp-overlay-offset: 16px; /* More spacing on mobile */
+    }
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
