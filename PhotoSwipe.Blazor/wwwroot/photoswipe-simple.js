@@ -42,7 +42,7 @@ window.PhotoSwipeBlazor = {
             const config = {
                 ...(options || {}),
                 gallery: `#${elementId}`,
-                children: 'a', 
+                children: 'a',
                 pswpModule: () => import('/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js')
             };
 
@@ -50,6 +50,24 @@ window.PhotoSwipeBlazor = {
 
             // Create PhotoSwipe Lightbox instance
             const lightbox = new PhotoSwipeLightbox(config);
+
+            // Add clickedIndex filter to prevent gallery opening on overlay elements
+            lightbox.addFilter('clickedIndex', (clickedIndex, e) => {
+                const clickedElement = e.target;
+
+                // Don't open gallery if clicking on overlay elements (selection checkboxes, delete buttons, etc.)
+                if (clickedElement.matches('input[type="checkbox"], input[type="radio"], button')) {
+                    return -1; // Return -1 to prevent gallery opening
+                }
+
+                // Don't open gallery if clicking inside overlay containers
+                const overlayElement = clickedElement.closest('.selection-overlay, .delete-overlay');
+                if (overlayElement) {
+                    return -1;
+                }
+
+                return clickedIndex;
+            });
 
             // Add custom caption UI element support (matching vanilla JS implementation)
             lightbox.on('uiRegister', function() {

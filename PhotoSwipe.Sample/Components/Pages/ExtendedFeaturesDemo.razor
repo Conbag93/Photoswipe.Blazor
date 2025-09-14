@@ -107,6 +107,7 @@
             ReadOnly="@_readOnlyMode"
             AllowUploads="@_allowUploads"
             AllowMultipleFiles="@_allowMultipleFiles"
+            EnableSelection="@(_selectionMode != SelectionMode.None)"
             AllowMultiSelect="@(_selectionMode == SelectionMode.Multi)"
             SelectedItem="@(_selectionMode == SelectionMode.Single ? _selectedItems.FirstOrDefault() : null)"
             SelectedItems="@(_selectionMode == SelectionMode.Multi ? _selectedItems : null)"

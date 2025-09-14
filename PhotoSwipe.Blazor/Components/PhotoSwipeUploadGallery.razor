@@ -116,7 +116,7 @@
     }
 
     <!-- Selection Controls -->
-    @if (_combinedItems.Any() && (AllowMultiSelect || SelectedItem != null || SelectedItems?.Any() == true))
+    @if (_combinedItems.Any() && EnableSelection)
     {
         <div class="selection-controls">
             @if (AllowMultiSelect)
@@ -145,7 +145,7 @@
         <ItemTemplate Context="item">
             <div class="gallery-item-wrapper">
                 <!-- Selection Overlay -->
-                @if (AllowMultiSelect || SelectedItem != null || SelectedItems?.Any() == true)
+                @if (EnableSelection)
                 {
                     <div class="selection-overlay">
                         @if (AllowMultiSelect)
@@ -157,11 +157,11 @@
                         }
                         else
                         {
-                            <input type="radio" 
+                            <input type="radio"
                                    class="selection-radio"
                                    name="single-select"
                                    checked="@(SelectedItem == item)"
-                                   @onchange="@(e => SelectSingle(item, (bool)e.Value!))" />
+                                   @onchange="@(e => SelectSingle(item, !string.IsNullOrEmpty(e.Value?.ToString())))" />
                         }
                     </div>
                 }
@@ -236,6 +236,7 @@
     [Parameter] public bool AllowMultiSelect { get; set; } = true;
     [Parameter] public PhotoSwipeItem? SelectedItem { get; set; }
     [Parameter] public IEnumerable<PhotoSwipeItem>? SelectedItems { get; set; }
+    [Parameter] public bool EnableSelection { get; set; } = false;
     
     // Events
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
