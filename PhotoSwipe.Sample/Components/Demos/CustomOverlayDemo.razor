@@ -309,11 +309,74 @@
             </div>
         }
     </div>
+
+    <!-- Reordering Demo -->
+    <div class="demo-subsection">
+        <h3>🔄 Image Reordering Demo</h3>
+        <p>Experience sophisticated drag-like reordering with intelligent controls. Use the up/down arrows to rearrange images, watch the index labels update in real-time, and see how boundary conditions are handled gracefully.</p>
+
+        <div class="reordering-explanation">
+            <h4>🎯 How Reordering Works:</h4>
+            <div class="explanation-content">
+                <p><strong>Three-Control System</strong> with smart positioning:</p>
+                <ul>
+                    <li><strong>Index Label (Top-Left):</strong> Shows current position "1/3", "2/3", "3/3"</li>
+                    <li><strong>Up Arrow (Top-Right):</strong> Moves image toward beginning (disabled for first image)</li>
+                    <li><strong>Down Arrow (Bottom-Right):</strong> Moves image toward end (disabled for last image)</li>
+                </ul>
+                <p><strong>Smart Visual Feedback:</strong></p>
+                <ul>
+                    <li>✅ <strong>Green up arrows:</strong> Move toward start of gallery</li>
+                    <li>✅ <strong>Orange down arrows:</strong> Move toward end of gallery</li>
+                    <li>✅ <strong>Disabled states:</strong> Grayed out when movement impossible</li>
+                    <li>✅ <strong>Real-time updates:</strong> Index labels and button states update instantly</li>
+                    <li>✅ <strong>PhotoSwipe sync:</strong> Gallery lightbox reflects new order</li>
+                </ul>
+                <p><em>Try reordering the images below and notice how the PhotoSwipe lightbox opens with the updated sequence!</em></p>
+            </div>
+        </div>
+
+        <PhotoSwipeUploadGallery
+            Id="reordering-demo-gallery"
+            Items="@_reorderingDemoItems"
+            CssClass="reordering-demo-gallery"
+            AllowReorder="true"
+            ShowIndexLabels="true"
+            OnItemsReordered="@OnItemsReordered">
+        </PhotoSwipeUploadGallery>
+
+        <!-- Current Order Summary -->
+        @if (_reorderingDemoItems.Any())
+        {
+            <div class="reordering-summary">
+                <h3>📋 Current Image Order</h3>
+                <div class="order-list">
+                    @for (int i = 0; i < _reorderingDemoItems.Count; i++)
+                    {
+                        var item = _reorderingDemoItems[i];
+                        <div class="order-item">
+                            <span class="order-number">@(i + 1).</span>
+                            <span class="order-title">@(item.Title ?? item.Alt ?? "Untitled")</span>
+                            @if (i == 0)
+                            {
+                                <span class="order-badge first">First</span>
+                            }
+                            else if (i == _reorderingDemoItems.Count - 1)
+                            {
+                                <span class="order-badge last">Last</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
     // Gallery data
     private List<PhotoSwipeItem> _galleryItems = new();
+    private List<PhotoSwipeItem> _reorderingDemoItems = new();
 
     // Custom overlay control state
     private HashSet<string> _heartedImages = new();
@@ -394,6 +457,51 @@
                 Alt = "Forest Trail",
                 Caption = "Path through the forest",
                 Title = "Forest Walk"
+            }
+        };
+
+        // Initialize reordering demo with different images
+        _reorderingDemoItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1025/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "City Skyline",
+                Caption = "Modern cityscape at dusk",
+                Title = "Urban Landscape"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1035/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1035/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Desert Dunes",
+                Caption = "Sand dunes in golden hour",
+                Title = "Desert Beauty"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1040/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1040/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Lakeside Reflection",
+                Caption = "Calm lake with reflections",
+                Title = "Mirror Lake"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1043/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1043/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Snowy Peaks",
+                Caption = "Snow-covered mountain range",
+                Title = "Winter Wonderland"
             }
         };
     }
@@ -527,5 +635,13 @@
             : PhotoSwipeOverlayControl.GrowDirection.Right; // Default fallback
     }
 
+    // Reordering event handler
+    private void OnItemsReordered(IEnumerable<PhotoSwipeItem> reorderedItems)
+    {
+        _reorderingDemoItems = reorderedItems.ToList();
+        StateHasChanged();
+        Logger.LogInformation("Items reordered, new order: {Order}",
+            string.Join(", ", _reorderingDemoItems.Select(x => x.Title ?? x.Alt)));
+    }
 
 }
