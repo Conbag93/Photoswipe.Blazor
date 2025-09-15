@@ -55,6 +55,7 @@ window.PhotoSwipeBlazor = {
             lightbox.addFilter('clickedIndex', (clickedIndex, e) => {
                 const clickedElement = e.target;
 
+
                 // ENHANCED: Handle interactive inputs specially - allow them to function but prevent gallery
                 // This fixes the regression where checkboxes/radio buttons stopped working
                 if (clickedElement.matches('input[type="checkbox"], input[type="radio"]')) {

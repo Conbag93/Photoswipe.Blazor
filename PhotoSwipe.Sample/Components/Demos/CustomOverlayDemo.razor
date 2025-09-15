@@ -66,13 +66,15 @@
                     <!-- Share Action with RenderFragment (demonstrates rich content) -->
                     <PhotoSwipeOverlayControl Position="@_sharePosition"
                                             ControlType="share"
-                                            Title="@GetShareTooltip(item.Src)"
-                                            OnClick="@(() => ShareImage(item))"
                                             SpacingIndex="@GetShareSpacingIndex()"
                                             Direction="@GetGrowDirectionForPosition(_sharePosition, "share")"
                                             ControlGap="@_controlGap">
                         <button type="button"
                                 class="overlay-control-button @GetShareButtonClass(item.Src)"
+                                @onclick="@(() => ShareImage(item))"
+                                @onclick:preventDefault="true"
+                                @onclick:stopPropagation="true"
+                                title="@GetShareTooltip(item.Src)"
                                 style="@(GetShareButtonClass(item.Src).Contains("active") ? "background: #28a745; color: white;" : "")">
                             @if (_sharedImages.Contains(item.Src))
                             {
@@ -449,7 +451,6 @@
         StateHasChanged();
         Logger.LogInformation("Image shared: {Alt}", item.Alt);
     }
-
 
     // Helper methods for overlay control styling and state
     private string GetHeartIcon(string itemSrc) => _heartedImages.Contains(itemSrc) ? "❤️" : "🖤";
