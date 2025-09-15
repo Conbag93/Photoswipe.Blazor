@@ -70,7 +70,18 @@ The approach resolves Blazor navigation conflicts by ensuring PhotoSwipe handles
 - Provides upload preview before confirmation
 - Integrates with ImageProcessingService for client-side image optimization
 - Manages upload state and progress indicators
-- Supports both read-only and upload-enabled modes
+- Supports selection with AllowAdd/AllowDelete permission controls
+- Enables custom overlay controls via CustomOverlayControls parameter
+
+**PhotoSwipeOverlayControl Component:**
+- Provides flexible overlay controls positioned over gallery items
+- Supports 9 predefined positions (TopLeft, TopRight, TopCenter, BottomLeft, BottomRight, BottomCenter, CenterLeft, CenterRight, Center) plus Custom positioning
+- Smart spacing system for multiple controls at the same position with configurable grow direction
+- Flexible content options: Icon (text/emoji/HTML), ChildContent (custom RenderFragment), or button with custom styling
+- Built-in click event handling with configurable preventDefault and stopPropagation
+- Accessibility features with Title, AriaLabel, and disabled state support
+- CSS integration with custom classes and positioning styles
+- Prevents PhotoSwipe gallery navigation when clicked (via data-pswp-prevent-gallery attribute)
 
 ### Data Models
 - **PhotoSwipeItem** - Image data model with src, dimensions, thumbnails, and metadata
@@ -173,15 +184,17 @@ The library uses PhotoSwipe 5.x with these key files:
 The PhotoSwipe.Sample project demonstrates various features across multiple demo pages:
 
 ### Demo Pages
-- **/photoswipe-demo** - Basic gallery with default templates, custom templates, lightbox triggers
-- **/photoswipe-upload-demo** - Comprehensive upload gallery demonstrations:
-  - Upload gallery with existing images (add/replace modes)
-  - Upload-only gallery starting empty
-  - Custom template upload gallery
-  - Drag & drop, file validation, and preview features
-- **/readonly-gallery-demo** - Read-only gallery with curated sample images
-- **/simple-photoswipe-demo** - Simple implementation examples
-- **/vanilla-js-demo** - Direct JavaScript PhotoSwipe integration
+- **/ (Home)** - Welcome page with project overview and navigation
+- **/vanilla-js-demo** - Direct JavaScript PhotoSwipe integration examples
+- **/basic-photoswipe-demo** - Basic PhotoSwipe Blazor component demonstrations:
+  - Basic DOM gallery with PhotoSwipeGallery component
+  - Array-based gallery with programmatic control
+  - Individual image lightboxes with PhotoSwipeLightbox component
+  - Custom templates and styling examples
+- **/extended-features-demo** - Advanced PhotoSwipe functionality:
+  - Selection and deletion capabilities with PhotoSwipeUploadGallery
+  - Custom overlay controls with PhotoSwipeOverlayControl component
+  - Smart positioning and interactive workflows
 
 ### Key Features Demonstrated
 - Basic galleries with responsive layouts

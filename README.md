@@ -33,6 +33,7 @@ PhotoSwipe.Blazor is more than just a wrapper - it's a feature-rich Blazor compo
 - **PhotoSwipeGallery** - Standard responsive image gallery with lightbox
 - **PhotoSwipeLightbox** - Programmatic lightbox triggers
 - **PhotoSwipeUploadGallery** - Extended gallery with upload capabilities
+- **PhotoSwipeOverlayControl** - Flexible overlay controls positioned over gallery items
 
 ## Quick Start
 
@@ -149,11 +150,10 @@ The PhotoSwipe.Blazor library uses static web assets to serve CSS and JavaScript
 
 The sample application includes several demo pages showcasing different features:
 
-- **/photoswipe-demo** - Basic PhotoSwipe gallery demonstrations
-- **/photoswipe-upload-demo** - Upload gallery with drag & drop, file validation, and preview
-- **/readonly-gallery-demo** - Read-only gallery with curated sample images
-- **/simple-photoswipe-demo** - Simple gallery implementation examples
-- **/vanilla-js-demo** - Direct JavaScript PhotoSwipe integration example
+- **/ (Home)** - Welcome page with project overview and getting started information
+- **/vanilla-js-demo** - Direct JavaScript PhotoSwipe integration examples showing traditional usage
+- **/basic-photoswipe-demo** - Basic PhotoSwipe Blazor component demonstrations including DOM galleries, array-based galleries, and individual lightboxes
+- **/extended-features-demo** - Advanced functionality including selection/deletion capabilities, custom overlay controls, and interactive workflows
 
 ## Testing
 

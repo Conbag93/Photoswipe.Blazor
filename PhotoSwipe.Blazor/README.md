@@ -244,28 +244,32 @@ The `PhotoSwipeUploadGallery` extends the base gallery with comprehensive upload
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `Items` | `List<PhotoSwipeItem>` | Current gallery items |
+| `Items` | `IEnumerable<PhotoSwipeItem>` | Current gallery items |
 | `UploadMode` | `PhotoSwipeUploadMode` | Add or Replace mode |
-| `MaxFileSize` | `long` | Maximum file size in bytes |
-| `MaxFiles` | `int` | Maximum number of files per upload |
-| `AllowMultiSelect` | `bool` | Enable multiple file selection |
-| `AllowUploads` | `bool` | Enable/disable upload functionality |
-| `ReadOnly` | `bool` | Set gallery to read-only mode |
-| `ProcessImages` | `bool` | Enable client-side image processing |
-| `MaxImageWidth` | `int` | Maximum width for processed images |
-| `MaxImageHeight` | `int` | Maximum height for processed images |
-| `ImageQuality` | `double` | JPEG quality (0.0-1.0) |
+| `MaxFileSize` | `long` | Maximum file size in bytes (default: 10MB) |
+| `MaxFiles` | `int` | Maximum number of files per upload (default: 20) |
+| `AllowMultipleFiles` | `bool` | Enable multiple file selection (default: true) |
+| `AllowAdd` | `bool` | Enable upload functionality (default: true) |
+| `AllowDelete` | `bool` | Enable delete functionality (default: false) |
+| `EnableSelection` | `bool` | Enable item selection (default: false) |
+| `AllowMultiSelect` | `bool` | Enable multiple item selection (default: true) |
+| `SelectedItem` | `PhotoSwipeItem?` | Currently selected single item |
+| `SelectedItems` | `IEnumerable<PhotoSwipeItem>?` | Currently selected multiple items |
+| `CustomOverlayControls` | `RenderFragment<PhotoSwipeItem>?` | Custom overlay controls template |
 
 ### Upload Gallery Events
 
 | Event | Type | Description |
 |-------|------|-------------|
+| `OnOpen` | `EventCallback<PhotoSwipeEventArgs>` | Fired when lightbox opens |
+| `OnClose` | `EventCallback<PhotoSwipeEventArgs>` | Fired when lightbox closes |
+| `OnChange` | `EventCallback<PhotoSwipeEventArgs>` | Fired when lightbox slide changes |
 | `OnItemsChanged` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired when gallery items change |
 | `OnItemsUploaded` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired after successful upload |
 | `OnItemDeleted` | `EventCallback<PhotoSwipeItem>` | Fired when single item is deleted |
 | `OnItemsDeleted` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired when multiple items are deleted |
-| `OnUploadError` | `EventCallback<string>` | Fired on upload error |
-| `SelectedItemsChanged` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired when selection changes |
+| `SelectedItemChanged` | `EventCallback<PhotoSwipeItem>` | Fired when single selection changes |
+| `SelectedItemsChanged` | `EventCallback<IEnumerable<PhotoSwipeItem>>` | Fired when multiple selection changes |
 
 ## Advanced Usage
 
