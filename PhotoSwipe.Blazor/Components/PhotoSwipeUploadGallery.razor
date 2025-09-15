@@ -185,6 +185,47 @@
                                             OnClick="@(() => ShowDeleteConfirmation(new List<PhotoSwipeItem> { item }))" />
                 }
 
+                <!-- Reordering Controls -->
+                @if (AllowReorder && ShowIndexLabels)
+                {
+                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.TopLeft"
+                                            ControlType="index"
+                                            Icon="@GetIndexLabel(item)"
+                                            ButtonCssClass="index-label"
+                                            Title="@GetIndexTooltip(item)"
+                                            Disabled="true"
+                                            SpacingIndex="0"
+                                            Direction="PhotoSwipeOverlayControl.GrowDirection.Right"
+                                            ControlGap="4" />
+                }
+
+                @if (AllowReorder)
+                {
+                    <!-- Up Arrow (Top-Right) -->
+                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.TopRight"
+                                            ControlType="reorder-up"
+                                            Icon="@GetUpArrowSvg()"
+                                            ButtonCssClass="@GetUpArrowButtonClass(item)"
+                                            Title="@GetUpArrowTooltip(item)"
+                                            OnClick="@(() => MoveItemUp(item))"
+                                            Disabled="@IsUpArrowDisabled(item)"
+                                            SpacingIndex="0"
+                                            Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
+                                            ControlGap="4" />
+
+                    <!-- Down Arrow (Bottom-Right) -->
+                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
+                                            ControlType="reorder-down"
+                                            Icon="@GetDownArrowSvg()"
+                                            ButtonCssClass="@GetDownArrowButtonClass(item)"
+                                            Title="@GetDownArrowTooltip(item)"
+                                            OnClick="@(() => MoveItemDown(item))"
+                                            Disabled="@IsDownArrowDisabled(item)"
+                                            SpacingIndex="@(AllowDelete ? 1 : 0)"
+                                            Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
+                                            ControlGap="4" />
+                }
+
                 <!-- Custom Overlay Controls (for user extensibility) -->
                 @if (CustomOverlayControls != null)
                 {
@@ -254,6 +295,10 @@
     [Parameter] public PhotoSwipeItem? SelectedItem { get; set; }
     [Parameter] public IEnumerable<PhotoSwipeItem>? SelectedItems { get; set; }
     [Parameter] public bool EnableSelection { get; set; } = false;
+
+    // Reordering parameters
+    [Parameter] public bool AllowReorder { get; set; } = false;
+    [Parameter] public bool ShowIndexLabels { get; set; } = true;
     
     // Events
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
@@ -265,6 +310,7 @@
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsDeleted { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsUploaded { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsChanged { get; set; }
+    [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsReordered { get; set; }
 
     private ImageProcessingService? _imageProcessor;
     private InputFile? inputFileRef;
@@ -605,6 +651,156 @@
         // For now, we'll just reset the drag state
         StateHasChanged();
     }
+    // Reordering methods
+    private async Task MoveItemUp(PhotoSwipeItem item)
+    {
+        var items = _combinedItems.ToList();
+        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        if (currentIndex > 0)
+        {
+            // Swap with the item above
+            (items[currentIndex], items[currentIndex - 1]) = (items[currentIndex - 1], items[currentIndex]);
+
+            // Update original or confirmed items based on which collection the item belongs to
+            UpdateItemCollections(items);
+
+            // BUGFIX: Update _combinedItems directly to preserve the reordered sequence
+            // Don't call UpdateCombinedItems() which would regenerate from original order
+            _combinedItems = items;
+
+            StateHasChanged();
+            Logger.LogInformation("Image moved up: {Title} from position {OldPos} to {NewPos}",
+                item.Title ?? item.Alt, currentIndex + 1, currentIndex);
+
+            if (OnItemsReordered.HasDelegate)
+            {
+                await OnItemsReordered.InvokeAsync(items);
+            }
+
+            if (OnItemsChanged.HasDelegate)
+            {
+                await OnItemsChanged.InvokeAsync(items);
+            }
+        }
+    }
+
+    private async Task MoveItemDown(PhotoSwipeItem item)
+    {
+        var items = _combinedItems.ToList();
+        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        if (currentIndex < items.Count - 1)
+        {
+            // Swap with the item below
+            (items[currentIndex], items[currentIndex + 1]) = (items[currentIndex + 1], items[currentIndex]);
+
+            // Update original or confirmed items based on which collection the item belongs to
+            UpdateItemCollections(items);
+
+            // BUGFIX: Update _combinedItems directly to preserve the reordered sequence
+            // Don't call UpdateCombinedItems() which would regenerate from original order
+            _combinedItems = items;
+
+            StateHasChanged();
+            Logger.LogInformation("Image moved down: {Title} from position {OldPos} to {NewPos}",
+                item.Title ?? item.Alt, currentIndex + 1, currentIndex + 2);
+
+            if (OnItemsReordered.HasDelegate)
+            {
+                await OnItemsReordered.InvokeAsync(items);
+            }
+
+            if (OnItemsChanged.HasDelegate)
+            {
+                await OnItemsChanged.InvokeAsync(items);
+            }
+        }
+    }
+
+    private void UpdateItemCollections(List<PhotoSwipeItem> reorderedItems)
+    {
+        // BUGFIX: For reordering to work across collections, we need to treat all items as one unified collection
+        // The original separation between _originalItems and _confirmedItems prevents cross-collection reordering
+
+        if (UploadMode == PhotoSwipeUploadMode.Replace && _confirmedItems.Any())
+        {
+            // In replace mode with confirmed items, update confirmed items
+            _confirmedItems.Clear();
+            _confirmedItems.AddRange(reorderedItems);
+        }
+        else
+        {
+            // Instead of maintaining artificial separation, put all reordered items in _originalItems
+            // and clear _confirmedItems, since the user has explicitly reordered them into a unified sequence
+            _originalItems.Clear();
+            _confirmedItems.Clear();
+
+            _originalItems.AddRange(reorderedItems);
+        }
+    }
+
+    // Reordering helper methods
+    private string GetIndexLabel(PhotoSwipeItem item)
+    {
+        var items = _combinedItems.ToList();
+        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        return $"{currentIndex + 1}/{items.Count}";
+    }
+
+    private string GetIndexTooltip(PhotoSwipeItem item)
+    {
+        var items = _combinedItems.ToList();
+        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        return $"Image {currentIndex + 1} of {items.Count}";
+    }
+
+    private bool IsUpArrowDisabled(PhotoSwipeItem item)
+    {
+        var items = _combinedItems.ToList();
+        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        return currentIndex <= 0; // Disabled if first item
+    }
+
+    private bool IsDownArrowDisabled(PhotoSwipeItem item)
+    {
+        var items = _combinedItems.ToList();
+        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        return currentIndex >= items.Count - 1; // Disabled if last item
+    }
+
+    private string GetUpArrowButtonClass(PhotoSwipeItem item)
+    {
+        return $"reorder-button up-arrow {(IsUpArrowDisabled(item) ? "disabled" : "")}";
+    }
+
+    private string GetDownArrowButtonClass(PhotoSwipeItem item)
+    {
+        return $"reorder-button down-arrow {(IsDownArrowDisabled(item) ? "disabled" : "")}";
+    }
+
+    private string GetUpArrowTooltip(PhotoSwipeItem item)
+    {
+        return IsUpArrowDisabled(item) ? "Already first image" : "Move image up";
+    }
+
+    private string GetDownArrowTooltip(PhotoSwipeItem item)
+    {
+        return IsDownArrowDisabled(item) ? "Already last image" : "Move image down";
+    }
+
+    private string GetUpArrowSvg()
+    {
+        return @"<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 640 640"">
+                   <path d=""M342.6 81.4C330.1 68.9 309.8 68.9 297.3 81.4L137.3 241.4C124.8 253.9 124.8 274.2 137.3 286.7C149.8 299.2 170.1 299.2 182.6 286.7L288 181.3L288 552C288 569.7 302.3 584 320 584C337.7 584 352 569.7 352 552L352 181.3L457.4 286.7C469.9 299.2 490.2 299.2 502.7 286.7C515.2 274.2 515.2 253.9 502.7 241.4L342.7 81.4z"" fill=""currentColor""/>
+                 </svg>";
+    }
+
+    private string GetDownArrowSvg()
+    {
+        return @"<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 640 640"">
+                   <path d=""M297.4 558.6C309.9 571.1 330.2 571.1 342.7 558.6L502.7 398.6C515.2 386.1 515.2 365.8 502.7 353.3C490.2 340.8 469.9 340.8 457.4 353.3L352 458.7L352 88C352 70.3 337.7 56 320 56C302.3 56 288 70.3 288 88L288 458.7L182.6 353.3C170.1 340.8 149.8 340.8 137.3 353.3C124.8 365.8 124.8 386.1 137.3 398.6L297.3 558.6z"" fill=""currentColor""/>
+                 </svg>";
+    }
+
     // Helper methods
     private static string[] GetSupportedTypes() => ImageProcessingService.GetSupportedTypes();
     private static string FormatFileSize(long bytes) => ImageProcessingService.FormatFileSize(bytes);
