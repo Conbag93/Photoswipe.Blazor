@@ -15,11 +15,11 @@ test.describe('PhotoSwipe Overlay Controls', () => {
         test('should not open gallery when delete button is clicked', async ({ page }) => {
             // Look for gallery images with delete buttons in the selection-deletion gallery
             const galleryItems = page.locator('#selection-deletion-gallery .gallery-item-wrapper');
-            await expect(galleryItems).toHaveCount(3, { timeout: 10000 }); // Initial images
+            await expect(galleryItems).toHaveCount(3); // Should have 3 images in the selection-deletion gallery
 
-            // Find the delete button in the first gallery item
+            // Find the delete button in the first gallery item - use PhotoSwipeOverlayControl structure
             const firstItem = galleryItems.first();
-            const deleteButton = firstItem.locator('[data-pswp-control-type="delete"] button, .btn-delete-item');
+            const deleteButton = firstItem.locator('.btn-delete-item');
 
             await expect(deleteButton).toBeVisible();
             await expect(deleteButton).toHaveAttribute('title', 'Delete this image');
@@ -49,8 +49,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
             const initialCount = await page.locator('#selection-deletion-gallery .gallery-item-wrapper').count();
             expect(initialCount).toBeGreaterThan(0);
 
-            // Click delete button on first item
-            const deleteButton = page.locator('#selection-deletion-gallery .gallery-item-wrapper').first().locator('[data-pswp-control-type="delete"] button, .btn-delete-item');
+            // Click delete button on first item - use PhotoSwipeOverlayControl structure
+            const deleteButton = page.locator('#selection-deletion-gallery .gallery-item-wrapper').first().locator('.btn-delete-item');
             await deleteButton.click();
 
             // Confirm deletion
@@ -67,7 +67,7 @@ test.describe('PhotoSwipe Overlay Controls', () => {
         });
 
         test('should handle delete button hover effects', async ({ page }) => {
-            const deleteButton = page.locator('#selection-deletion-gallery .gallery-item-wrapper').first().locator('[data-pswp-control-type="delete"] button, .btn-delete-item');
+            const deleteButton = page.locator('#selection-deletion-gallery .gallery-item-wrapper').first().locator('.btn-delete-item');
             await expect(deleteButton).toBeVisible();
 
             // Hover over delete button
@@ -81,8 +81,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
 
     test.describe('Selection Controls Functionality', () => {
         test('should not open gallery when selection checkbox is clicked', async ({ page }) => {
-            // Find a selection checkbox
-            const selectionCheckbox = page.locator('.selection-checkbox').first();
+            // Find a selection checkbox in the selection-deletion gallery
+            const selectionCheckbox = page.locator('#selection-deletion-gallery .selection-checkbox').first();
             await expect(selectionCheckbox).toBeVisible();
 
             // Click the checkbox - this should NOT open the gallery
@@ -100,7 +100,7 @@ test.describe('PhotoSwipe Overlay Controls', () => {
         });
 
         test('should handle multiple selection via checkboxes', async ({ page }) => {
-            const checkboxes = page.locator('.selection-checkbox');
+            const checkboxes = page.locator('#selection-deletion-gallery .selection-checkbox');
             const checkboxCount = await checkboxes.count();
             expect(checkboxCount).toBeGreaterThan(1);
 
@@ -119,8 +119,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
             const lightbox = page.locator('.pswp');
             await expect(lightbox).not.toBeVisible();
 
-            // Check for selection controls becoming visible
-            const deleteSelectedButton = page.locator('.btn-delete-selected');
+            // Check for selection controls becoming visible - look for it in the workflow controls area
+            const deleteSelectedButton = page.locator('button:has-text("Delete Selected")');
             await expect(deleteSelectedButton).toBeVisible();
             await expect(deleteSelectedButton).toContainText('Delete Selected (2)');
         });
@@ -131,8 +131,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
             await singleSelectRadio.click();
             await page.waitForTimeout(500);
 
-            // Find radio buttons
-            const radioButtons = page.locator('.selection-radio');
+            // Find radio buttons in the selection-deletion gallery
+            const radioButtons = page.locator('#selection-deletion-gallery .selection-radio');
             const radioCount = await radioButtons.count();
             expect(radioCount).toBeGreaterThan(1);
 
@@ -161,8 +161,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
 
     test.describe('Gallery Opening Prevention', () => {
         test('should open gallery when clicking on image area (not controls)', async ({ page }) => {
-            // Click on the image itself, not on overlay controls
-            const galleryImage = page.locator('.gallery-image').first();
+            // Click on the image itself, not on overlay controls - scope to selection-deletion gallery
+            const galleryImage = page.locator('#selection-deletion-gallery img').first();
             await expect(galleryImage).toBeVisible();
 
             await galleryImage.click();
@@ -181,10 +181,9 @@ test.describe('PhotoSwipe Overlay Controls', () => {
         });
 
         test('should prevent gallery opening for data-attribute marked controls', async ({ page }) => {
-            // Look for delete button overlay controls (these are always visible)
-            const deleteOverlayControls = page.locator('[data-pswp-control-type="delete"]');
-            const deleteControlCount = await deleteOverlayControls.count();
-            expect(deleteControlCount).toBeGreaterThan(0);
+            // Look for delete button overlay controls in the selection-deletion gallery
+            const deleteOverlayControls = page.locator('#selection-deletion-gallery [data-pswp-control-type="delete"]');
+            await expect(deleteOverlayControls).toHaveCount(3);
 
             // Click on a delete overlay control container
             await deleteOverlayControls.first().click();
@@ -214,8 +213,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
                 }
             });
 
-            // Click on a delete button
-            const deleteButton = page.locator('.btn-delete-item').first();
+            // Click on a delete button in the selection-deletion gallery
+            const deleteButton = page.locator('#selection-deletion-gallery .btn-delete-item').first();
             await deleteButton.click();
 
             // Cancel the modal
@@ -233,13 +232,13 @@ test.describe('PhotoSwipe Overlay Controls', () => {
 
     test.describe('Overlay Control Accessibility', () => {
         test('should have proper ARIA labels and titles', async ({ page }) => {
-            // Check delete button accessibility
-            const deleteButton = page.locator('[data-pswp-control-type="delete"] button').first();
+            // Check delete button accessibility in the selection-deletion gallery
+            const deleteButton = page.locator('#selection-deletion-gallery .btn-delete-item').first();
             await expect(deleteButton).toHaveAttribute('title', 'Delete this image');
             await expect(deleteButton).toHaveAttribute('aria-label', 'Delete image');
 
             // Check selection controls accessibility
-            const selectionCheckbox = page.locator('.selection-checkbox').first();
+            const selectionCheckbox = page.locator('#selection-deletion-gallery .selection-checkbox').first();
             await expect(selectionCheckbox).toBeVisible();
         });
 
@@ -253,16 +252,15 @@ test.describe('PhotoSwipe Overlay Controls', () => {
             // Should be able to focus overlay controls
             const isOverlayControl = await focusedElement.evaluate(el => {
                 return el.closest('[data-pswp-overlay-control="true"]') !== null ||
-                       el.classList.contains('btn-delete-item') ||
+                       el.closest('[data-pswp-control-type="delete"]') !== null ||
                        el.classList.contains('selection-checkbox') ||
                        el.classList.contains('selection-radio');
             });
 
             // Note: Exact focus behavior depends on tab order, so we just verify
-            // that overlay controls are focusable elements
-            const deleteButtons = page.locator('.btn-delete-item');
-            const deleteButtonCount = await deleteButtons.count();
-            expect(deleteButtonCount).toBeGreaterThan(0);
+            // that overlay controls are focusable elements in the selection-deletion gallery
+            const deleteButtons = page.locator('#selection-deletion-gallery .btn-delete-item');
+            await expect(deleteButtons).toHaveCount(3);
         });
     });
 
@@ -272,8 +270,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
             await page.setViewportSize({ width: 375, height: 667 });
             await page.waitForTimeout(500);
 
-            // Overlay controls should still be visible and functional
-            const deleteButton = page.locator('.btn-delete-item').first();
+            // Overlay controls should still be visible and functional in selection-deletion gallery
+            const deleteButton = page.locator('#selection-deletion-gallery .btn-delete-item').first();
             await expect(deleteButton).toBeVisible();
 
             // Click should still work
@@ -293,8 +291,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
             await page.setViewportSize({ width: 768, height: 1024 });
             await page.waitForTimeout(500);
 
-            // Test selection functionality
-            const selectionCheckbox = page.locator('.selection-checkbox').first();
+            // Test selection functionality in the selection-deletion gallery
+            const selectionCheckbox = page.locator('#selection-deletion-gallery .selection-checkbox').first();
             await expect(selectionCheckbox).toBeVisible();
             await selectionCheckbox.click();
 
@@ -309,17 +307,17 @@ test.describe('PhotoSwipe Overlay Controls', () => {
 
     test.describe('Error Handling', () => {
         test('should handle missing controls gracefully', async ({ page }) => {
-            // Switch to read-only mode (no delete buttons)
-            const readOnlyRadio = page.locator('input[name="readonly"]').last();
-            await readOnlyRadio.click();
+            // Switch to no delete mode by unchecking "Allow Deleting Images"
+            const allowDeleteCheckbox = page.locator('label').filter({ hasText: 'Allow Deleting Images' }).locator('input[type="checkbox"]');
+            await allowDeleteCheckbox.uncheck();
             await page.waitForTimeout(500);
 
-            // Delete buttons should not be visible
-            const deleteButtons = page.locator('.btn-delete-item');
+            // Delete buttons should not be visible in the selection-deletion gallery
+            const deleteButtons = page.locator('#selection-deletion-gallery .btn-delete-item');
             await expect(deleteButtons).toHaveCount(0);
 
             // Gallery should still be functional
-            const galleryImage = page.locator('.gallery-image').first();
+            const galleryImage = page.locator('#selection-deletion-gallery img').first();
             await galleryImage.click();
 
             const lightbox = page.locator('.pswp');

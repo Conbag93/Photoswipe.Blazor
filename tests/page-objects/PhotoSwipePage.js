@@ -6,9 +6,9 @@ class PhotoSwipePage {
     this.galleryImages = page.locator('a[data-pswp-width]');
     this.lightbox = page.locator('.pswp');
     this.lightboxImage = page.locator('.pswp__img');
-    this.closeButton = page.locator('[data-pswp-close]');
-    this.nextButton = page.locator('[data-pswp-next]');
-    this.prevButton = page.locator('[data-pswp-prev]');
+    this.closeButton = page.locator('.pswp__button--close');
+    this.nextButton = page.locator('.pswp__button--arrow--next');
+    this.prevButton = page.locator('.pswp__button--arrow--prev');
   }
 
   async goto() {

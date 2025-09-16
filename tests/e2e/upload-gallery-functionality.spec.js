@@ -17,52 +17,53 @@ test.describe('PhotoSwipe Extended Features Functionality', () => {
     });
 
     test('should display mode controls', async ({ page }) => {
-        // Check that mode controls are visible
-        const modeControls = page.locator('.mode-controls').first();
-        await expect(modeControls).toBeVisible();
-        
-        // Check for mode selection options
-        await expect(page.locator('input[type="radio"]')).toHaveCount(6); // 3 sections x 2 options each
+        // Check that permission controls are visible (replaced readonly mode)
+        const permissionControls = page.locator('label:has-text("Allow Adding Images")');
+        await expect(permissionControls).toBeVisible();
+
+        const deletePermission = page.locator('label:has-text("Allow Deleting Images")');
+        await expect(deletePermission).toBeVisible();
+
+        // Check for selection mode options
+        const selectionMode = page.locator('input[name="selection"]');
+        await expect(selectionMode).toHaveCount(3); // None, Single, Multi
     });
 
     test('should display gallery section', async ({ page }) => {
-        // Check for gallery container
-        const gallery = page.locator('.gallery-section').first();
+        // Check for gallery container in selection-deletion demo
+        const gallery = page.locator('#selection-deletion-gallery');
         await expect(gallery).toBeVisible();
-        
-        // Should have PhotoSwipeUploadGallery component
-        const uploadGallery = page.locator('.photoswipe-upload-gallery');
-        await expect(uploadGallery).toBeVisible();
+
+        // Should have gallery items
+        const galleryItems = page.locator('#selection-deletion-gallery .gallery-item-wrapper');
+        await expect(galleryItems).toHaveCount(3); // 3 initial images
     });
 
     test('should toggle between modes', async ({ page }) => {
-        // Test readonly mode toggle
-        const readOnlyRadio = page.locator('input[name="readonly"]').last();
-        await readOnlyRadio.click();
-        
+        // Test selection mode toggle
+        const singleRadio = page.locator('input[name="selection"]').nth(1);
+        await singleRadio.click();
+
         // Wait for state to update
         await page.waitForTimeout(500);
-        
-        // Switch back to interactive
-        const interactiveRadio = page.locator('input[name="readonly"]').first();
-        await interactiveRadio.click();
+
+        // Switch to multi selection
+        const multiRadio = page.locator('input[name="selection"]').nth(2);
+        await multiRadio.click();
         await page.waitForTimeout(500);
     });
 
     test('should display workflow section when uploads enabled', async ({ page }) => {
-        // Ensure uploads are enabled and not in read-only mode
-        const uploadsCheckbox = page.locator('input[type="checkbox"]');
-        if (await uploadsCheckbox.isChecked() === false) {
-            await uploadsCheckbox.click();
-        }
-        
-        const workflowSection = page.locator('.workflow-section');
-        await expect(workflowSection).toBeVisible();
-        
-        // Should have action buttons
-        const actionButtons = page.locator('.btn-action');
-        const buttonCount = await actionButtons.count();
-        expect(buttonCount).toBeGreaterThan(0);
+        // Check for upload area
+        const uploadSection = page.locator('.upload-zone, .upload-area').first();
+        await expect(uploadSection).toBeVisible();
+
+        // Should have selection buttons
+        const selectAllButton = page.locator('.btn-select-all');
+        await expect(selectAllButton).toBeVisible();
+
+        const deselectAllButton = page.locator('.btn-deselect-all');
+        await expect(deselectAllButton).toBeVisible();
     });
 
     test('should handle responsive design', async ({ page }) => {
@@ -81,7 +82,7 @@ test.describe('PhotoSwipe Extended Features Functionality', () => {
             await expect(mainContent).toBeVisible();
             
             // Upload area should still be accessible
-            const uploadArea = page.locator('.upload-area').first();
+            const uploadArea = page.locator('.upload-zone, .upload-area').first();
             if (await uploadArea.count() > 0) {
                 await expect(uploadArea).toBeVisible();
             }
@@ -104,7 +105,7 @@ test.describe('PhotoSwipe Extended Features Functionality', () => {
             await expect(lightbox).toBeVisible();
             
             // Check that lightbox contains an image
-            const lightboxImage = page.locator('.pswp__img');
+            const lightboxImage = page.locator('.pswp__img').first();
             await expect(lightboxImage).toBeVisible();
             
             // Close lightbox with Escape key
@@ -125,15 +126,13 @@ test.describe('PhotoSwipe Extended Features Functionality', () => {
         await multiSelectRadio.click();
         await page.waitForTimeout(500);
         
-        // Check if selection controls appear
-        const selectionControls = page.locator('.selection-controls');
-        await expect(selectionControls).toBeVisible();
-        
+        // Check if selection checkboxes appear
+        const selectionCheckboxes = page.locator('#selection-deletion-gallery .selection-checkbox');
+        await expect(selectionCheckboxes).toHaveCount(3);
+
         // Look for select all button
         const selectAllBtn = page.locator('.btn-select-all');
-        if (await selectAllBtn.count() > 0) {
-            await expect(selectAllBtn).toBeVisible();
-        }
+        await expect(selectAllBtn).toBeVisible();
     });
 
     // Removed selection controls tests - not present in current implementation
