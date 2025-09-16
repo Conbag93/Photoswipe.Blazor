@@ -39,11 +39,16 @@ jobs:
           PhotoSwipe.Blazor/package-lock.json
           tests/package-lock.json
 
+    - name: Get Playwright version
+      working-directory: ./tests
+      run: echo "PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package-lock.json').dependencies['@playwright/test'].version)")" >> $GITHUB_ENV
+
     - name: Cache Playwright browsers
       uses: actions/cache@v4
+      id: playwright-cache
       with:
         path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('tests/package-lock.json') }}
+        key: ${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}
         restore-keys: |
           ${{ runner.os }}-playwright-
 
@@ -53,11 +58,17 @@ jobs:
         npm ci
         npm run build
 
-    - name: Install Playwright dependencies
+    - name: Install Playwright dependencies and browsers
       working-directory: ./tests
       run: |
         npm ci
         npx playwright install --with-deps
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+    - name: Install Playwright system dependencies (cache hit)
+      working-directory: ./tests
+      run: npx playwright install-deps
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
 
     - name: Start PhotoSwipe Sample App
       run: |
@@ -71,12 +82,24 @@ jobs:
 
     - name: Run Playwright tests
       working-directory: ./tests
-      timeout-minutes: 5
-      run: npx playwright test --reporter=list
+      timeout-minutes: 15
+      run: npx playwright test --reporter=html,list --output-dir=playwright-report
+      env:
+        # Increase individual test timeout for CI environment
+        PLAYWRIGHT_TEST_TIMEOUT: 60000
 
-    - uses: actions/upload-artifact@v4
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
         name: playwright-report
         path: tests/playwright-report/
         retention-days: 30
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-traces
+        path: tests/test-results/
+        retention-days: 7
