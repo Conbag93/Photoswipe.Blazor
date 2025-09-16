@@ -83,7 +83,7 @@ jobs:
     - name: Run Playwright tests
       working-directory: ./tests
       timeout-minutes: 15
-      run: npx playwright test --reporter=html,list --output-dir=playwright-report
+      run: npx playwright test --reporter=html,list --output playwright-report
       env:
         # Increase individual test timeout for CI environment
         PLAYWRIGHT_TEST_TIMEOUT: 60000
