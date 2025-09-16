@@ -1,5 +1,5 @@
 using PhotoSwipe.Sample.Components;
-using PhotoSwipe.Blazor.Services;
+using PhotoSwipe.Blazor.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,10 +11,11 @@ if (builder.Environment.IsDevelopment())
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents()
+    .AddInteractiveWebAssemblyComponents();
 
 // Add PhotoSwipe services
-builder.Services.AddScoped<PhotoSwipeInterop>();
+builder.Services.AddPhotoSwipe();
 
 var app = builder.Build();
 
@@ -33,6 +34,8 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    .AddInteractiveWebAssemblyRenderMode()
+    .AddAdditionalAssemblies(typeof(PhotoSwipe.Blazor._Imports).Assembly);
 
 app.Run();

@@ -14,7 +14,7 @@ PhotoSwipe.Blazor is more than just a wrapper - it's a feature-rich Blazor compo
 ### Core Gallery Features
 - **Responsive Image Galleries** - Mobile-first design with automatic grid layouts
 - **PhotoSwipe 5 Integration** - Full support for the latest PhotoSwipe version
-- **Blazor Server Components** - Native .NET integration with multiple component options
+- **Multi-Platform Support** - Compatible with Blazor Server, WebAssembly, and Hybrid apps
 - **Event Handling** - Bidirectional event system between JavaScript and .NET
 - **Customizable Templates** - Support for custom item and trigger templates
 - **CSS Isolation** - Scoped styling with CSS isolation support
@@ -46,14 +46,64 @@ dotnet add package PhotoSwipe.Blazor
 
 ### 2. Add Services
 
+**For Blazor Server apps:**
 ```csharp
 // Program.cs
-using PhotoSwipe.Blazor.Services;
+using PhotoSwipe.Blazor.Extensions;
 
-builder.Services.AddScoped<PhotoSwipeInterop>();
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+builder.Services.AddPhotoSwipe();
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 ```
 
-### 3. Basic Gallery
+**For Blazor WebAssembly apps:**
+```csharp
+// Program.cs (Client)
+using PhotoSwipe.Blazor.Extensions;
+
+builder.Services.AddPhotoSwipe();
+```
+
+**For Blazor Web Apps (Server + WASM):**
+```csharp
+// Program.cs
+using PhotoSwipe.Blazor.Extensions;
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents()
+    .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddPhotoSwipe();
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode()
+    .AddInteractiveWebAssemblyRenderMode()
+    .AddAdditionalAssemblies(typeof(PhotoSwipe.Blazor._Imports).Assembly);
+```
+
+**For MAUI Hybrid apps:**
+```csharp
+// MauiProgram.cs
+using PhotoSwipe.Blazor.Extensions;
+
+builder.Services.AddMauiBlazorWebView();
+builder.Services.AddPhotoSwipe();
+```
+
+### 3. Include CSS and JavaScript
+
+Add to your App.razor or _Host.cshtml:
+
+```html
+<link rel="stylesheet" href="_content/PhotoSwipe.Blazor/css/photoswipe.css" />
+<script src="_framework/blazor.web.js"></script>
+```
+
+### 4. Basic Gallery
 
 ```razor
 @using PhotoSwipe.Blazor
@@ -68,6 +118,22 @@ builder.Services.AddScoped<PhotoSwipeInterop>();
     };
 }
 ```
+
+## Platform-Specific Notes
+
+### Blazor Server
+- Full functionality with real-time JavaScript interop over SignalR
+- No additional configuration needed beyond service registration
+
+### Blazor WebAssembly
+- All features work identically to Server
+- JavaScript runs directly in browser for optimal performance
+- Static assets served via RCL paths (`_content/PhotoSwipe.Blazor/`)
+
+### Blazor Hybrid (MAUI)
+- Components work seamlessly in WebView
+- File upload may require platform-specific permissions
+- Consider mobile-optimized touch interactions
 
 ## Development
 
