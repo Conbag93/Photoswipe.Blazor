@@ -62,7 +62,9 @@ jobs:
     - name: Start PhotoSwipe Sample App
       run: |
         cd PhotoSwipe.Sample
-        dotnet run --urls http://localhost:5224 &
+        dotnet publish -c Release -o ./publish
+        cd ./publish
+        ASPNETCORE_ENVIRONMENT=Development dotnet PhotoSwipe.Sample.dll --urls http://localhost:5224 &
         echo "Waiting for server to start..."
         timeout 30 bash -c 'until curl --silent --fail http://localhost:5224 > /dev/null 2>&1; do sleep 1; done'
         echo "Server is ready!"
