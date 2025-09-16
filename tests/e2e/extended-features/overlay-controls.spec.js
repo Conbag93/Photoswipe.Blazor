@@ -13,8 +13,8 @@ test.describe('PhotoSwipe Overlay Controls', () => {
 
     test.describe('Delete Button Functionality', () => {
         test('should not open gallery when delete button is clicked', async ({ page }) => {
-            // Look for gallery images with delete buttons
-            const galleryItems = page.locator('.gallery-item-wrapper');
+            // Look for gallery images with delete buttons in the selection-deletion gallery
+            const galleryItems = page.locator('#selection-deletion-gallery .gallery-item-wrapper');
             await expect(galleryItems).toHaveCount(3, { timeout: 10000 }); // Initial images
 
             // Find the delete button in the first gallery item
@@ -46,11 +46,11 @@ test.describe('PhotoSwipe Overlay Controls', () => {
 
         test('should successfully delete item when confirmed', async ({ page }) => {
             // Count initial items
-            const initialCount = await page.locator('.gallery-item-wrapper').count();
+            const initialCount = await page.locator('#selection-deletion-gallery .gallery-item-wrapper').count();
             expect(initialCount).toBeGreaterThan(0);
 
             // Click delete button on first item
-            const deleteButton = page.locator('.gallery-item-wrapper').first().locator('[data-pswp-control-type="delete"] button, .btn-delete-item');
+            const deleteButton = page.locator('#selection-deletion-gallery .gallery-item-wrapper').first().locator('[data-pswp-control-type="delete"] button, .btn-delete-item');
             await deleteButton.click();
 
             // Confirm deletion
@@ -62,12 +62,12 @@ test.describe('PhotoSwipe Overlay Controls', () => {
             await page.waitForTimeout(500);
 
             // Verify item count decreased
-            const finalCount = await page.locator('.gallery-item-wrapper').count();
+            const finalCount = await page.locator('#selection-deletion-gallery .gallery-item-wrapper').count();
             expect(finalCount).toBe(initialCount - 1);
         });
 
         test('should handle delete button hover effects', async ({ page }) => {
-            const deleteButton = page.locator('.gallery-item-wrapper').first().locator('[data-pswp-control-type="delete"] button, .btn-delete-item');
+            const deleteButton = page.locator('#selection-deletion-gallery .gallery-item-wrapper').first().locator('[data-pswp-control-type="delete"] button, .btn-delete-item');
             await expect(deleteButton).toBeVisible();
 
             // Hover over delete button
