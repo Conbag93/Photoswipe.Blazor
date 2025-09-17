@@ -1,0 +1,41 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install PhotoSwipe dependencies
+      working-directory: PhotoSwipe.Blazor
+      run: npm install
+
+    - name: Build PhotoSwipe assets
+      working-directory: PhotoSwipe.Blazor
+      run: npm run build
+
+    - name: Publish WASM app
+      run: dotnet publish PhotoSwipe.Wasm.GitHub/PhotoSwipe.Wasm.GitHub.csproj -c Release -o publish --nologo
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: publish/wwwroot
