@@ -34,19 +34,18 @@ window.PhotoSwipeBlazor = {
         }
 
         try {
-            // Import PhotoSwipe modules dynamically using Microsoft's official RCL path guidance
-            // Reference: https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/location-of-javascript
+            // Import PhotoSwipe modules using relative paths within the same RCL
+            // For JavaScript-to-JavaScript imports within the same RCL, use simple relative paths
             console.log('📦 Importing PhotoSwipe modules...');
 
-            // Microsoft requires "./" prefix for RCL static asset paths to work correctly with base href
-            const { default: PhotoSwipeLightbox } = await import('./_content/PhotoSwipe.Blazor/js/photoswipe-lightbox.esm.min.js');
+            const { default: PhotoSwipeLightbox } = await import('./js/photoswipe-lightbox.esm.min.js');
 
             // Create PhotoSwipe configuration - merge options first, then override essential settings
             const config = {
                 ...(options || {}),
                 gallery: `#${elementId}`,
                 children: 'a',
-                pswpModule: () => import('./_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js')
+                pswpModule: () => import('./js/photoswipe.esm.min.js')
             };
 
             console.log('⚙️ PhotoSwipe config:', config);
@@ -226,11 +225,10 @@ window.PhotoSwipeBlazor = {
         }
 
         try {
-            // Import PhotoSwipe modules dynamically using Microsoft's official RCL path guidance
+            // Import PhotoSwipe modules using relative paths within the same RCL
             console.log('📦 Importing PhotoSwipe modules...');
 
-            // Microsoft requires "./" prefix for RCL static asset paths to work correctly with base href
-            const { default: PhotoSwipe } = await import('./_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js');
+            const { default: PhotoSwipe } = await import('./js/photoswipe.esm.min.js');
             
             // Create PhotoSwipe configuration for data mode
             const config = {
