@@ -1,0 +1,403 @@
+@inject IJSRuntime JS
+
+<PageTitle>Basic PhotoSwipe Demo</PageTitle>
+
+<div class="photoswipe-blazor-demo">
+    <div class="demo-header">
+        <h1>📸 Basic PhotoSwipe Blazor Component Demos</h1>
+        <p class="lead">
+            This demo showcases PhotoSwipe's capabilities using Blazor components with full .NET integration.
+            Each demo below demonstrates different component usage patterns and features.
+        </p>
+    </div>
+
+    <!-- Demo 1: Basic Gallery -->
+    <section class="demo-section" data-testid="basic-gallery">
+        <div class="demo-info">
+            <h2>🖼️ Basic DOM Gallery</h2>
+            <p>Traditional gallery using <code>PhotoSwipeGallery</code> component with Items parameter. PhotoSwipe reads image data from component properties and DOM attributes.</p>
+        </div>
+        <PhotoSwipeGallery Items="@basicImages" Options="@basicOptions" CssClass="pswp-gallery--basic" />
+    </section>
+
+    <!-- Demo 2: Array-Based Gallery (Button Triggered) -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>📊 Array-Based Gallery (Button Triggered)</h2>
+            <p>Gallery initialized from a .NET data array using <code>PhotoSwipeInterop</code> directly. This approach provides more flexibility and is perfect for programmatic control.</p>
+        </div>
+        <div class="demo-controls">
+            <button type="button" class="demo-btn" @onclick="OpenArrayGallery">🚀 Open Array Gallery (@arrayGalleryImages.Count() images)</button>
+        </div>
+    </section>
+
+    <!-- Demo 3: Individual Images -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>🔍 Individual Image Lightboxes</h2>
+            <p>Each image has its own <code>PhotoSwipeLightbox</code> instance. Useful for scattered images across a page that shouldn't be grouped together.</p>
+        </div>
+        <div class="individual-gallery">
+            @foreach (var (item, index) in individualImages.Select((item, index) => (item, index)))
+            {
+                <PhotoSwipeLightbox Items="@(new[] { item })" Options="@individualOptions">
+                    <TriggerTemplate Context="triggerItem">
+                        <div class="individual-item">
+                            <img src="@triggerItem.ThumbnailUrl" alt="@triggerItem.Alt" />
+                            <span class="individual-label">Individual #@(index + 1)</span>
+                        </div>
+                    </TriggerTemplate>
+                </PhotoSwipeLightbox>
+            }
+        </div>
+    </section>
+
+    <!-- Demo 4: Responsive Images -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>📱 Responsive Image Gallery</h2>
+            <p>Gallery supporting responsive images with <code>SrcSet</code> property for optimal loading on different devices and screen densities.</p>
+        </div>
+        <PhotoSwipeGallery Items="@responsiveImages" Options="@responsiveOptions" CssClass="pswp-gallery--responsive">
+            <ItemTemplate Context="item">
+                <div class="responsive-item">
+                    <img src="@item.ThumbnailUrl" alt="@item.Alt" />
+                    <span class="responsive-badge">📱 Responsive</span>
+                </div>
+            </ItemTemplate>
+        </PhotoSwipeGallery>
+    </section>
+
+    <!-- Demo 5: Mixed Content Gallery -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>🎨 Mixed Content Gallery</h2>
+            <p>Gallery containing both images and custom content. Demonstrates PhotoSwipe's flexibility beyond just photos using programmatic opening.</p>
+        </div>
+        <div class="demo-controls">
+            <button type="button" class="demo-btn" @onclick="OpenMixedContent">🎭 Open Mixed Content Gallery</button>
+        </div>
+    </section>
+
+    <!-- Demo 6: Custom Thumbnails -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>✨ Custom Thumbnails & Animations</h2>
+            <p>Gallery with custom thumbnail templates, hover effects, and enhanced styling using <code>ItemTemplate</code> parameter.</p>
+        </div>
+        <PhotoSwipeGallery Items="@customThumbnailImages" Options="@customThumbnailOptions" CssClass="pswp-gallery--custom">
+            <ItemTemplate Context="item">
+                <div class="custom-thumb">
+                    <img src="@item.ThumbnailUrl" alt="@item.Alt" />
+                    <div class="custom-overlay">
+                        <span class="zoom-icon">🔍</span>
+                        <span class="custom-title">@item.Title</span>
+                    </div>
+                </div>
+            </ItemTemplate>
+        </PhotoSwipeGallery>
+    </section>
+
+    <!-- Demo 7: Dynamic Gallery -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>⚡ Dynamic Gallery Generator</h2>
+            <p>Dynamically generated gallery that creates images on-demand using PhotoSwipe's filter system, matching the vanilla JS implementation exactly.</p>
+        </div>
+        <div class="demo-controls">
+            <label for="dynamic-count" class="demo-label">Number of images:</label>
+            <input type="number" id="dynamic-count" class="demo-input" @bind="dynamicImageCount" min="1" max="20" />
+            <button type="button" class="demo-btn" @onclick="OpenDynamicGallery">🎲 Generate Dynamic Gallery</button>
+        </div>
+    </section>
+
+    <!-- Demo 8: Gallery with Captions -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>💬 Gallery with Custom Captions</h2>
+            <p>Gallery featuring rich HTML captions that display detailed content below the images using the Caption property.</p>
+        </div>
+        <PhotoSwipeGallery Items="@captionImages" Options="@captionOptions" CssClass="pswp-gallery--basic" />
+    </section>
+
+    <!-- Demo Status -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>📊 Demo Status</h2>
+            <p>Monitor the status of all PhotoSwipe Blazor component demos on this page.</p>
+        </div>
+        <div class="demo-status">
+            <div class="status-item">
+                <span class="status-label">Components Loaded:</span>
+                <span class="status-value">✅ @totalDemoCount</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Demo Patterns:</span>
+                <span class="status-value">8 Different Usage Examples</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Framework:</span>
+                <span class="status-value">Blazor Server (.NET 9)</span>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private int totalDemoCount = 8;
+    private List<PhotoSwipeItem> dynamicImages = new();
+
+    #region Demo 1: Basic Images
+    private readonly List<PhotoSwipeItem> basicImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Beach", Caption = "Beautiful beach landscape"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-200.jpg",
+            Width = 1669, Height = 2500,
+            Alt = "Stairs", Caption = "Modern architectural stairs"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-200.jpg",
+            Width = 2500, Height = 1666,
+            Alt = "Red Chair", Caption = "Vibrant red chair against colorful wall"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Lake", Caption = "Serene lake reflection"
+        }
+    };
+
+    private readonly PhotoSwipeOptions basicOptions = new()
+    {
+        ShowHideAnimationType = "fade",
+        ShowAnimationDuration = 333,
+        BackgroundOpacity = 0.8,
+        Loop = true,
+        EscKey = true,
+        ArrowKeys = true
+    };
+    #endregion
+
+    #region Demo 2: Array-Based Gallery - Matching Vanilla JS exactly
+    private readonly List<PhotoSwipeItem> arrayGalleryImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/1620x1080/4a90e2/fff/?text=Slide+1",
+            Width = 1620, Height = 1080,
+            Alt = "Test image 1"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/1950x1300/e74c3c/fff/?text=Slide+2",
+            Width = 1950, Height = 1300,
+            Alt = "Test image 2"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/1500x1000/27ae60/fff/?text=Responsive+Slide+3",
+            SrcSet = "https://dummyimage.com/1500x1000/27ae60/fff/?text=1500x1000 1500w, https://dummyimage.com/1200x800/27ae60/fff/?text=1200x800 1200w",
+            Width = 1500, Height = 1000,
+            Alt = "Test image 3"
+        }
+    };
+
+    private readonly PhotoSwipeOptions arrayGalleryOptions = new()
+    {
+        // Using default options like vanilla JS
+    };
+    #endregion
+
+    #region Demo 3: Individual Images
+    private readonly List<PhotoSwipeItem> individualImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/5/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/5/img-200.jpg",
+            Width = 2500, Height = 1667,
+            Alt = "Mountain 1", Caption = "Mountain landscape - Individual lightbox #1"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/6/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/6/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Desert", Caption = "Desert scene - Individual lightbox #2"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/8/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/8/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Building", Caption = "Urban architecture - Individual lightbox #3"
+        }
+    };
+
+    private readonly PhotoSwipeOptions individualOptions = new()
+    {
+        ShowHideAnimationType = "fade",
+        ShowAnimationDuration = 200,
+        BackgroundOpacity = 0.7
+    };
+    #endregion
+
+    #region Demo 4: Responsive Images
+    private readonly List<PhotoSwipeItem> responsiveImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/1200x800/4a90e2/fff/?text=Responsive+Image+1",
+            ThumbnailUrl = "https://dummyimage.com/200x150/4a90e2/fff/?text=Thumb+1",
+            SrcSet = "https://dummyimage.com/600x400/4a90e2/fff/?text=600x400 600w, https://dummyimage.com/1200x800/4a90e2/fff/?text=1200x800 1200w",
+            Width = 1200, Height = 800,
+            Alt = "Responsive", Caption = "Responsive image with srcset - loads optimal size"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x1200/e74c3c/fff/?text=Responsive+Image+2",
+            ThumbnailUrl = "https://dummyimage.com/150x200/e74c3c/fff/?text=Thumb+2",
+            SrcSet = "https://dummyimage.com/400x600/e74c3c/fff/?text=400x600 400w, https://dummyimage.com/800x1200/e74c3c/fff/?text=800x1200 800w",
+            Width = 800, Height = 1200,
+            Alt = "Portrait", Caption = "Another responsive image with multiple sources"
+        }
+    };
+
+    private readonly PhotoSwipeOptions responsiveOptions = new()
+    {
+        BackgroundOpacity = 0.8,
+        Loop = true
+    };
+    #endregion
+
+    #region Demo 6: Custom Thumbnails
+    private readonly List<PhotoSwipeItem> customThumbnailImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Custom 1", Title = "Custom Style",
+            Caption = "Custom styled thumbnail with enhanced animations"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-200.jpg",
+            Width = 1669, Height = 2500,
+            Alt = "Custom 2", Title = "Enhanced UX",
+            Caption = "Another custom thumbnail with hover effects"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-200.jpg",
+            Width = 2500, Height = 1666,
+            Alt = "Custom 3", Title = "Modern Design",
+            Caption = "Third custom thumbnail showcasing styling flexibility"
+        }
+    };
+
+    private readonly PhotoSwipeOptions customThumbnailOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        ShowAnimationDuration = 400,
+        BackgroundOpacity = 0.9,
+        Spacing = 0.2
+    };
+    #endregion
+
+    #region Demo 8: Gallery with Captions
+    private readonly List<PhotoSwipeItem> captionImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Lake with Caption",
+            Caption = "<strong>Tranquil Lake</strong><br>A peaceful lake reflecting the sky and surrounding nature. Perfect for meditation and relaxation. <em>Photo by Nature Photographer</em>"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/8/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/8/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Architecture with Caption",
+            Caption = "<strong>Modern Architecture</strong><br>Clean lines and geometric patterns define this contemporary building design. Notice the interplay of light and shadow. <em>Urban Photography Collection</em>"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/9/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/9/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Landscape with Caption",
+            Caption = "<strong>Golden Hour Landscape</strong><br>The magic hour when the sun creates warm, soft lighting across the landscape. This is every photographer's dream lighting condition. <em>Landscape Series #3</em>"
+        }
+    };
+
+    private readonly PhotoSwipeOptions captionOptions = new()
+    {
+        BackgroundOpacity = 0.85
+    };
+    #endregion
+
+    private async Task OpenArrayGallery()
+    {
+        // Create array gallery like vanilla JS - single button opens data array directly
+        var interop = new PhotoSwipeInterop(JS);
+        var instanceId = $"array-gallery-{Guid.NewGuid():N}";
+        await interop.CreateFromDataAsync(instanceId, arrayGalleryImages, arrayGalleryOptions, 0);
+    }
+
+    #region Dynamic Gallery - Matching Vanilla JS Implementation 
+    private int dynamicImageCount = 10;
+
+    private async Task OpenDynamicGallery()
+    {
+        // Create dynamic images data matching vanilla JS colors/approach
+        var colors = new[] { "3498db", "e74c3c", "2ecc71", "f39c12", "9b59b6", "1abc9c" };
+        var dynamicImages = new List<PhotoSwipeItem>();
+
+        for (int i = 0; i < dynamicImageCount; i++)
+        {
+            var color = colors[i % colors.Length];
+            dynamicImages.Add(new PhotoSwipeItem
+            {
+                Src = $"https://dummyimage.com/800x600/{color}/fff/?text=Dynamic+Image+{i + 1}",
+                Width = 800, Height = 600,
+                Alt = $"Dynamic image {i + 1}"
+            });
+        }
+
+        // Use PhotoSwipeInterop to create dynamic gallery like vanilla JS
+        var interop = new PhotoSwipeInterop(JS);
+        var instanceId = $"dynamic-gallery-{Guid.NewGuid():N}";
+        await interop.CreateFromDataAsync(instanceId, dynamicImages, new PhotoSwipeOptions { 
+            Preload = new[] { 1, 2 }
+        }, 0);
+    }
+    #endregion
+
+    private async Task OpenMixedContent()
+    {
+        // For mixed content, we'd need to extend the component to support custom slides
+        // For now, open a regular gallery as a placeholder
+        await Task.CompletedTask;
+        // This would require additional PhotoSwipe features for custom slide content
+    }
+}

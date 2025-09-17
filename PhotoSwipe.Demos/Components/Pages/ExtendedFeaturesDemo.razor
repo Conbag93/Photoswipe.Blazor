@@ -1,0 +1,24 @@
+@using PhotoSwipe.Demos.Components.Demos
+@inject ILogger<ExtendedFeaturesDemo> Logger
+
+<PageTitle>Extended Features Demo</PageTitle>
+
+<div class="extended-demo-container">
+    <div class="demo-header">
+        <h1>🚀 Extended Features Demo</h1>
+        <p>This demo showcases the extended capabilities beyond basic PhotoSwipe: custom overlay controls with smart positioning, uploads, selection, deletion, and interactive workflows.</p>
+    </div>
+
+    <!-- Selection & Deletion Demo -->
+    <SelectionDeletionDemo />
+
+    <!-- Custom Overlay Controls Demo -->
+    <CustomOverlayDemo />
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Logger.LogInformation("Extended Features Demo page initialized");
+    }
+}

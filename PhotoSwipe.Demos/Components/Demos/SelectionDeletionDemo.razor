@@ -1,0 +1,286 @@
+@inject ILogger<SelectionDeletionDemo> Logger
+
+<!-- Selection & Deletion Demo -->
+<div class="selection-deletion-section">
+    <h2>📋 Selection & Deletion Demo</h2>
+    <p>Demonstrate comprehensive gallery management with upload functionality, selection modes, and deletion capabilities.</p>
+
+    <!-- Mode Controls -->
+    <div class="mode-controls">
+        <div class="control-group">
+            <label>
+                <strong>Gallery Permissions:</strong>
+            </label>
+            <label class="radio-option">
+                <input type="checkbox" checked="@_allowAdd" @onchange="@((e) => _allowAdd = (bool)e.Value!)" />
+                Allow Adding Images
+            </label>
+            <label class="radio-option">
+                <input type="checkbox" checked="@_allowDelete" @onchange="@((e) => _allowDelete = (bool)e.Value!)" />
+                Allow Deleting Images
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label>
+                <strong>Selection Mode:</strong>
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="selection" checked="@(_selectionMode == SelectionMode.None)" @onchange="@(() => _selectionMode = SelectionMode.None)" />
+                None
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="selection" checked="@(_selectionMode == SelectionMode.Single)" @onchange="@(() => _selectionMode = SelectionMode.Single)" />
+                Single
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="selection" checked="@(_selectionMode == SelectionMode.Multi)" @onchange="@(() => _selectionMode = SelectionMode.Multi)" />
+                Multi
+            </label>
+        </div>
+
+        @if (_allowAdd)
+        {
+            <div class="control-group">
+                <label>
+                    <strong>File Upload Mode:</strong>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="fileUploadMode" checked="@_allowMultipleFiles" @onchange="@(() => _allowMultipleFiles = true)" />
+                    Multi-File Upload
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="fileUploadMode" checked="@(!_allowMultipleFiles)" @onchange="@(() => _allowMultipleFiles = false)" />
+                    Single File Upload
+                </label>
+            </div>
+        }
+    </div>
+
+    <!-- Status Panel -->
+    @if (_galleryItems.Any() || _selectedItems.Any())
+    {
+        <div class="status-panel">
+            <div class="status-item">
+                <span class="status-label">Total Images:</span>
+                <span class="status-value">@_galleryItems.Count</span>
+            </div>
+            @if (_selectionMode != SelectionMode.None)
+            {
+                <div class="status-item">
+                    <span class="status-label">Selected:</span>
+                    <span class="status-value">@_selectedItems.Count</span>
+                </div>
+            }
+            @if (_uploadedThisSession > 0)
+            {
+                <div class="status-item">
+                    <span class="status-label">Uploaded:</span>
+                    <span class="status-value">@_uploadedThisSession</span>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Interactive Gallery -->
+    <div class="gallery-section">
+        <PhotoSwipeUploadGallery
+            Id="selection-deletion-gallery"
+            Items="@_galleryItems"
+            AllowAdd="@_allowAdd"
+            AllowDelete="@_allowDelete"
+            AllowMultipleFiles="@_allowMultipleFiles"
+            EnableSelection="@(_selectionMode != SelectionMode.None)"
+            AllowMultiSelect="@(_selectionMode == SelectionMode.Multi)"
+            SelectedItem="@(_selectionMode == SelectionMode.Single ? _selectedItems.FirstOrDefault() : null)"
+            SelectedItems="@(_selectionMode == SelectionMode.Multi ? _selectedItems : null)"
+            MaxFileSize="@(10 * 1024 * 1024)"
+            MaxFiles="20"
+            UploadMode="PhotoSwipeUploadMode.Add"
+            OnItemsChanged="@OnGalleryChanged"
+            OnItemsUploaded="@OnItemsUploaded"
+            OnItemDeleted="@OnItemDeleted"
+            OnItemsDeleted="@OnItemsDeleted"
+            SelectedItemChanged="@OnSingleSelectionChanged"
+            SelectedItemsChanged="@OnMultiSelectionChanged"
+            Options="@_galleryOptions" />
+    </div>
+</div>
+
+@code {
+    private enum SelectionMode { None, Single, Multi }
+
+    // Mode states
+    private SelectionMode _selectionMode = SelectionMode.Multi;
+    private bool _allowAdd = true;
+    private bool _allowDelete = true;
+    private bool _allowMultipleFiles = true;
+
+    // Gallery data
+    private List<PhotoSwipeItem> _galleryItems = new();
+    private List<PhotoSwipeItem> _selectedItems = new();
+    private int _uploadedThisSession = 0;
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.85,
+        ShowAnimationDuration = 350
+    };
+
+    protected override void OnInitialized()
+    {
+        // Start with some initial images
+        InitializeGallery();
+        Logger.LogInformation("Selection Deletion Demo initialized");
+    }
+
+    private void InitializeGallery()
+    {
+        _galleryItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1025/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Cityscape",
+                Caption = "Urban architecture at dusk",
+                Title = "City Lights"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1016/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1016/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Desert Landscape",
+                Caption = "Sand dunes and clear sky",
+                Title = "Desert Beauty"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1020/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1020/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Lake Reflection",
+                Caption = "Peaceful lake with mountain reflections",
+                Title = "Serene Waters"
+            }
+        };
+    }
+
+    // Event handlers
+    private void OnGalleryChanged(IEnumerable<PhotoSwipeItem> items)
+    {
+        _galleryItems = items.ToList();
+        // Clear selections when gallery changes
+        _selectedItems.Clear();
+        StateHasChanged();
+    }
+
+    private void OnItemsUploaded(IEnumerable<PhotoSwipeItem> items)
+    {
+        _uploadedThisSession += items.Count();
+        Logger.LogInformation("Items uploaded: {Count}", items.Count());
+        StateHasChanged();
+    }
+
+    private void OnItemDeleted(PhotoSwipeItem item)
+    {
+        _selectedItems.Remove(item);
+        Logger.LogInformation("Item deleted: {Alt}", item.Alt);
+        StateHasChanged();
+    }
+
+    private void OnItemsDeleted(IEnumerable<PhotoSwipeItem> items)
+    {
+        foreach (var item in items)
+        {
+            _selectedItems.Remove(item);
+        }
+        Logger.LogInformation("Items deleted: {Count}", items.Count());
+        StateHasChanged();
+    }
+
+    private void OnSingleSelectionChanged(PhotoSwipeItem item)
+    {
+        _selectedItems.Clear();
+        if (item != null)
+        {
+            _selectedItems.Add(item);
+        }
+        StateHasChanged();
+    }
+
+    private void OnMultiSelectionChanged(IEnumerable<PhotoSwipeItem> items)
+    {
+        _selectedItems = items.ToList();
+        StateHasChanged();
+    }
+
+    // Interactive actions
+    private void AddSampleImages()
+    {
+        var newImages = new[]
+        {
+            new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{Random.Shared.Next(1000, 1100)}/1200/800",
+                ThumbnailUrl = $"https://picsum.photos/id/{Random.Shared.Next(1000, 1100)}/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = $"Sample Image {DateTime.Now:HHmmss}",
+                Caption = "Programmatically added sample",
+                Title = "Added Sample"
+            },
+            new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{Random.Shared.Next(1000, 1100)}/1200/900",
+                ThumbnailUrl = $"https://picsum.photos/id/{Random.Shared.Next(1000, 1100)}/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = $"Another Sample {DateTime.Now:HHmmss}",
+                Caption = "Another test image",
+                Title = "Test Image"
+            }
+        };
+
+        _galleryItems.AddRange(newImages);
+        StateHasChanged();
+    }
+
+    private void SelectRandomItems()
+    {
+        if (_galleryItems.Count == 0) return;
+
+        _selectedItems.Clear();
+        var itemsToSelect = Random.Shared.Next(1, Math.Min(4, _galleryItems.Count + 1));
+        var shuffled = _galleryItems.OrderBy(x => Random.Shared.Next()).Take(itemsToSelect);
+        _selectedItems.AddRange(shuffled);
+        StateHasChanged();
+    }
+
+    private void DeleteSelected()
+    {
+        if (!_selectedItems.Any()) return;
+
+        foreach (var item in _selectedItems.ToList())
+        {
+            _galleryItems.Remove(item);
+        }
+        _selectedItems.Clear();
+        StateHasChanged();
+    }
+
+    private void ClearGallery()
+    {
+        _galleryItems.Clear();
+        _selectedItems.Clear();
+        _uploadedThisSession = 0;
+        StateHasChanged();
+    }
+}
