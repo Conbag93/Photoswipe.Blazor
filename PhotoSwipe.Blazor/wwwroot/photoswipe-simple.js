@@ -36,19 +36,14 @@ window.PhotoSwipeBlazor = {
         try {
             // Import PhotoSwipe modules dynamically
             console.log('📦 Importing PhotoSwipe modules...');
-
-            // Detect GitHub Pages environment and use absolute URLs to avoid path duplication
-            const isGitHubPages = window.location.hostname.includes('github.io');
-            const baseUrl = isGitHubPages ? 'https://conbag93.github.io/Photoswipe.Blazor' : '';
-
-            const { default: PhotoSwipeLightbox } = await import(`${baseUrl}/_content/PhotoSwipe.Blazor/js/photoswipe-lightbox.esm.min.js`);
+            const { default: PhotoSwipeLightbox } = await import('/_content/PhotoSwipe.Blazor/js/photoswipe-lightbox.esm.min.js');
             
             // Create PhotoSwipe configuration - merge options first, then override essential settings
             const config = {
                 ...(options || {}),
                 gallery: `#${elementId}`,
                 children: 'a',
-                pswpModule: () => import(`${baseUrl}/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js`)
+                pswpModule: () => import('/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js')
             };
 
             console.log('⚙️ PhotoSwipe config:', config);
@@ -230,12 +225,7 @@ window.PhotoSwipeBlazor = {
         try {
             // Import PhotoSwipe modules dynamically
             console.log('📦 Importing PhotoSwipe modules...');
-
-            // Detect GitHub Pages environment and use absolute URLs to avoid path duplication
-            const isGitHubPages = window.location.hostname.includes('github.io');
-            const baseUrl = isGitHubPages ? 'https://conbag93.github.io/Photoswipe.Blazor' : '';
-
-            const { default: PhotoSwipe } = await import(`${baseUrl}/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js`);
+            const { default: PhotoSwipe } = await import('/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js');
             
             // Create PhotoSwipe configuration for data mode
             const config = {

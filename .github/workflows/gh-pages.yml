@@ -4,15 +4,27 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'PhotoSwipe.Wasm.GitHub/**'
+      - 'PhotoSwipe.Blazor/**'
+      - 'PhotoSwipe.Demos/**'
+      - '.github/workflows/gh-pages.yml'
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  PUBLISH_DIR: PhotoSwipe.Wasm.GitHub/bin/Release/net9.0/publish/wwwroot
+
 jobs:
   deploy:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -39,11 +51,14 @@ jobs:
       working-directory: PhotoSwipe.Blazor
       run: npm run build
 
-    - name: Fix libdl.so dependency for PublishSPAforGitHubPages.Build
-      run: sudo ln -s /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libdl.so
-
     - name: Publish WASM app
-      run: dotnet publish PhotoSwipe.Wasm.GitHub/PhotoSwipe.Wasm.GitHub.csproj -c Release -o publish --nologo
+      run: dotnet publish PhotoSwipe.Wasm.GitHub/PhotoSwipe.Wasm.GitHub.csproj -c Release --nologo
+
+    - name: Rewrite base href
+      uses: SteveSandersonMS/ghaction-rewrite-base-href@v1.1.0
+      with:
+        html_path: ${{ env.PUBLISH_DIR }}/index.html
+        base_href: /Photoswipe.Blazor/
 
     - name: Setup Pages
       uses: actions/configure-pages@v5
@@ -51,7 +66,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: publish/wwwroot
+        path: ${{ env.PUBLISH_DIR }}
 
     - name: Deploy to GitHub Pages
       id: deployment
