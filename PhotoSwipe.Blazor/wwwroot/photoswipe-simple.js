@@ -34,16 +34,19 @@ window.PhotoSwipeBlazor = {
         }
 
         try {
-            // Import PhotoSwipe modules dynamically
+            // Import PhotoSwipe modules dynamically using Microsoft's official RCL path guidance
+            // Reference: https://learn.microsoft.com/en-us/aspnet/core/blazor/javascript-interoperability/location-of-javascript
             console.log('📦 Importing PhotoSwipe modules...');
-            const { default: PhotoSwipeLightbox } = await import('/_content/PhotoSwipe.Blazor/js/photoswipe-lightbox.esm.min.js');
-            
+
+            // Microsoft requires "./" prefix for RCL static asset paths to work correctly with base href
+            const { default: PhotoSwipeLightbox } = await import('./_content/PhotoSwipe.Blazor/js/photoswipe-lightbox.esm.min.js');
+
             // Create PhotoSwipe configuration - merge options first, then override essential settings
             const config = {
                 ...(options || {}),
                 gallery: `#${elementId}`,
                 children: 'a',
-                pswpModule: () => import('/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js')
+                pswpModule: () => import('./_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js')
             };
 
             console.log('⚙️ PhotoSwipe config:', config);
@@ -223,9 +226,11 @@ window.PhotoSwipeBlazor = {
         }
 
         try {
-            // Import PhotoSwipe modules dynamically
+            // Import PhotoSwipe modules dynamically using Microsoft's official RCL path guidance
             console.log('📦 Importing PhotoSwipe modules...');
-            const { default: PhotoSwipe } = await import('/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js');
+
+            // Microsoft requires "./" prefix for RCL static asset paths to work correctly with base href
+            const { default: PhotoSwipe } = await import('./_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js');
             
             // Create PhotoSwipe configuration for data mode
             const config = {
