@@ -6,6 +6,13 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
+    "test:server": "playwright test --project=\"Server Chrome\"",
+    "test:wasm": "playwright test --project=\"WASM Chrome\"",
+    "test:server-all": "playwright test --project=\"Server Chrome\" --project=\"Server Firefox\" --project=\"Server Mobile Chrome\"",
+    "test:wasm-all": "playwright test --project=\"WASM Chrome\" --project=\"WASM Firefox\" --project=\"WASM Mobile Chrome\"",
+    "test:chrome": "playwright test --project=\"Server Chrome\" --project=\"WASM Chrome\"",
+    "test:firefox": "playwright test --project=\"Server Firefox\" --project=\"WASM Firefox\"",
+    "test:mobile": "playwright test --project=\"Server Mobile Chrome\" --project=\"WASM Mobile Chrome\"",
     "show-report": "playwright show-report"
   },
   "keywords": [],

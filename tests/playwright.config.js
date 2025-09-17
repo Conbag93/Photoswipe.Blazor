@@ -16,7 +16,6 @@ module.exports = defineConfig({
   outputDir: 'test-results/artifacts',
   
   use: {
-    baseURL: 'http://localhost:5224',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -25,9 +24,58 @@ module.exports = defineConfig({
   },
 
   projects: [
+    // Blazor Server Tests (Interactive Server mode)
     {
-      name: 'Desktop Chrome',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'Server Chrome',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:5224',
+      },
+      testMatch: /.*\.spec\.js/,
+    },
+    {
+      name: 'Server Firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: 'http://localhost:5224',
+      },
+      testMatch: /.*\.spec\.js/,
+    },
+
+    // Blazor WebAssembly Tests (Client-side interactivity)
+    {
+      name: 'WASM Chrome',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:5225',
+      },
+      testMatch: /.*\.spec\.js/,
+    },
+    {
+      name: 'WASM Firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: 'http://localhost:5225',
+      },
+      testMatch: /.*\.spec\.js/,
+    },
+
+    // Mobile Tests (both hosting models)
+    {
+      name: 'Server Mobile Chrome',
+      use: {
+        ...devices['Pixel 5'],
+        baseURL: 'http://localhost:5224',
+      },
+      testMatch: /.*\.spec\.js/,
+    },
+    {
+      name: 'WASM Mobile Chrome',
+      use: {
+        ...devices['Pixel 5'],
+        baseURL: 'http://localhost:5225',
+      },
+      testMatch: /.*\.spec\.js/,
     },
   ],
 
