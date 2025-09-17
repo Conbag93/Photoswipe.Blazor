@@ -39,6 +39,9 @@ jobs:
       working-directory: PhotoSwipe.Blazor
       run: npm run build
 
+    - name: Fix libdl.so dependency for PublishSPAforGitHubPages.Build
+      run: sudo ln -s /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libdl.so
+
     - name: Publish WASM app
       run: dotnet publish PhotoSwipe.Wasm.GitHub/PhotoSwipe.Wasm.GitHub.csproj -c Release -o publish --nologo
 
