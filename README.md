@@ -96,11 +96,17 @@ builder.Services.AddPhotoSwipe();
 
 ### 3. Include CSS and JavaScript
 
-Add to your App.razor or _Host.cshtml:
+Add to your App.razor or index.html:
 
 ```html
 <link rel="stylesheet" href="_content/PhotoSwipe.Blazor/css/photoswipe.css" />
-<script src="_framework/blazor.web.js"></script>
+<link rel="stylesheet" href="_content/PhotoSwipe.Blazor/css/photoswipe-overlay-controls.css" />
+<script src="_content/PhotoSwipe.Blazor/photoswipe-simple.js"></script>
+```
+
+**For demo/extended features (upload galleries, overlay controls):**
+```html
+<link rel="stylesheet" href="_content/PhotoSwipe.Demos/css/photoswipe-demos.css" />
 ```
 
 ### 4. Basic Gallery
@@ -153,12 +159,19 @@ npm run build
 # 2. Build .NET library  
 dotnet build
 
-# 3. Run sample application
+# 3. Run demo applications
+# Blazor Server demo:
 cd ../PhotoSwipe.Sample
+dotnet run
+
+# Blazor WebAssembly demo (separate terminal):
+cd ../PhotoSwipe.Wasm.GitHub
 dotnet run
 ```
 
-The sample app will be available at `http://localhost:5224`
+Demo applications will be available at:
+- **Blazor Server**: `http://localhost:5224`
+- **Blazor WebAssembly**: `http://localhost:5225`
 
 ### Static Web Assets & Environment Configuration
 
@@ -209,8 +222,21 @@ The PhotoSwipe.Blazor library uses static web assets to serve CSS and JavaScript
 ### Project Structure
 
 - **PhotoSwipe.Blazor/** - Main Razor Class Library with gallery components and services
-- **PhotoSwipe.Sample/** - Demo Blazor application showcasing all features
+- **PhotoSwipe.Demos/** - Shared demo components and layouts used by sample projects
+- **PhotoSwipe.Sample/** - Blazor Server demo application showcasing all features
+- **PhotoSwipe.Wasm.GitHub/** - Blazor WebAssembly demo application (identical functionality to Server)
 - **tests/** - Playwright end-to-end tests
+
+### Multi-Platform Architecture
+
+The repository demonstrates a multi-platform Blazor setup:
+
+1. **Core Library (PhotoSwipe.Blazor)** - Contains all PhotoSwipe components and services
+2. **Shared Demo Library (PhotoSwipe.Demos)** - Contains reusable demo components, layouts, and styling
+3. **Server Demo (PhotoSwipe.Sample)** - Blazor Server hosting model implementation
+4. **WebAssembly Demo (PhotoSwipe.Wasm.GitHub)** - Blazor WASM hosting model implementation
+
+Both demo projects reference the shared libraries and provide identical functionality across different hosting models.
 
 ### Demo Pages
 
@@ -228,24 +254,40 @@ This project uses Playwright for comprehensive end-to-end testing.
 ### Running Tests
 
 **Prerequisites:**
-1. Start the sample app: `cd PhotoSwipe.Sample && dotnet run`
+1. Start both demo applications:
+   - Server: `cd PhotoSwipe.Sample && dotnet watch --urls http://localhost:5224`
+   - WASM: `cd PhotoSwipe.Wasm.GitHub && dotnet watch --urls http://localhost:5225`
 2. Install test dependencies: `cd tests && npm install`
 
 **Basic Commands:**
 ```bash
 cd tests
-npm test                    # Run all tests
-npm run test:headed         # Run with browser UI  
+npm test                    # Run all tests (both Server & WASM)
+npm run test:headed         # Run with browser UI
 npm run test:ui             # Interactive test runner
 npm run show-report         # View test report
+
+# Target specific hosting models:
+npm run test:server         # Test only Server (port 5224)
+npm run test:wasm           # Test only WASM (port 5225)
+npm run test:server-all     # All Server browsers
+npm run test:wasm-all       # All WASM browsers
+
+# Cross-platform testing:
+npm run test:chrome         # Both Server & WASM on Chrome
+npm run test:firefox        # Both Server & WASM on Firefox
+npm run test:mobile         # Both hosting models on mobile
 ```
 
 **Development Workflow:**
 ```bash
-# Terminal 1: Start the app
-cd PhotoSwipe.Sample && dotnet run
+# Terminal 1: Start Server demo
+cd PhotoSwipe.Sample && dotnet watch --urls http://localhost:5224
 
-# Terminal 2: Run tests interactively
+# Terminal 2: Start WASM demo
+cd PhotoSwipe.Wasm.GitHub && dotnet watch --urls http://localhost:5225
+
+# Terminal 3: Run tests interactively
 cd tests && npx playwright test --ui
 ```
 

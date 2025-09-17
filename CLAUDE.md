@@ -4,10 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Structure
 
-This is a PhotoSwipe Blazor integration consisting of two projects:
+This is a PhotoSwipe Blazor integration demonstrating multi-platform Blazor architecture:
 
 - **PhotoSwipe.Blazor/** - Main Razor Class Library (RCL) that wraps PhotoSwipe JavaScript library
-- **PhotoSwipe.Sample/** - Demo Blazor Web App showcasing the library features
+- **PhotoSwipe.Demos/** - Shared demo components library (render mode agnostic)
+- **PhotoSwipe.Sample/** - Blazor Server demo application (port 5224)
+- **PhotoSwipe.Wasm.GitHub/** - Blazor WebAssembly demo application (port 5225)
+- **tests/** - Playwright end-to-end tests supporting both hosting models
 
 ## Build Commands
 
@@ -19,18 +22,26 @@ npm run build                  # Copy PhotoSwipe assets to wwwroot
 dotnet build                   # Build the RCL
 ```
 
-### Sample Application
+### Demo Applications
 ```bash
+# Blazor Server Demo (PhotoSwipe.Sample)
 cd PhotoSwipe.Sample
 dotnet build                   # Build sample app (will also build referenced library)
-dotnet run                     # Run the demo application
+dotnet watch --urls http://localhost:5224   # Run Server demo with watch mode
+
+# Blazor WebAssembly Demo (PhotoSwipe.Wasm.GitHub)
+cd PhotoSwipe.Wasm.GitHub
+dotnet build                   # Build WASM app
+dotnet watch --urls http://localhost:5225   # Run WASM demo with watch mode
 ```
 
 ### Full Solution Build
 ```bash
 # From repository root
 dotnet build PhotoSwipe.Blazor/PhotoSwipe.Blazor.csproj
+dotnet build PhotoSwipe.Demos/PhotoSwipe.Demos.csproj
 dotnet build PhotoSwipe.Sample/PhotoSwipe.Sample.csproj
+dotnet build PhotoSwipe.Wasm.GitHub/PhotoSwipe.Wasm.GitHub.csproj
 ```
 
 ## Architecture Overview
@@ -238,16 +249,29 @@ tests/
 ### Test Commands
 
 **Prerequisites:**
-1. Start the PhotoSwipe sample app: `cd PhotoSwipe.Sample && dotnet run`
-2. Ensure app is running at `http://localhost:5224`
+1. Start both demo applications:
+   - Server: `cd PhotoSwipe.Sample && dotnet watch --urls http://localhost:5224`
+   - WASM: `cd PhotoSwipe.Wasm.GitHub && dotnet watch --urls http://localhost:5225`
+2. Install test dependencies: `cd tests && npm install`
 
 **Basic Test Commands:**
 ```bash
 cd tests
-npm test                          # Run all tests headless
+npm test                          # Run all tests (both Server & WASM)
 npm run test:headed               # Run tests with browser UI
 npm run test:ui                   # Run tests with Playwright UI mode
 npm run show-report               # View HTML test report
+
+# Target specific hosting models:
+npm run test:server               # Test only Server (port 5224)
+npm run test:wasm                 # Test only WASM (port 5225)
+npm run test:server-all           # All Server browsers
+npm run test:wasm-all             # All WASM browsers
+
+# Cross-platform testing:
+npm run test:chrome               # Both Server & WASM on Chrome
+npm run test:firefox              # Both Server & WASM on Firefox
+npm run test:mobile               # Both hosting models on mobile
 ```
 
 **Advanced Commands:**
@@ -330,11 +354,15 @@ test('should open lightbox', async ({ page }) => {
 
 **Quick Development Workflow:**
 ```bash
-# Terminal 1: Start the app
+# Terminal 1: Start Server demo
 cd PhotoSwipe.Sample
-dotnet run
+dotnet watch --urls http://localhost:5224
 
-# Terminal 2: Run tests in watch mode
+# Terminal 2: Start WASM demo
+cd PhotoSwipe.Wasm.GitHub
+dotnet watch --urls http://localhost:5225
+
+# Terminal 3: Run tests in interactive mode
 cd tests
 npx playwright test --ui  # Interactive mode for development
 ```
@@ -345,3 +373,42 @@ npx playwright test --ui  # Interactive mode for development
 3. Use trace viewer: `npx playwright show-trace trace.zip`
 4. Run specific test with debug: `npx playwright test --debug test-name.spec.js`
 - If we try to run the program and the port is already in use, then use pkill -f Photoswipe to terminate the current process before trying again
+
+## VS Code Configuration
+
+### Launch Configurations
+
+The repository includes VS Code launch configurations for debugging both hosting models:
+
+**Individual Launch Configurations:**
+- **Launch PhotoSwipe Sample (HTTP)** - Blazor Server on port 5224
+- **Launch PhotoSwipe Sample (HTTPS)** - Blazor Server with HTTPS
+- **Launch PhotoSwipe Sample (Watch Mode)** - Server with hot reload
+- **Launch PhotoSwipe WASM (HTTP)** - Blazor WebAssembly on port 5225
+- **Launch PhotoSwipe WASM (Watch Mode)** - WASM with hot reload
+
+**Compound Launch Configuration:**
+- **Launch Both Server & WASM (Watch Mode)** - Starts both projects simultaneously
+
+### Build Tasks
+
+VS Code tasks are configured for all projects:
+
+- **build** - Build Server project
+- **build-library** - Build PhotoSwipe.Blazor library
+- **build-photoswipe-assets** - Build PhotoSwipe CSS/JS assets
+- **build-wasm** - Build WASM project (depends on library and assets)
+- **publish** - Publish Server project
+- **publish-wasm** - Publish WASM project
+- **watch** - Server project in watch mode
+- **watch-wasm** - WASM project in watch mode
+
+### Development Workflow
+
+1. **F5** (Run and Debug) - Select compound launch to start both projects
+2. **Ctrl+Shift+P** → "Tasks: Run Task" → Select specific build/watch tasks
+3. Access demos at:
+   - Server: http://localhost:5224
+   - WASM: http://localhost:5225
+
+Both applications will have identical functionality thanks to the shared PhotoSwipe.Demos library.
