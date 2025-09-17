@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PhotoSwipe.Blazor\PhotoSwipe.Blazor.csproj" />
+    <ProjectReference Include="..\PhotoSwipe.Demos\PhotoSwipe.Demos.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

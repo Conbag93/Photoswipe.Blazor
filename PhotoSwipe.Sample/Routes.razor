@@ -1,0 +1,8 @@
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+
+<Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(PhotoSwipe.Blazor._Imports).Assembly, typeof(PhotoSwipe.Demos.Components._Imports).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(PhotoSwipe.Demos.Components.Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
