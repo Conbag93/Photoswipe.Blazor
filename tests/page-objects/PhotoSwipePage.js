@@ -1,4 +1,5 @@
 // Page Object Model for PhotoSwipe functionality
+const { waitForBlazorPhotoSwipeInit, waitForLightboxOpen, waitForLightboxClose } = require('../utils/test-helpers');
 
 class PhotoSwipePage {
   constructor(page) {
@@ -13,27 +14,21 @@ class PhotoSwipePage {
 
   async goto() {
     await this.page.goto('/basic-photoswipe-demo');
-    await this.page.waitForLoadState('networkidle');
+    await waitForBlazorPhotoSwipeInit(this.page, 'a[data-pswp-width]', 4);
   }
 
   async openFirstImage() {
     await this.galleryImages.first().click();
-    await this.page.waitForTimeout(500); // Allow time for animation
+    await waitForLightboxOpen(this.page);
   }
 
   async openImageAtIndex(index) {
     await this.galleryImages.nth(index).click();
-    await this.page.waitForTimeout(500);
+    await waitForLightboxOpen(this.page);
   }
 
   async closeLightbox() {
-    if (await this.closeButton.isVisible()) {
-      await this.closeButton.click();
-    } else {
-      // Fallback: press Escape key
-      await this.page.keyboard.press('Escape');
-    }
-    await this.page.waitForTimeout(500);
+    await waitForLightboxClose(this.page);
   }
 
   async navigateNext() {
@@ -47,11 +42,17 @@ class PhotoSwipePage {
   }
 
   async isLightboxOpen() {
-    return await this.lightbox.isVisible();
+    return await this.page.evaluate(() => {
+      const lightbox = document.querySelector('.pswp.pswp--open');
+      return lightbox !== null;
+    });
   }
 
   async isLightboxClosed() {
-    return !(await this.lightbox.isVisible());
+    return await this.page.evaluate(() => {
+      const lightbox = document.querySelector('.pswp.pswp--open');
+      return lightbox === null;
+    });
   }
 
   async getGalleryImageCount() {
