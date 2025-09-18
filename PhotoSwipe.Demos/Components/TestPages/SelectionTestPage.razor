@@ -1,0 +1,284 @@
+@page "/test/selection"
+@inject ILogger<SelectionTestPage> Logger
+
+<PageTitle>Selection Test Page</PageTitle>
+
+<div class="selection-test-container">
+    <div class="test-header">
+        <h1>🔘 Selection Feature Test Page</h1>
+        <p>Isolated testing environment for PhotoSwipe selection functionality. Focus on single vs multi-selection behavior, state management, and interaction patterns.</p>
+    </div>
+
+    <!-- Selection Mode Controls -->
+    <div class="selection-mode-controls">
+        <div class="control-group">
+            <label><strong>Selection Mode:</strong></label>
+            <label class="radio-option">
+                <input type="radio" name="selection-mode" checked="@(_selectionMode == SelectionMode.None)" @onchange="@(() => SetSelectionMode(SelectionMode.None))" />
+                None
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="selection-mode" checked="@(_selectionMode == SelectionMode.Single)" @onchange="@(() => SetSelectionMode(SelectionMode.Single))" />
+                Single
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="selection-mode" checked="@(_selectionMode == SelectionMode.Multi)" @onchange="@(() => SetSelectionMode(SelectionMode.Multi))" />
+                Multi
+            </label>
+        </div>
+    </div>
+
+    <!-- Test Status Panel -->
+    <div class="test-status-panel">
+        <div class="status-row">
+            <div class="status-item">
+                <span class="status-label">Selection Mode:</span>
+                <span class="status-value">@_selectionMode</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Total Images:</span>
+                <span class="status-value">@_galleryItems.Count</span>
+            </div>
+            @if (_selectionMode != SelectionMode.None)
+            {
+                <div class="status-item">
+                    <span class="status-label">Selected:</span>
+                    <span class="status-value">@_selectedItems.Count</span>
+                </div>
+            }
+        </div>
+        @if (_selectedItems.Any())
+        {
+            <div class="selected-items-detail">
+                <span class="detail-label">Selected Items:</span>
+                @foreach (var item in _selectedItems)
+                {
+                    <span class="selected-item-tag">@(item.Title ?? item.Alt ?? "Untitled")</span>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Test Actions -->
+    <div class="test-actions">
+        <button type="button" class="btn btn-secondary" @onclick="ClearSelection">Clear Selection</button>
+        <button type="button" class="btn btn-secondary" @onclick="SelectRandom" disabled="@(_selectionMode == SelectionMode.None || _galleryItems.Count == 0)">Select Random</button>
+        @if (_selectionMode == SelectionMode.Multi)
+        {
+            <button type="button" class="btn btn-secondary" @onclick="SelectAll">Select All</button>
+        }
+    </div>
+
+    <!-- Test Gallery -->
+    <div class="selection-test-gallery">
+        <PhotoSwipeUploadGallery
+            Id="selection-test-gallery"
+            Items="@_galleryItems"
+            AllowAdd="false"
+            AllowDelete="false"
+            AllowReorder="false"
+            EnableSelection="@(_selectionMode != SelectionMode.None)"
+            AllowMultiSelect="@(_selectionMode == SelectionMode.Multi)"
+            SelectedItem="@(_selectionMode == SelectionMode.Single ? _selectedItems.FirstOrDefault() : null)"
+            SelectedItems="@(_selectionMode == SelectionMode.Multi ? _selectedItems : null)"
+            SelectedItemChanged="@OnSingleSelectionChanged"
+            SelectedItemsChanged="@OnMultiSelectionChanged"
+            Options="@_galleryOptions" />
+    </div>
+
+    <!-- Performance Testing Section -->
+    <div class="performance-testing">
+        <h3>⚡ Performance Testing</h3>
+        <div class="perf-controls">
+            <button type="button" class="btn btn-outline-primary" @onclick="AddTestImages">Add 10 Test Images</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="ClearAllImages">Clear All Images</button>
+        </div>
+        <div class="perf-stats">
+            <span>Last selection change took: @(_lastSelectionTime?.TotalMilliseconds.ToString("F2") ?? "N/A") ms</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    private enum SelectionMode { None, Single, Multi }
+
+    // State
+    private SelectionMode _selectionMode = SelectionMode.Multi;
+    private List<PhotoSwipeItem> _galleryItems = new();
+    private List<PhotoSwipeItem> _selectedItems = new();
+    private DateTime _lastSelectionStart;
+    private TimeSpan? _lastSelectionTime;
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.85,
+        ShowAnimationDuration = 350
+    };
+
+    protected override void OnInitialized()
+    {
+        InitializeTestGallery();
+        Logger.LogInformation("Selection Test Page initialized");
+    }
+
+    private void InitializeTestGallery()
+    {
+        _galleryItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1025/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Test Image 1",
+                Caption = "First test image for selection testing",
+                Title = "Mountain Landscape"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1016/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1016/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Test Image 2",
+                Caption = "Second test image for selection testing",
+                Title = "Desert Sunset"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1020/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1020/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Test Image 3",
+                Caption = "Third test image for selection testing",
+                Title = "Lake Reflection"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1018/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1018/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Test Image 4",
+                Caption = "Fourth test image for selection testing",
+                Title = "Forest Path"
+            }
+        };
+    }
+
+    private void SetSelectionMode(SelectionMode mode)
+    {
+        _selectionMode = mode;
+        ClearSelection();
+        Logger.LogInformation("Selection mode changed to: {Mode}", mode);
+    }
+
+    private void ClearSelection()
+    {
+        _selectedItems.Clear();
+        StateHasChanged();
+        Logger.LogInformation("Selection cleared");
+    }
+
+    private void SelectRandom()
+    {
+        if (_galleryItems.Count == 0) return;
+
+        ClearSelection();
+        var random = Random.Shared;
+
+        if (_selectionMode == SelectionMode.Single)
+        {
+            var randomItem = _galleryItems[random.Next(_galleryItems.Count)];
+            _selectedItems.Add(randomItem);
+        }
+        else if (_selectionMode == SelectionMode.Multi)
+        {
+            var itemsToSelect = random.Next(1, Math.Min(4, _galleryItems.Count + 1));
+            var selectedIndices = new HashSet<int>();
+
+            while (selectedIndices.Count < itemsToSelect)
+            {
+                selectedIndices.Add(random.Next(_galleryItems.Count));
+            }
+
+            foreach (var index in selectedIndices)
+            {
+                _selectedItems.Add(_galleryItems[index]);
+            }
+        }
+
+        StateHasChanged();
+        Logger.LogInformation("Random selection: {Count} items selected", _selectedItems.Count);
+    }
+
+    private void SelectAll()
+    {
+        if (_selectionMode != SelectionMode.Multi) return;
+
+        _selectedItems.Clear();
+        _selectedItems.AddRange(_galleryItems);
+        StateHasChanged();
+        Logger.LogInformation("All items selected: {Count} items", _selectedItems.Count);
+    }
+
+    private void OnSingleSelectionChanged(PhotoSwipeItem item)
+    {
+        _lastSelectionStart = DateTime.UtcNow;
+
+        _selectedItems.Clear();
+        if (item != null)
+        {
+            _selectedItems.Add(item);
+        }
+
+        _lastSelectionTime = DateTime.UtcNow - _lastSelectionStart;
+        StateHasChanged();
+        Logger.LogInformation("Single selection changed to: {Title}", item?.Title ?? "None");
+    }
+
+    private void OnMultiSelectionChanged(IEnumerable<PhotoSwipeItem> items)
+    {
+        _lastSelectionStart = DateTime.UtcNow;
+
+        _selectedItems = items.ToList();
+
+        _lastSelectionTime = DateTime.UtcNow - _lastSelectionStart;
+        StateHasChanged();
+        Logger.LogInformation("Multi selection changed: {Count} items", _selectedItems.Count);
+    }
+
+    // Performance testing methods
+    private void AddTestImages()
+    {
+        var startCount = _galleryItems.Count;
+        for (int i = 1; i <= 10; i++)
+        {
+            var imageId = Random.Shared.Next(1001, 1100);
+            _galleryItems.Add(new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{imageId}/1200/800",
+                ThumbnailUrl = $"https://picsum.photos/id/{imageId}/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = $"Generated Test Image {startCount + i}",
+                Caption = $"Performance test image {startCount + i}",
+                Title = $"Generated Image {startCount + i}"
+            });
+        }
+        StateHasChanged();
+        Logger.LogInformation("Added 10 test images. Total: {Count}", _galleryItems.Count);
+    }
+
+    private void ClearAllImages()
+    {
+        _galleryItems.Clear();
+        _selectedItems.Clear();
+        StateHasChanged();
+        Logger.LogInformation("All images cleared");
+    }
+}

@@ -1,0 +1,628 @@
+@page "/test/reordering"
+@inject ILogger<ReorderingTestPage> Logger
+
+<PageTitle>Reordering Test Page</PageTitle>
+
+<div class="reordering-test-container">
+    <div class="test-header">
+        <h1>🔄 Reordering Feature Test Page</h1>
+        <p>Isolated testing environment for PhotoSwipe reordering functionality. Focus on up/down arrow behavior, boundary conditions, index label updates, and PhotoSwipe synchronization.</p>
+    </div>
+
+    <!-- Reordering Configuration Controls -->
+    <div class="reordering-config-controls">
+        <div class="control-group">
+            <label><strong>Show Index Labels:</strong></label>
+            <label class="checkbox-option">
+                <input type="checkbox" checked="@_showIndexLabels" @onchange="@(() => ToggleIndexLabels())" />
+                Display position indicators (1/4, 2/4, etc.)
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label><strong>Gallery Size:</strong></label>
+            <label class="radio-option">
+                <input type="radio" name="gallery-size" checked="@(_gallerySize == GallerySize.Small)" @onchange="@(() => SetGallerySize(GallerySize.Small))" />
+                Small (4 items)
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="gallery-size" checked="@(_gallerySize == GallerySize.Medium)" @onchange="@(() => SetGallerySize(GallerySize.Medium))" />
+                Medium (6 items)
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="gallery-size" checked="@(_gallerySize == GallerySize.Large)" @onchange="@(() => SetGallerySize(GallerySize.Large))" />
+                Large (10 items)
+            </label>
+        </div>
+    </div>
+
+    <!-- Test Status Panel -->
+    <div class="test-status-panel">
+        <div class="status-row">
+            <div class="status-item">
+                <span class="status-label">Total Items:</span>
+                <span class="status-value">@_galleryItems.Count</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Moves Performed:</span>
+                <span class="status-value">@_totalMoves</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Items Moved:</span>
+                <span class="status-value">@_movedItemsCount</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Index Labels:</span>
+                <span class="status-value">@(_showIndexLabels ? "Enabled" : "Disabled")</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Actions -->
+    <div class="test-actions">
+        <button type="button" class="btn btn-primary" @onclick="ResetGallery">
+            🔄 Reset Gallery
+        </button>
+        <button type="button" class="btn btn-secondary" @onclick="MoveFirstToLast">
+            📋 Move First to Last
+        </button>
+        <button type="button" class="btn btn-secondary" @onclick="MoveLastToFirst">
+            📋 Move Last to First
+        </button>
+        <button type="button" class="btn btn-info" @onclick="RandomizeOrder">
+            🎲 Randomize Order
+        </button>
+        <button type="button" class="btn btn-warning" @onclick="ReverseOrder">
+            🔁 Reverse Order
+        </button>
+    </div>
+
+    <!-- Test Gallery -->
+    <div class="reordering-test-gallery">
+        <h3>🖼️ Reordering Test Gallery</h3>
+
+        <PhotoSwipeUploadGallery
+            Id="reordering-test-gallery"
+            Items="@_galleryItems"
+            CssClass="test-gallery"
+            AllowReorder="true"
+            ShowIndexLabels="@_showIndexLabels"
+            Options="@_galleryOptions"
+            OnItemsReordered="@OnItemsReordered">
+        </PhotoSwipeUploadGallery>
+    </div>
+
+    <!-- Current Order Summary -->
+    @if (_galleryItems.Any())
+    {
+        <div class="reordering-summary">
+            <h3>📋 Current Image Order</h3>
+            <div class="order-list">
+                @for (int i = 0; i < _galleryItems.Count; i++)
+                {
+                    var item = _galleryItems[i];
+                    var hasBeenMoved = _movedItems.Contains(item.Src);
+                    <div class="order-item @(hasBeenMoved ? "moved-item" : "")">
+                        <span class="order-number">@(i + 1).</span>
+                        <span class="order-title">@(item.Title ?? item.Alt ?? "Untitled")</span>
+                        @if (i == 0)
+                        {
+                            <span class="order-badge first">First</span>
+                        }
+                        else if (i == _galleryItems.Count - 1)
+                        {
+                            <span class="order-badge last">Last</span>
+                        }
+                        @if (hasBeenMoved)
+                        {
+                            <span class="order-badge moved">Moved</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Performance Testing -->
+    <div class="performance-testing">
+        <h3>⚡ Performance Metrics</h3>
+        <div class="performance-stats">
+            <div class="perf-item">
+                <span class="perf-label">Average Move Time:</span>
+                <span class="perf-value">@(_averageMoveTime?.ToString("F2") ?? "N/A") ms</span>
+            </div>
+            <div class="perf-item">
+                <span class="perf-label">Fastest Move:</span>
+                <span class="perf-value">@(_fastestMove?.ToString("F2") ?? "N/A") ms</span>
+            </div>
+            <div class="perf-item">
+                <span class="perf-label">Slowest Move:</span>
+                <span class="perf-value">@(_slowestMove?.ToString("F2") ?? "N/A") ms</span>
+            </div>
+            <div class="perf-item">
+                <span class="perf-label">Total Test Time:</span>
+                <span class="perf-value">@(_totalTestTime.TotalSeconds.ToString("F1")) sec</span>
+            </div>
+        </div>
+
+        @if (_moveTimes.Any())
+        {
+            <button type="button" class="btn btn-info btn-sm" @onclick="ClearPerformanceStats">
+                📊 Clear Performance Data
+            </button>
+        }
+    </div>
+
+    <!-- Reordering History -->
+    @if (_reorderingHistory.Any())
+    {
+        <div class="reordering-history">
+            <h3>📜 Reordering History</h3>
+            <div class="history-list">
+                @foreach (var historyItem in _reorderingHistory.TakeLast(10).Reverse())
+                {
+                    <div class="history-item">
+                        <span class="history-timestamp">@historyItem.Timestamp.ToString("HH:mm:ss")</span>
+                        <span class="history-action">@historyItem.Action</span>
+                        <span class="history-duration">(@historyItem.Duration.ToString("F1")ms)</span>
+                    </div>
+                }
+            </div>
+            @if (_reorderingHistory.Count > 10)
+            {
+                <div class="history-more">
+                    ... and @(_reorderingHistory.Count - 10) more actions
+                </div>
+            }
+            <button type="button" class="btn btn-secondary btn-sm" @onclick="ClearHistory">
+                🗑️ Clear History
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    // Gallery data and configuration
+    private List<PhotoSwipeItem> _galleryItems = new();
+    private List<PhotoSwipeItem> _originalItems = new();
+    private bool _showIndexLabels = true;
+    private GallerySize _gallerySize = GallerySize.Small;
+
+    // State tracking
+    private int _totalMoves = 0;
+    private HashSet<string> _movedItems = new();
+    private int _movedItemsCount => _movedItems.Count;
+
+    // Performance tracking
+    private List<double> _moveTimes = new();
+    private double? _averageMoveTime => _moveTimes.Any() ? _moveTimes.Average() : null;
+    private double? _fastestMove => _moveTimes.Any() ? _moveTimes.Min() : null;
+    private double? _slowestMove => _moveTimes.Any() ? _moveTimes.Max() : null;
+    private DateTime _testStartTime = DateTime.Now;
+    private TimeSpan _totalTestTime => DateTime.Now - _testStartTime;
+
+    // History tracking
+    private List<ReorderingHistoryItem> _reorderingHistory = new();
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.9,
+        ShowAnimationDuration = 250
+    };
+
+    public enum GallerySize
+    {
+        Small,
+        Medium,
+        Large
+    }
+
+    public class ReorderingHistoryItem
+    {
+        public DateTime Timestamp { get; set; }
+        public string Action { get; set; } = "";
+        public double Duration { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        InitializeGallery();
+        _testStartTime = DateTime.Now;
+        Logger.LogInformation("Reordering Test Page initialized");
+    }
+
+    private void InitializeGallery()
+    {
+        var allItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1018/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1018/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Mountain Landscape",
+                Caption = "Scenic mountain landscape",
+                Title = "Mountain Peak"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1015/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1015/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Ocean Waves",
+                Caption = "Ocean waves at sunset",
+                Title = "Peaceful Ocean"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1019/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1019/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Forest Trail",
+                Caption = "Path through the forest",
+                Title = "Forest Walk"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1025/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "City Skyline",
+                Caption = "Modern cityscape at dusk",
+                Title = "Urban Landscape"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1035/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1035/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Desert Dunes",
+                Caption = "Sand dunes in golden hour",
+                Title = "Desert Beauty"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1040/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1040/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Lakeside Reflection",
+                Caption = "Calm lake with reflections",
+                Title = "Mirror Lake"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1043/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1043/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Snowy Peaks",
+                Caption = "Snow-covered mountain range",
+                Title = "Winter Wonderland"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1051/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1051/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Autumn Forest",
+                Caption = "Colorful autumn foliage",
+                Title = "Fall Colors"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1059/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1059/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Rocky Coast",
+                Caption = "Dramatic rocky coastline",
+                Title = "Coastal Cliffs"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1062/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1062/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Sunrise Valley",
+                Caption = "Sunrise over the valley",
+                Title = "Dawn Light"
+            }
+        };
+
+        SetGalleryBySize(_gallerySize, allItems);
+    }
+
+    private void SetGalleryBySize(GallerySize size, List<PhotoSwipeItem>? allItems = null)
+    {
+        var items = allItems ?? GetAllItems();
+
+        _galleryItems = size switch
+        {
+            GallerySize.Small => items.Take(4).ToList(),
+            GallerySize.Medium => items.Take(6).ToList(),
+            GallerySize.Large => items.Take(10).ToList(),
+            _ => items.Take(4).ToList()
+        };
+
+        _originalItems = _galleryItems.ToList();
+        ResetStats();
+    }
+
+    private List<PhotoSwipeItem> GetAllItems()
+    {
+        return new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1018/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1018/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Mountain Landscape",
+                Caption = "Scenic mountain landscape",
+                Title = "Mountain Peak"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1015/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1015/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Ocean Waves",
+                Caption = "Ocean waves at sunset",
+                Title = "Peaceful Ocean"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1019/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1019/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Forest Trail",
+                Caption = "Path through the forest",
+                Title = "Forest Walk"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1025/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "City Skyline",
+                Caption = "Modern cityscape at dusk",
+                Title = "Urban Landscape"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1035/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1035/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Desert Dunes",
+                Caption = "Sand dunes in golden hour",
+                Title = "Desert Beauty"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1040/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1040/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Lakeside Reflection",
+                Caption = "Calm lake with reflections",
+                Title = "Mirror Lake"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1043/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1043/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Snowy Peaks",
+                Caption = "Snow-covered mountain range",
+                Title = "Winter Wonderland"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1051/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1051/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Autumn Forest",
+                Caption = "Colorful autumn foliage",
+                Title = "Fall Colors"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1059/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1059/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Rocky Coast",
+                Caption = "Dramatic rocky coastline",
+                Title = "Coastal Cliffs"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1062/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1062/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Sunrise Valley",
+                Caption = "Sunrise over the valley",
+                Title = "Dawn Light"
+            }
+        };
+    }
+
+    private void SetGallerySize(GallerySize size)
+    {
+        _gallerySize = size;
+        SetGalleryBySize(size);
+        StateHasChanged();
+        Logger.LogInformation("Gallery size changed to {Size} ({Count} items)", size, _galleryItems.Count);
+    }
+
+    private void ToggleIndexLabels()
+    {
+        _showIndexLabels = !_showIndexLabels;
+        StateHasChanged();
+        Logger.LogInformation("Index labels toggled: {ShowLabels}", _showIndexLabels);
+    }
+
+    private void OnItemsReordered(IEnumerable<PhotoSwipeItem> reorderedItems)
+    {
+        var startTime = DateTime.Now;
+
+        var newItems = reorderedItems.ToList();
+        var previousOrder = string.Join(", ", _galleryItems.Select(x => x.Title ?? x.Alt));
+        var newOrder = string.Join(", ", newItems.Select(x => x.Title ?? x.Alt));
+
+        _galleryItems = newItems;
+        _totalMoves++;
+
+        // Track which items have been moved from their original positions
+        for (int i = 0; i < _galleryItems.Count; i++)
+        {
+            var currentItem = _galleryItems[i];
+            var originalIndex = _originalItems.FindIndex(x => x.Src == currentItem.Src);
+            if (originalIndex != i)
+            {
+                _movedItems.Add(currentItem.Src);
+            }
+        }
+
+        var duration = (DateTime.Now - startTime).TotalMilliseconds;
+        _moveTimes.Add(duration);
+
+        // Add to history
+        _reorderingHistory.Add(new ReorderingHistoryItem
+        {
+            Timestamp = DateTime.Now,
+            Action = $"Reordered: {previousOrder} → {newOrder}",
+            Duration = duration
+        });
+
+        StateHasChanged();
+        Logger.LogInformation("Items reordered, Move #{MoveNumber}, Duration: {Duration}ms, New order: {Order}",
+            _totalMoves, duration, newOrder);
+    }
+
+    private void ResetGallery()
+    {
+        SetGalleryBySize(_gallerySize);
+        StateHasChanged();
+        Logger.LogInformation("Gallery reset to original order");
+
+        _reorderingHistory.Add(new ReorderingHistoryItem
+        {
+            Timestamp = DateTime.Now,
+            Action = "Gallery reset to original order",
+            Duration = 0
+        });
+    }
+
+    private void MoveFirstToLast()
+    {
+        if (_galleryItems.Count < 2) return;
+
+        var startTime = DateTime.Now;
+        var firstItem = _galleryItems[0];
+        var newItems = _galleryItems.Skip(1).Append(firstItem).ToList();
+
+        OnItemsReordered(newItems);
+
+        var duration = (DateTime.Now - startTime).TotalMilliseconds;
+        _reorderingHistory.Add(new ReorderingHistoryItem
+        {
+            Timestamp = DateTime.Now,
+            Action = $"Moved '{firstItem.Title ?? firstItem.Alt}' from first to last",
+            Duration = duration
+        });
+    }
+
+    private void MoveLastToFirst()
+    {
+        if (_galleryItems.Count < 2) return;
+
+        var startTime = DateTime.Now;
+        var lastItem = _galleryItems.Last();
+        var newItems = new[] { lastItem }.Concat(_galleryItems.Take(_galleryItems.Count - 1)).ToList();
+
+        OnItemsReordered(newItems);
+
+        var duration = (DateTime.Now - startTime).TotalMilliseconds;
+        _reorderingHistory.Add(new ReorderingHistoryItem
+        {
+            Timestamp = DateTime.Now,
+            Action = $"Moved '{lastItem.Title ?? lastItem.Alt}' from last to first",
+            Duration = duration
+        });
+    }
+
+    private void RandomizeOrder()
+    {
+        var startTime = DateTime.Now;
+        var random = new Random();
+        var newItems = _galleryItems.OrderBy(x => random.Next()).ToList();
+
+        OnItemsReordered(newItems);
+
+        var duration = (DateTime.Now - startTime).TotalMilliseconds;
+        _reorderingHistory.Add(new ReorderingHistoryItem
+        {
+            Timestamp = DateTime.Now,
+            Action = "Randomized gallery order",
+            Duration = duration
+        });
+    }
+
+    private void ReverseOrder()
+    {
+        var startTime = DateTime.Now;
+        var newItems = _galleryItems.AsEnumerable().Reverse().ToList();
+
+        OnItemsReordered(newItems);
+
+        var duration = (DateTime.Now - startTime).TotalMilliseconds;
+        _reorderingHistory.Add(new ReorderingHistoryItem
+        {
+            Timestamp = DateTime.Now,
+            Action = "Reversed gallery order",
+            Duration = duration
+        });
+    }
+
+    private void ClearPerformanceStats()
+    {
+        _moveTimes.Clear();
+        StateHasChanged();
+        Logger.LogInformation("Performance statistics cleared");
+    }
+
+    private void ClearHistory()
+    {
+        _reorderingHistory.Clear();
+        StateHasChanged();
+        Logger.LogInformation("Reordering history cleared");
+    }
+
+    private void ResetStats()
+    {
+        _totalMoves = 0;
+        _movedItems.Clear();
+        _moveTimes.Clear();
+        _reorderingHistory.Clear();
+        _testStartTime = DateTime.Now;
+    }
+}

@@ -1,0 +1,433 @@
+@page "/test/upload"
+@inject ILogger<UploadTestPage> Logger
+
+<PageTitle>Upload Test Page</PageTitle>
+
+<div class="upload-test-container">
+    <div class="test-header">
+        <h1>📤 Upload Feature Test Page</h1>
+        <p>Isolated testing environment for PhotoSwipe upload functionality. Focus on file upload, drag & drop, validation, and upload modes.</p>
+    </div>
+
+    <!-- Upload Configuration Controls -->
+    <div class="upload-mode-controls">
+        <div class="control-group">
+            <label><strong>Upload Mode:</strong></label>
+            <label class="radio-option">
+                <input type="radio" name="upload-mode" value="Add" checked="@(_uploadMode == PhotoSwipeUploadMode.Add)" @onchange="@(() => _uploadMode = PhotoSwipeUploadMode.Add)" />
+                Add Mode
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="upload-mode" value="Replace" checked="@(_uploadMode == PhotoSwipeUploadMode.Replace)" @onchange="@(() => _uploadMode = PhotoSwipeUploadMode.Replace)" />
+                Replace Mode
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label><strong>File Upload Settings:</strong></label>
+            <label class="checkbox-option">
+                <input type="checkbox" checked="@_allowMultipleFiles" @onchange="@((e) => _allowMultipleFiles = (bool)e.Value!)" />
+                Allow Multiple Files
+            </label>
+            <label class="checkbox-option">
+                <input type="checkbox" checked="@_allowDragDrop" @onchange="@((e) => _allowDragDrop = (bool)e.Value!)" />
+                Enable Drag & Drop
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label><strong>Validation Settings:</strong></label>
+            <div class="input-group">
+                <label>Max File Size (MB):</label>
+                <input type="number" @bind="_maxFileSizeMB" min="1" max="50" />
+            </div>
+            <div class="input-group">
+                <label>Max Files:</label>
+                <input type="number" @bind="_maxFiles" min="1" max="100" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Status Panel -->
+    <div class="test-status-panel">
+        <div class="status-row">
+            <div class="status-item">
+                <span class="status-label">Upload Mode:</span>
+                <span class="status-value">@_uploadMode</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Total Images:</span>
+                <span class="status-value">@_galleryItems.Count</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Uploaded This Session:</span>
+                <span class="status-value">@_uploadedThisSession</span>
+            </div>
+            @if (_lastUploadTime.HasValue)
+            {
+                <div class="status-item">
+                    <span class="status-label">Last Upload Time:</span>
+                    <span class="status-value">@_lastUploadTime.Value.ToString("F2") ms</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Test Actions -->
+    <div class="test-actions">
+        <button type="button" class="btn btn-secondary" @onclick="ClearGallery">Clear Gallery</button>
+        <button type="button" class="btn btn-secondary" @onclick="AddSampleImages">Add Sample Images</button>
+        <button type="button" class="btn btn-danger" @onclick="SimulateUploadError">Simulate Upload Error</button>
+        @if (_uploadErrors.Any())
+        {
+            <button type="button" class="btn btn-warning" @onclick="ClearErrors">Clear Errors</button>
+        }
+    </div>
+
+    <!-- Test Gallery with Upload -->
+    <div class="upload-test-gallery">
+        <PhotoSwipeUploadGallery
+            Id="upload-test-gallery"
+            Items="@_galleryItems"
+            AllowAdd="true"
+            AllowDelete="false"
+            AllowReorder="false"
+            EnableSelection="false"
+            AllowMultipleFiles="@_allowMultipleFiles"
+            MaxFileSize="@(_maxFileSizeMB * 1024 * 1024)"
+            MaxFiles="@_maxFiles"
+            UploadMode="@_uploadMode"
+            OnItemsChanged="@OnGalleryChanged"
+            OnItemsUploaded="@OnItemsUploaded"
+            Options="@_galleryOptions" />
+    </div>
+
+    <!-- Upload Errors -->
+    @if (_uploadErrors.Any())
+    {
+        <div class="upload-errors error-section">
+            <h3>⚠️ Upload Errors</h3>
+            <div class="error-list">
+                @foreach (var error in _uploadErrors)
+                {
+                    <div class="error-item alert alert-danger">
+                        <span class="error-time">@error.Timestamp.ToString("HH:mm:ss")</span>
+                        <span class="error-message">@error.Message</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Upload Statistics -->
+    <div class="upload-statistics">
+        <h3>📊 Upload Statistics</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">@_totalUploads</div>
+                <div class="stat-label">Total Uploads</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@_successfulUploads</div>
+                <div class="stat-label">Successful</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@_failedUploads</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@(_averageUploadTime?.ToString("F1") ?? "N/A") ms</div>
+                <div class="stat-label">Avg Upload Time</div>
+            </div>
+        </div>
+        @if (_uploadHistory.Any())
+        {
+            <div class="upload-history">
+                <h4>Recent Upload History</h4>
+                <div class="history-list">
+                    @foreach (var entry in _uploadHistory.TakeLast(5).Reverse())
+                    {
+                        <div class="history-item @(entry.Success ? "success" : "error")">
+                            <span class="history-time">@entry.Timestamp.ToString("HH:mm:ss")</span>
+                            <span class="history-action">@entry.Action</span>
+                            @if (!entry.Success)
+                            {
+                                <span class="history-error">@entry.Error</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Performance Testing Section -->
+    <div class="performance-testing">
+        <h3>⚡ Performance Testing</h3>
+        <div class="perf-controls">
+            <button type="button" class="btn btn-outline-primary" @onclick="BulkUploadTest">Bulk Upload Test (10 files)</button>
+            <button type="button" class="btn btn-outline-primary" @onclick="LargeFileTest">Large File Test</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="ResetStatistics">Reset Statistics</button>
+        </div>
+        <div class="perf-info">
+            <p><strong>Bulk Upload Test:</strong> Simulates uploading 10 images simultaneously</p>
+            <p><strong>Large File Test:</strong> Simulates uploading a large (5MB+) image file</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Upload configuration
+    private PhotoSwipeUploadMode _uploadMode = PhotoSwipeUploadMode.Add;
+    private bool _allowMultipleFiles = true;
+    private bool _allowDragDrop = true;
+    private int _maxFileSizeMB = 10;
+    private int _maxFiles = 20;
+
+    // Gallery state
+    private List<PhotoSwipeItem> _galleryItems = new();
+    private int _uploadedThisSession = 0;
+
+    // Performance tracking
+    private double? _lastUploadTime;
+    private DateTime _lastUploadStart;
+    private int _totalUploads = 0;
+    private int _successfulUploads = 0;
+    private int _failedUploads = 0;
+    private List<double> _uploadTimes = new();
+    private double? _averageUploadTime => _uploadTimes.Any() ? _uploadTimes.Average() : null;
+
+    // Upload history
+    private List<UploadHistoryEntry> _uploadHistory = new();
+
+    // Upload errors
+    private List<UploadErrorEntry> _uploadErrors = new();
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.85,
+        ShowAnimationDuration = 350
+    };
+
+    protected override void OnInitialized()
+    {
+        InitializeTestGallery();
+        Logger.LogInformation("Upload Test Page initialized");
+    }
+
+    private void InitializeTestGallery()
+    {
+        _galleryItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1025/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Test Image 1",
+                Caption = "Initial test image for upload testing",
+                Title = "Mountain Landscape"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1016/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1016/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Test Image 2",
+                Caption = "Second initial test image",
+                Title = "Desert Sunset"
+            }
+        };
+    }
+
+    private void OnGalleryChanged(IEnumerable<PhotoSwipeItem> items)
+    {
+        _galleryItems = items.ToList();
+        StateHasChanged();
+        Logger.LogInformation("Gallery changed, new count: {Count}", _galleryItems.Count);
+    }
+
+    private void OnItemsUploaded(IEnumerable<PhotoSwipeItem> items)
+    {
+        _lastUploadStart = DateTime.UtcNow;
+        var count = items.Count();
+        _uploadedThisSession += count;
+        _totalUploads += count;
+        _successfulUploads += count;
+
+        _lastUploadTime = (DateTime.UtcNow - _lastUploadStart).TotalMilliseconds;
+        _uploadTimes.Add(_lastUploadTime.Value);
+
+        // Add to history
+        _uploadHistory.Add(new UploadHistoryEntry
+        {
+            Timestamp = DateTime.Now,
+            Action = $"Uploaded {count} item(s)",
+            Success = true
+        });
+
+        StateHasChanged();
+        Logger.LogInformation("Items uploaded: {Count}, Total time: {Time}ms", count, _lastUploadTime);
+    }
+
+
+    private void ClearGallery()
+    {
+        _galleryItems.Clear();
+        StateHasChanged();
+        Logger.LogInformation("Gallery cleared");
+    }
+
+    private void AddSampleImages()
+    {
+        var newImages = new[]
+        {
+            new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{Random.Shared.Next(1030, 1060)}/1200/800",
+                ThumbnailUrl = $"https://picsum.photos/id/{Random.Shared.Next(1030, 1060)}/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = $"Sample Image {DateTime.Now:HHmmss}",
+                Caption = "Programmatically added sample",
+                Title = "Added Sample"
+            },
+            new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{Random.Shared.Next(1030, 1060)}/1200/900",
+                ThumbnailUrl = $"https://picsum.photos/id/{Random.Shared.Next(1030, 1060)}/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = $"Another Sample {DateTime.Now:HHmmss}",
+                Caption = "Another test image",
+                Title = "Test Image"
+            }
+        };
+
+        _galleryItems.AddRange(newImages);
+        StateHasChanged();
+        Logger.LogInformation("Added {Count} sample images", newImages.Length);
+    }
+
+
+    private async Task BulkUploadTest()
+    {
+        var startTime = DateTime.UtcNow;
+
+        // Simulate uploading 10 files
+        var bulkItems = new List<PhotoSwipeItem>();
+        for (int i = 1; i <= 10; i++)
+        {
+            bulkItems.Add(new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{Random.Shared.Next(1100, 1200)}/1200/800",
+                ThumbnailUrl = $"https://picsum.photos/id/{Random.Shared.Next(1100, 1200)}/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = $"Bulk Upload {i}",
+                Caption = $"Bulk upload test image {i}",
+                Title = $"Bulk Test {i}"
+            });
+
+            // Simulate processing delay
+            await Task.Delay(50);
+        }
+
+        _galleryItems.AddRange(bulkItems);
+        OnItemsUploaded(bulkItems);
+
+        var totalTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+        Logger.LogInformation("Bulk upload test completed in {Time}ms", totalTime);
+    }
+
+    private void LargeFileTest()
+    {
+        var startTime = DateTime.UtcNow;
+
+        // Simulate uploading a large file
+        var largeFileItem = new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1084/2400/1600", // Larger image
+            ThumbnailUrl = "https://picsum.photos/id/1084/300/200",
+            Width = 2400,
+            Height = 1600,
+            Alt = "Large File Test",
+            Caption = "Large file upload test (simulated 5MB+)",
+            Title = "Large File Test"
+        };
+
+        _galleryItems.Add(largeFileItem);
+
+        // Simulate longer processing time for large file
+        var processingTime = Random.Shared.Next(800, 1500); // 0.8-1.5 seconds
+        _lastUploadTime = processingTime;
+        _uploadTimes.Add(processingTime);
+
+        OnItemsUploaded(new[] { largeFileItem });
+
+        Logger.LogInformation("Large file test completed in {Time}ms", processingTime);
+    }
+
+    private void ResetStatistics()
+    {
+        _totalUploads = 0;
+        _successfulUploads = 0;
+        _failedUploads = 0;
+        _uploadTimes.Clear();
+        _uploadHistory.Clear();
+        _uploadedThisSession = 0;
+        _lastUploadTime = null;
+        StateHasChanged();
+        Logger.LogInformation("Upload statistics reset");
+    }
+
+    private void SimulateUploadError()
+    {
+        var errorMessage = "Simulated upload error: File size too large";
+        _uploadErrors.Add(new UploadErrorEntry
+        {
+            Timestamp = DateTime.Now,
+            Message = errorMessage
+        });
+
+        _failedUploads++;
+        _totalUploads++;
+
+        // Add to history
+        _uploadHistory.Add(new UploadHistoryEntry
+        {
+            Timestamp = DateTime.Now,
+            Action = "Upload failed",
+            Success = false,
+            Error = errorMessage
+        });
+
+        StateHasChanged();
+        Logger.LogWarning("Simulated upload error: {Error}", errorMessage);
+    }
+
+    private void ClearErrors()
+    {
+        _uploadErrors.Clear();
+        StateHasChanged();
+        Logger.LogInformation("Upload errors cleared");
+    }
+
+    private class UploadHistoryEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Action { get; set; } = "";
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private class UploadErrorEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Message { get; set; } = "";
+    }
+}

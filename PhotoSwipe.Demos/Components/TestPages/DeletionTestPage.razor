@@ -1,0 +1,532 @@
+@page "/test/deletion"
+@inject ILogger<DeletionTestPage> Logger
+
+<PageTitle>Deletion Test Page</PageTitle>
+
+<div class="deletion-test-container">
+    <div class="test-header">
+        <h1>🗑️ Deletion Feature Test Page</h1>
+        <p>Isolated testing environment for PhotoSwipe deletion functionality. Focus on individual and bulk deletion, confirmation modals, and state management.</p>
+    </div>
+
+    <!-- Deletion Configuration Controls -->
+    <div class="deletion-mode-controls">
+        <div class="control-group">
+            <label><strong>Deletion Settings:</strong></label>
+            <label class="checkbox-option">
+                <input type="checkbox" checked="@_requireConfirmation" @onchange="@((e) => _requireConfirmation = (bool)e.Value!)" />
+                Require Confirmation
+            </label>
+            <label class="checkbox-option">
+                <input type="checkbox" checked="@_enableBulkDelete" @onchange="@((e) => ToggleBulkDelete((bool)e.Value!))" />
+                Enable Bulk Delete
+            </label>
+            <label class="checkbox-option">
+                <input type="checkbox" checked="@_showDeleteAnimation" @onchange="@((e) => _showDeleteAnimation = (bool)e.Value!)" />
+                Show Delete Animation
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label><strong>Delete Button Position:</strong></label>
+            <label class="radio-option">
+                <input type="radio" name="delete-position" checked="@(_deleteButtonPosition == PhotoSwipeOverlayControl.OverlayPosition.TopRight)" @onchange="@(() => _deleteButtonPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight)" />
+                Top Right
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-position" checked="@(_deleteButtonPosition == PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" @onchange="@(() => _deleteButtonPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" />
+                Top Left
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-position" checked="@(_deleteButtonPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" @onchange="@(() => _deleteButtonPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" />
+                Bottom Right
+            </label>
+        </div>
+    </div>
+
+    <!-- Test Status Panel -->
+    <div class="test-status-panel">
+        <div class="status-row">
+            <div class="status-item">
+                <span class="status-label">Total Images:</span>
+                <span class="status-value">@_galleryItems.Count</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Deleted This Session:</span>
+                <span class="status-value">@_deletedThisSession</span>
+            </div>
+            @if (_enableBulkDelete && _selectedItems.Any())
+            {
+                <div class="status-item">
+                    <span class="status-label">Selected for Deletion:</span>
+                    <span class="status-value">@_selectedItems.Count</span>
+                </div>
+            }
+            @if (_lastDeleteTime.HasValue)
+            {
+                <div class="status-item">
+                    <span class="status-label">Last Delete Time:</span>
+                    <span class="status-value">@_lastDeleteTime.Value.ToString("F2") ms</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Test Actions -->
+    <div class="test-actions">
+        <button type="button" class="btn btn-secondary" @onclick="RestoreGallery">Restore Gallery</button>
+        <button type="button" class="btn btn-secondary" @onclick="AddMoreImages">Add More Images</button>
+        @if (_enableBulkDelete && _selectedItems.Any())
+        {
+            <button type="button" class="btn btn-danger" @onclick="BulkDelete">Delete Selected (@_selectedItems.Count)</button>
+        }
+        @if (_deletionHistory.Any())
+        {
+            <button type="button" class="btn btn-warning" @onclick="UndoLastDeletion">Undo Last Deletion</button>
+        }
+        <button type="button" class="btn btn-danger" @onclick="SimulateDeleteError">Simulate Delete Error</button>
+    </div>
+
+    <!-- Test Gallery with Deletion -->
+    <div class="deletion-test-gallery">
+        <PhotoSwipeUploadGallery
+            Id="deletion-test-gallery"
+            Items="@_galleryItems"
+            AllowAdd="false"
+            AllowDelete="false"
+            AllowReorder="false"
+            EnableSelection="@_enableBulkDelete"
+            AllowMultiSelect="@_enableBulkDelete"
+            SelectedItems="@_selectedItems"
+            SelectedItemsChanged="@OnSelectionChanged"
+            OnItemDeleted="@OnItemDeleted"
+            OnItemsChanged="@OnGalleryChanged"
+            Options="@_galleryOptions">
+            <CustomOverlayControls>
+                <PhotoSwipeOverlayControl
+                    Position="@_deleteButtonPosition"
+                    Title="Delete this image"
+                    AriaLabel="Delete image"
+                    CssClass="btn-delete-item"
+                    Icon="🗑️"
+                    OnClick="@(() => DeleteItem(context))"
+                    PreventGallery="true" />
+            </CustomOverlayControls>
+        </PhotoSwipeUploadGallery>
+    </div>
+
+    <!-- Deletion Confirmation Modal -->
+    @if (_showConfirmationModal)
+    {
+        <div class="delete-confirmation-modal">
+            <div class="modal-content">
+                <h3>⚠️ Confirm Deletion</h3>
+                <p>Are you sure you want to delete @(_itemsToDelete.Count == 1 ? "this image" : $"{_itemsToDelete.Count} images")?</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-danger btn-confirm-delete" @onclick="ConfirmDeletion">Delete</button>
+                    <button type="button" class="btn btn-secondary btn-cancel-delete" @onclick="CancelDeletion">Cancel</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Deletion Statistics -->
+    <div class="deletion-statistics">
+        <h3>📊 Deletion Statistics</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">@_totalDeletions</div>
+                <div class="stat-label">Total Deletions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@_bulkDeletions</div>
+                <div class="stat-label">Bulk Deletions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@_undoOperations</div>
+                <div class="stat-label">Undo Operations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@(_averageDeleteTime?.ToString("F1") ?? "N/A") ms</div>
+                <div class="stat-label">Avg Delete Time</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deletion History -->
+    @if (_deletionHistory.Any())
+    {
+        <div class="deletion-history">
+            <h3>📜 Deletion History</h3>
+            <div class="history-list">
+                @foreach (var entry in _deletionHistory.TakeLast(5).Reverse())
+                {
+                    <div class="history-item">
+                        <span class="history-time">@entry.Timestamp.ToString("HH:mm:ss")</span>
+                        <span class="history-action">@entry.Action</span>
+                        <span class="history-count">@entry.ItemCount item(s)</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Performance Testing Section -->
+    <div class="performance-testing">
+        <h3>⚡ Performance Testing</h3>
+        <div class="perf-controls">
+            <button type="button" class="btn btn-outline-primary" @onclick="() => AddBatchImages(50)">Add 50 Images</button>
+            <button type="button" class="btn btn-outline-primary" @onclick="() => AddBatchImages(100)">Add 100 Images</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="DeleteHalf">Delete Half</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="ClearAll">Clear All</button>
+        </div>
+        <div class="perf-stats">
+            <span>Gallery has @_galleryItems.Count items | Last operation: @(_lastOperationTime?.TotalMilliseconds.ToString("F2") ?? "N/A") ms</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    // State
+    private List<PhotoSwipeItem> _galleryItems = new();
+    private List<PhotoSwipeItem> _selectedItems = new();
+    private List<PhotoSwipeItem> _itemsToDelete = new();
+    private List<DeletionHistoryEntry> _deletionHistory = new();
+    private bool _showConfirmationModal = false;
+
+    // Settings
+    private bool _requireConfirmation = true;
+    private bool _enableBulkDelete = false;
+    private bool _showDeleteAnimation = true;
+    private PhotoSwipeOverlayControl.OverlayPosition _deleteButtonPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight;
+
+    // Statistics
+    private int _deletedThisSession = 0;
+    private int _totalDeletions = 0;
+    private int _bulkDeletions = 0;
+    private int _undoOperations = 0;
+    private double? _lastDeleteTime;
+    private double? _averageDeleteTime;
+    private TimeSpan? _lastOperationTime;
+    private List<double> _deleteTimings = new();
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.85,
+        ShowAnimationDuration = 350
+    };
+
+    protected override void OnInitialized()
+    {
+        InitializeTestGallery();
+        Logger.LogInformation("Deletion Test Page initialized");
+    }
+
+    private void InitializeTestGallery()
+    {
+        _galleryItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1015/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1015/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "River and mountains",
+                Caption = "Beautiful river flowing through mountains",
+                Title = "River Valley"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1019/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1019/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Ocean waves",
+                Caption = "Powerful ocean waves at sunset",
+                Title = "Ocean Sunset"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1022/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1022/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Northern lights",
+                Caption = "Spectacular northern lights display",
+                Title = "Aurora Borealis"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1024/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1024/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Mountain peak",
+                Caption = "Snow-capped mountain peak",
+                Title = "Mountain Summit"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1026/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1026/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Forest trail",
+                Caption = "Peaceful forest trail in autumn",
+                Title = "Autumn Trail"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1029/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1029/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "City skyline",
+                Caption = "Modern city skyline at night",
+                Title = "City Lights"
+            }
+        };
+    }
+
+    private void ToggleBulkDelete(bool enable)
+    {
+        _enableBulkDelete = enable;
+        if (!enable)
+        {
+            _selectedItems.Clear();
+        }
+        StateHasChanged();
+    }
+
+    private async Task DeleteItem(PhotoSwipeItem item)
+    {
+        _itemsToDelete = new List<PhotoSwipeItem> { item };
+
+        if (_requireConfirmation)
+        {
+            _showConfirmationModal = true;
+        }
+        else
+        {
+            await PerformDeletion();
+        }
+    }
+
+    private async Task BulkDelete()
+    {
+        if (!_selectedItems.Any()) return;
+
+        _itemsToDelete = new List<PhotoSwipeItem>(_selectedItems);
+
+        if (_requireConfirmation)
+        {
+            _showConfirmationModal = true;
+        }
+        else
+        {
+            await PerformDeletion();
+        }
+    }
+
+    private async Task ConfirmDeletion()
+    {
+        _showConfirmationModal = false;
+        await PerformDeletion();
+    }
+
+    private void CancelDeletion()
+    {
+        _showConfirmationModal = false;
+        _itemsToDelete.Clear();
+    }
+
+    private async Task PerformDeletion()
+    {
+        var startTime = DateTime.UtcNow;
+
+        // Store items for undo
+        var deletedItems = new List<PhotoSwipeItem>(_itemsToDelete);
+
+        // Perform deletion
+        foreach (var item in _itemsToDelete)
+        {
+            _galleryItems.Remove(item);
+            _selectedItems.Remove(item);
+        }
+
+        // Update statistics
+        _deletedThisSession += _itemsToDelete.Count;
+        _totalDeletions += _itemsToDelete.Count;
+
+        if (_itemsToDelete.Count > 1)
+        {
+            _bulkDeletions++;
+        }
+
+        // Calculate timing
+        var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
+        _lastDeleteTime = elapsed;
+        _deleteTimings.Add(elapsed);
+        _averageDeleteTime = _deleteTimings.Average();
+
+        // Add to history
+        _deletionHistory.Add(new DeletionHistoryEntry
+        {
+            Timestamp = DateTime.Now,
+            Action = _itemsToDelete.Count == 1 ? "Single Delete" : $"Bulk Delete",
+            ItemCount = _itemsToDelete.Count,
+            DeletedItems = deletedItems
+        });
+
+        // Clear selection
+        _itemsToDelete.Clear();
+
+        StateHasChanged();
+
+        Logger.LogInformation("Deleted {Count} items in {Time}ms", deletedItems.Count, elapsed);
+
+        if (_showDeleteAnimation)
+        {
+            await Task.Delay(300); // Simulate animation
+        }
+    }
+
+    private void UndoLastDeletion()
+    {
+        if (!_deletionHistory.Any()) return;
+
+        var lastEntry = _deletionHistory.Last();
+
+        // Restore items
+        _galleryItems.AddRange(lastEntry.DeletedItems);
+
+        // Update statistics
+        _deletedThisSession -= lastEntry.ItemCount;
+        _undoOperations++;
+
+        // Remove from history
+        _deletionHistory.Remove(lastEntry);
+
+        StateHasChanged();
+        Logger.LogInformation("Undid deletion of {Count} items", lastEntry.ItemCount);
+    }
+
+    private void RestoreGallery()
+    {
+        InitializeTestGallery();
+        _selectedItems.Clear();
+        _deletedThisSession = 0;
+        StateHasChanged();
+        Logger.LogInformation("Gallery restored to initial state");
+    }
+
+    private void AddMoreImages()
+    {
+        var random = Random.Shared;
+        for (int i = 0; i < 3; i++)
+        {
+            var imageId = random.Next(1030, 1100);
+            _galleryItems.Add(new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{imageId}/1200/800",
+                ThumbnailUrl = $"https://picsum.photos/id/{imageId}/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = $"Additional image {imageId}",
+                Caption = $"Dynamically added test image",
+                Title = $"Image {imageId}"
+            });
+        }
+        StateHasChanged();
+        Logger.LogInformation("Added 3 more images");
+    }
+
+    private void SimulateDeleteError()
+    {
+        Logger.LogError("Simulated deletion error occurred!");
+        // In real scenario, this would show an error modal or notification
+    }
+
+    private void OnSelectionChanged(IEnumerable<PhotoSwipeItem> items)
+    {
+        _selectedItems = items.ToList();
+        StateHasChanged();
+    }
+
+    private void OnItemDeleted(PhotoSwipeItem item)
+    {
+        Logger.LogInformation("Item deleted via component: {Title}", item?.Title);
+    }
+
+    private void OnGalleryChanged(IEnumerable<PhotoSwipeItem> items)
+    {
+        _galleryItems = items.ToList();
+        StateHasChanged();
+    }
+
+    // Performance testing methods
+    private void AddBatchImages(int count)
+    {
+        var startTime = DateTime.UtcNow;
+        var random = Random.Shared;
+
+        for (int i = 0; i < count; i++)
+        {
+            var imageId = random.Next(1001, 1200);
+            _galleryItems.Add(new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{imageId}/1200/800",
+                ThumbnailUrl = $"https://picsum.photos/id/{imageId}/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = $"Batch image {i + 1}",
+                Caption = $"Performance test image {i + 1}",
+                Title = $"Batch {i + 1}"
+            });
+        }
+
+        _lastOperationTime = DateTime.UtcNow - startTime;
+        StateHasChanged();
+        Logger.LogInformation("Added {Count} images in {Time}ms", count, _lastOperationTime.Value.TotalMilliseconds);
+    }
+
+    private async Task DeleteHalf()
+    {
+        var startTime = DateTime.UtcNow;
+        var halfCount = _galleryItems.Count / 2;
+
+        _itemsToDelete = _galleryItems.Take(halfCount).ToList();
+        _requireConfirmation = false; // Bypass confirmation for performance test
+        await PerformDeletion();
+        _requireConfirmation = true;
+
+        _lastOperationTime = DateTime.UtcNow - startTime;
+        Logger.LogInformation("Deleted {Count} items in {Time}ms", halfCount, _lastOperationTime.Value.TotalMilliseconds);
+    }
+
+    private void ClearAll()
+    {
+        var startTime = DateTime.UtcNow;
+        var count = _galleryItems.Count;
+
+        _galleryItems.Clear();
+        _selectedItems.Clear();
+        _deletedThisSession += count;
+
+        _lastOperationTime = DateTime.UtcNow - startTime;
+        StateHasChanged();
+        Logger.LogInformation("Cleared all {Count} items in {Time}ms", count, _lastOperationTime.Value.TotalMilliseconds);
+    }
+
+    // Helper classes
+    private class DeletionHistoryEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Action { get; set; } = "";
+        public int ItemCount { get; set; }
+        public List<PhotoSwipeItem> DeletedItems { get; set; } = new();
+    }
+}
