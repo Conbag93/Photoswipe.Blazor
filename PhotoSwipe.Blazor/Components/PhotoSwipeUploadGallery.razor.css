@@ -354,11 +354,21 @@
     background: #c82333;
 }
 
+/* Gallery Grid - Required for upload gallery to inherit PhotoSwipeGallery styling */
+::deep .photoswipe-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
 /* Gallery Item Wrapper */
 .gallery-item-wrapper {
     position: relative;
     display: block;
     cursor: pointer;
+    height: 100%;
+    object-fit: cover;
 }
 
 /* Overlay Control Integration Styles */

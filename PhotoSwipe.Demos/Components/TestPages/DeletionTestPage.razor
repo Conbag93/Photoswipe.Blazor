@@ -42,6 +42,46 @@
                 Bottom Right
             </label>
         </div>
+
+        <div class="control-group">
+            <label><strong>Delete Icon Style:</strong></label>
+            <label class="radio-option">
+                <input type="radio" name="delete-icon" checked="@(_deleteIconType == DeleteIconType.TrashEmoji)" @onchange="@(() => _deleteIconType = DeleteIconType.TrashEmoji)" />
+                Trash Emoji (🗑️)
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-icon" checked="@(_deleteIconType == DeleteIconType.CrossText)" @onchange="@(() => _deleteIconType = DeleteIconType.CrossText)" />
+                Cross Symbol (×)
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-icon" checked="@(_deleteIconType == DeleteIconType.SvgTrash)" @onchange="@(() => _deleteIconType = DeleteIconType.SvgTrash)" />
+                SVG Trash Can
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-icon" checked="@(_deleteIconType == DeleteIconType.TextDel)" @onchange="@(() => _deleteIconType = DeleteIconType.TextDel)" />
+                Text "DEL"
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-icon" checked="@(_deleteIconType == DeleteIconType.RedX)" @onchange="@(() => _deleteIconType = DeleteIconType.RedX)" />
+                Red X (❌)
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label><strong>Delete Button Size:</strong></label>
+            <label class="radio-option">
+                <input type="radio" name="delete-size" checked="@(_deleteButtonSize == DeleteButtonSize.Small)" @onchange="@(() => _deleteButtonSize = DeleteButtonSize.Small)" />
+                Small (28px)
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-size" checked="@(_deleteButtonSize == DeleteButtonSize.Default)" @onchange="@(() => _deleteButtonSize = DeleteButtonSize.Default)" />
+                Default (36px)
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="delete-size" checked="@(_deleteButtonSize == DeleteButtonSize.Large)" @onchange="@(() => _deleteButtonSize = DeleteButtonSize.Large)" />
+                Large (44px)
+            </label>
+        </div>
     </div>
 
     <!-- Test Status Panel -->
@@ -108,7 +148,8 @@
                     Title="Delete this image"
                     AriaLabel="Delete image"
                     CssClass="btn-delete-item"
-                    Icon="🗑️"
+                    Icon="@GetDeleteIcon()"
+                    ButtonCssClass="@GetDeleteButtonCssClass()"
                     OnClick="@(() => DeleteItem(context))"
                     PreventGallery="true" />
             </CustomOverlayControls>
@@ -199,6 +240,8 @@
     private bool _enableBulkDelete = false;
     private bool _showDeleteAnimation = true;
     private PhotoSwipeOverlayControl.OverlayPosition _deleteButtonPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight;
+    private DeleteIconType _deleteIconType = DeleteIconType.TrashEmoji;
+    private DeleteButtonSize _deleteButtonSize = DeleteButtonSize.Default;
 
     // Statistics
     private int _deletedThisSession = 0;
@@ -519,6 +562,52 @@
         _lastOperationTime = DateTime.UtcNow - startTime;
         StateHasChanged();
         Logger.LogInformation("Cleared all {Count} items in {Time}ms", count, _lastOperationTime.Value.TotalMilliseconds);
+    }
+
+    // Helper methods for delete icon customization
+    private string GetDeleteIcon()
+    {
+        return _deleteIconType switch
+        {
+            DeleteIconType.TrashEmoji => "🗑️",
+            DeleteIconType.CrossText => "×",
+            DeleteIconType.SvgTrash => "<svg width='16' height='16' viewBox='0 0 24 24' fill='currentColor'><path d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'/></svg>",
+            DeleteIconType.TextDel => "DEL",
+            DeleteIconType.RedX => "❌",
+            _ => "🗑️"
+        };
+    }
+
+    private string GetDeleteButtonCssClass()
+    {
+        var sizeClass = _deleteButtonSize switch
+        {
+            DeleteButtonSize.Small => "size-small",
+            DeleteButtonSize.Default => "size-delete",
+            DeleteButtonSize.Large => "size-large",
+            _ => "size-delete"
+        };
+
+        var shapeClass = _deleteIconType == DeleteIconType.TextDel ? "shape-square" : "";
+
+        return $"{sizeClass} {shapeClass}".Trim();
+    }
+
+    // Helper enums
+    private enum DeleteIconType
+    {
+        TrashEmoji,
+        CrossText,
+        SvgTrash,
+        TextDel,
+        RedX
+    }
+
+    private enum DeleteButtonSize
+    {
+        Small,
+        Default,
+        Large
     }
 
     // Helper classes
