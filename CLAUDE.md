@@ -221,17 +221,26 @@ The PhotoSwipe.Sample project demonstrates various features across multiple demo
 ## Testing with Playwright
 
 ### Testing Structure
-The project uses Playwright for end-to-end testing with the following organized structure:
+The project uses Playwright for comprehensive end-to-end testing with a clear organizational structure that separates base PhotoSwipe wrapper functionality from extended features:
 
 ```
 tests/
 ├── playwright.config.js          # Main Playwright configuration
 ├── package.json                  # Test dependencies
 ├── e2e/                          # End-to-end test files
-│   ├── smoke/                    # Smoke tests (basic functionality)
-│   ├── gallery/                  # Gallery-specific tests
-│   ├── lightbox/                 # Lightbox functionality tests
-│   └── responsive/               # Responsive design tests
+│   ├── setup/                    # Infrastructure and setup tests
+│   │   ├── app-loading.spec.js   # App initialization and JavaScript availability
+│   │   └── navigation.spec.js    # Navigation between demo pages
+│   ├── base/                     # Core PhotoSwipe wrapper tests
+│   │   ├── gallery-display.spec.js # Gallery rendering and layout
+│   │   ├── interop.spec.js       # JavaScript interop and lifecycle
+│   │   └── lightbox.spec.js      # Basic lightbox functionality
+│   └── extensions/               # Extended feature tests
+│       ├── upload.spec.js        # File upload functionality
+│       ├── selection.spec.js     # Single/multi selection modes
+│       ├── deletion.spec.js      # Item deletion and overlay controls
+│       ├── reordering.spec.js    # Image reordering functionality
+│       └── integration.spec.js   # Cross-feature integration and error detection
 ├── page-objects/                 # Page Object Models
 │   └── PhotoSwipePage.js         # PhotoSwipe page interactions
 ├── fixtures/                     # Test data and fixtures
@@ -245,6 +254,22 @@ tests/
     ├── artifacts/                # Screenshots, videos, traces
     └── screenshots/              # Manual screenshots
 ```
+
+### Testing Methodology
+
+#### Test Organization Philosophy
+- **Setup Tests**: Infrastructure tests that verify the application loads correctly and navigation works
+- **Base Tests**: Core functionality tests that verify the PhotoSwipe wrapper works correctly in Blazor
+- **Extension Tests**: Comprehensive tests for each extended feature (uploads, deletion, selection, reordering)
+- **Integration Tests**: Cross-feature interaction tests and error detection
+
+#### Feature Isolation Strategy
+We are currently implementing a feature isolation strategy (see `docs/testing/feature-isolation-strategy.md`) that involves:
+
+1. **Dedicated Test Pages**: Creating isolated test pages for each feature (e.g., `/test/selection`, `/test/upload`)
+2. **Comprehensive Test Suites**: Each feature has its own comprehensive test file covering all aspects
+3. **Clear Separation**: Base wrapper tests are separated from extended feature tests
+4. **Performance Focus**: Isolated environments enable faster test execution and debugging
 
 ### Test Commands
 
@@ -290,10 +315,10 @@ npx playwright test --trace=on                 # Record traces for all tests
 - Utilities: `*.js` (e.g., `test-helpers.js`)
 
 #### Test Organization
-- **Smoke Tests**: Basic app loading and core functionality
-- **Feature Tests**: Specific PhotoSwipe features (gallery, lightbox, navigation)
-- **Responsive Tests**: Mobile/tablet/desktop behavior
-- **Cross-Browser Tests**: Browser compatibility testing
+- **Setup Tests** (`setup/`): Basic app loading, JavaScript availability, and navigation
+- **Base Tests** (`base/`): Core PhotoSwipe wrapper functionality - gallery display, lightbox behavior, JavaScript interop
+- **Extension Tests** (`extensions/`): Extended feature testing - uploads, selection, deletion, reordering
+- **Integration Tests** (`extensions/integration.spec.js`): Cross-feature interactions and error detection
 
 #### Page Object Pattern
 Always use Page Object Models for reusable page interactions:
@@ -309,8 +334,45 @@ test('should open lightbox', async ({ page }) => {
 });
 ```
 
+#### Using Centralized Configuration
+All tests should leverage the centralized configuration for consistency:
+
+```javascript
+const testData = require('../../fixtures/test-data');
+
+test('should navigate to demo page', async ({ page }) => {
+  // Use centralized URLs
+  await page.goto(testData.urls.basicPhotoswipeDemo);
+
+  // Use centralized selectors
+  const galleryImages = page.locator(testData.selectors.galleryImages);
+  await expect(galleryImages.first()).toBeVisible();
+
+  // Use centralized timeouts
+  await page.waitForTimeout(testData.timeouts.short);
+
+  // Use centralized expected values
+  await expect(page).toHaveTitle(testData.expectedTitles.basicPhotoswipeDemo);
+});
+```
+
+#### Centralized Test Configuration
+The testing infrastructure uses centralized configuration for consistency and maintainability:
+
+**Test Data** (`fixtures/test-data.js`):
+- **URLs**: Centralized page URLs for all demo pages
+- **Selectors**: Common DOM selectors for PhotoSwipe elements
+- **Timeouts**: Standardized timeout values (short, medium, long)
+- **Sample Data**: Test image dimensions and metadata
+
+**Playwright Config** (`playwright.config.js`):
+- **TEST_CONFIG**: Centralized port and baseURL configuration
+- **Unified test settings**: Shared timeouts, retries, and output paths
+- **Project definitions**: Browser and hosting model configurations
+
 #### Test Data Management
-- Store test data in `fixtures/test-data.js`
+- All test data is centralized in `fixtures/test-data.js`
+- Tests import and use the shared `testData` object
 - Use descriptive constants instead of magic strings/numbers
 - Keep test data separate from test logic
 
