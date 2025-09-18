@@ -421,11 +421,20 @@
     transition: var(--pswp-overlay-transition, all 0.2s ease);
 }
 
+/* Selection checkbox styling improvements */
 .selection-checkbox, .selection-radio {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     cursor: pointer;
     pointer-events: auto;
+    transform: scale(1.2);
+    border-radius: 4px !important;
+    outline: none;
+}
+
+/* Remove selection overlay background for better image visibility */
+.selection-overlay {
+    background: transparent !important;
 }
 
 .delete-overlay {
