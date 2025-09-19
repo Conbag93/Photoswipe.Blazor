@@ -1,0 +1,610 @@
+@page "/test/layout"
+@inject ILogger<LayoutTestPage> Logger
+
+<PageTitle>Layout Test Page</PageTitle>
+
+<div class="layout-test-container">
+    <div class="test-header">
+        <h1>🏗️ Layout Feature Test Page</h1>
+        <p>Isolated testing environment for PhotoSwipe grid layout functionality. Focus on CSS Grid layouts, item spanning, responsive design, and creative layout compositions.</p>
+    </div>
+
+    <div class="layout-test-gallery @(_simulateMobile ? "mobile-simulation" : "")">
+        <div class="gallery-container">
+            <PhotoSwipeGallery
+                Id="layout-test-gallery"
+                Items="@GetDisplayItems()"
+                CssClass="@GetGalleryLayoutClass()"
+                Options="@_galleryOptions" />
+        </div>
+
+        @if (_simulateMobile)
+        {
+            <div class="mobile-indicator">
+                📱 Mobile Simulation Active (375px width)
+            </div>
+        }
+    </div>
+
+    <!-- Layout Configuration -->
+    <div class="layout-configuration-section">
+        <!-- Layout Type Selection -->
+        <div class="layout-type-selection">
+            <h2>🎨 Layout Type Selection</h2>
+            <div class="layout-options">
+                <label class="layout-option @(_currentLayoutType == LayoutType.BasicGrid ? "selected" : "")">
+                    <input type="radio" name="layout-type" checked="@(_currentLayoutType == LayoutType.BasicGrid)" @onchange="@(() => SetLayoutType(LayoutType.BasicGrid))" />
+                    <span class="layout-title">📐 Basic Grid</span>
+                    <span class="layout-description">Standard responsive grid with auto-fill columns</span>
+                </label>
+                <label class="layout-option @(_currentLayoutType == LayoutType.MixedLayout ? "selected" : "")">
+                    <input type="radio" name="layout-type" checked="@(_currentLayoutType == LayoutType.MixedLayout)" @onchange="@(() => SetLayoutType(LayoutType.MixedLayout))" />
+                    <span class="layout-title">🎭 Mixed Layout</span>
+                    <span class="layout-description">PhotoSwipe.com style: large featured + small grid</span>
+                </label>
+                <label class="layout-option @(_currentLayoutType == LayoutType.TwoColumn ? "selected" : "")">
+                    <input type="radio" name="layout-type" checked="@(_currentLayoutType == LayoutType.TwoColumn)" @onchange="@(() => SetLayoutType(LayoutType.TwoColumn))" />
+                    <span class="layout-title">📊 Two Column</span>
+                    <span class="layout-description">Fixed two-column layout</span>
+                </label>
+                <label class="layout-option @(_currentLayoutType == LayoutType.ThreeColumn ? "selected" : "")">
+                    <input type="radio" name="layout-type" checked="@(_currentLayoutType == LayoutType.ThreeColumn)" @onchange="@(() => SetLayoutType(LayoutType.ThreeColumn))" />
+                    <span class="layout-title">📈 Three Column</span>
+                    <span class="layout-description">Fixed three-column layout</span>
+                </label>
+                <label class="layout-option @(_currentLayoutType == LayoutType.FourColumn ? "selected" : "")">
+                    <input type="radio" name="layout-type" checked="@(_currentLayoutType == LayoutType.FourColumn)" @onchange="@(() => SetLayoutType(LayoutType.FourColumn))" />
+                    <span class="layout-title">📅 Four Column</span>
+                    <span class="layout-description">Fixed four-column layout</span>
+                </label>
+                <label class="layout-option @(_currentLayoutType == LayoutType.CustomSpanning ? "selected" : "")">
+                    <input type="radio" name="layout-type" checked="@(_currentLayoutType == LayoutType.CustomSpanning)" @onchange="@(() => SetLayoutType(LayoutType.CustomSpanning))" />
+                    <span class="layout-title">🎯 Custom Spanning</span>
+                    <span class="layout-description">Individual item control with custom spanning</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Item Controls (only for Custom Spanning) -->
+    @if (_currentLayoutType == LayoutType.CustomSpanning)
+    {
+        <div class="item-spanning-controls">
+            <h3>🔧 Individual Item Spanning Controls</h3>
+            <div class="items-grid">
+                @for (int i = 0; i < _currentGalleryItems.Count; i++)
+                {
+                    var index = i; // Capture for lambda
+                    var item = _currentGalleryItems[index];
+                    <div class="item-control-card">
+                        <div class="item-preview">
+                            <img src="@item.ThumbnailUrl" alt="@item.Alt" />
+                            <span class="item-label">Image @(index + 1)</span>
+                        </div>
+                        <div class="spanning-controls">
+                            <div class="control-group">
+                                <label><strong>Column Span:</strong></label>
+                                <div class="span-options">
+                                    @for (int span = 1; span <= 4; span++)
+                                    {
+                                        var spanValue = span; // Capture for lambda
+                                        <label class="span-option">
+                                            <input type="radio" name="@($"col-span-{index}")" checked="@(item.GridColumnSpan == spanValue)" @onchange="@(() => SetItemColumnSpan(index, spanValue))" />
+                                            @spanValue
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label><strong>Row Span:</strong></label>
+                                <div class="span-options">
+                                    @for (int span = 1; span <= 3; span++)
+                                    {
+                                        var spanValue = span; // Capture for lambda
+                                        <label class="span-option">
+                                            <input type="radio" name="@($"row-span-{index}")" checked="@(item.GridRowSpan == spanValue)" @onchange="@(() => SetItemRowSpan(index, spanValue))" />
+                                            @spanValue
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Test Status Panel -->
+    <div class="test-status-panel">
+        <div class="status-row">
+            <div class="status-item">
+                <span class="status-label">Layout Type:</span>
+                <span class="status-value">@GetLayoutDisplayName(_currentLayoutType)</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Total Images:</span>
+                <span class="status-value">@GetDisplayItems().Count</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Mobile View:</span>
+                <span class="status-value status-@(_simulateMobile ? "true" : "false")">@(_simulateMobile ? "Active" : "Desktop")</span>
+            </div>
+            @if (_currentLayoutType == LayoutType.CustomSpanning)
+            {
+                <div class="status-item">
+                    <span class="status-label">Spanning Items:</span>
+                    <span class="status-value">@GetSpanningItemsCount()</span>
+                </div>
+            }
+        </div>
+
+        @if (_currentLayoutType == LayoutType.CustomSpanning)
+        {
+            <div class="spanning-detail">
+                <span class="detail-label">Spanning Summary:</span>
+                @foreach (var item in _currentGalleryItems.Where(i => i.GridColumnSpan > 1 || i.GridRowSpan > 1))
+                {
+                    var index = _currentGalleryItems.IndexOf(item);
+                    <span class="spanning-tag">
+                        Image @(index + 1): @(item.GridColumnSpan)×@(item.GridRowSpan)
+                    </span>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Test Actions -->
+    <div class="test-actions">
+        <button type="button" class="btn btn-primary" @onclick="CycleLayouts">🔄 Cycle Layouts</button>
+        <button type="button" class="btn btn-secondary" @onclick="ApplyRandomSpanning" disabled="@(_currentLayoutType != LayoutType.CustomSpanning)">🎲 Random Spanning</button>
+        <button type="button" class="btn btn-secondary" @onclick="@(() => ToggleMobileSimulation())">@(_simulateMobile ? "💻 Desktop View" : "📱 Mobile View")</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="ResetToDefaults">🔄 Reset to Defaults</button>
+        <button type="button" class="btn btn-info" @onclick="ShowLayoutShowcase">🎨 Layout Showcase</button>
+    </div>
+
+    <!-- Live Layout Analysis -->
+    <div class="layout-analysis">
+        <h3>📐 Layout Analysis</h3>
+        <div class="analysis-summary">
+            <span><strong>Current Layout:</strong> @GetLayoutDisplayName(_currentLayoutType)</span>
+            <span><strong>CSS Class:</strong> @GetGalleryLayoutClass()</span>
+            <span><strong>Container Width:</strong> @(_simulateMobile ? "375px (Mobile)" : "100% (Desktop)")</span>
+            @if (_currentLayoutType == LayoutType.CustomSpanning)
+            {
+                <span><strong>Total Spanning Items:</strong> @GetSpanningItemsCount()</span>
+                <span><strong>Max Column Span:</strong> @(_currentGalleryItems.Count > 0 ? _currentGalleryItems.Max(i => i.GridColumnSpan) : 1)</span>
+                <span><strong>Max Row Span:</strong> @(_currentGalleryItems.Count > 0 ? _currentGalleryItems.Max(i => i.GridRowSpan) : 1)</span>
+            }
+        </div>
+    </div>
+
+    <!-- Performance Testing Section -->
+    <div class="performance-testing">
+        <h3>⚡ Performance Testing</h3>
+        <div class="perf-controls">
+            <button type="button" class="btn btn-outline-primary" @onclick="AddMoreImages">Add 5 More Images</button>
+            <button type="button" class="btn btn-outline-primary" @onclick="TestAllLayouts">Test All Layouts</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="ResetGallery">Reset Gallery</button>
+            <button type="button" class="btn btn-outline-info" @onclick="LogCurrentConfiguration">Log Configuration</button>
+        </div>
+        <div class="perf-stats">
+            @if (_lastLayoutChangeTime.HasValue)
+            {
+                <span>Last layout change took: @_lastLayoutChangeTime.Value.ToString("F2") ms</span>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    // Layout types
+    public enum LayoutType
+    {
+        BasicGrid,
+        MixedLayout,
+        TwoColumn,
+        ThreeColumn,
+        FourColumn,
+        CustomSpanning
+    }
+
+    // State
+    private LayoutType _currentLayoutType = LayoutType.MixedLayout;
+    private bool _simulateMobile = false;
+    private List<PhotoSwipeItem> _currentGalleryItems = new();
+    private double? _lastLayoutChangeTime;
+    private bool _isTestingAllLayouts = false;
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.85,
+        ShowAnimationDuration = 350
+    };
+
+    protected override void OnInitialized()
+    {
+        InitializeGallery();
+        Logger.LogInformation("Layout Test Page initialized with {Count} images", _currentGalleryItems.Count);
+    }
+
+    private void InitializeGallery()
+    {
+        // Create a diverse collection of images with different aspect ratios
+        _currentGalleryItems = new List<PhotoSwipeItem>
+        {
+            // Hero image - wide landscape for featured position
+            new()
+            {
+                Src = "https://picsum.photos/id/1018/1600/900",
+                ThumbnailUrl = "https://picsum.photos/id/1018/400/225",
+                Width = 1600, Height = 900,
+                Alt = "Mountain landscape hero",
+                Caption = "Stunning mountain landscape - perfect for hero position",
+                Title = "Alpine Vista",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            // Portrait image
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/800/1200",
+                ThumbnailUrl = "https://picsum.photos/id/1025/200/300",
+                Width = 800, Height = 1200,
+                Alt = "Portrait format image",
+                Caption = "Beautiful portrait orientation shot",
+                Title = "Vertical Nature",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            // Square image
+            new()
+            {
+                Src = "https://picsum.photos/id/1040/1000/1000",
+                ThumbnailUrl = "https://picsum.photos/id/1040/250/250",
+                Width = 1000, Height = 1000,
+                Alt = "Square format image",
+                Caption = "Perfect square composition",
+                Title = "Geometric Balance",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            // Another landscape
+            new()
+            {
+                Src = "https://picsum.photos/id/1043/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1043/300/200",
+                Width = 1200, Height = 800,
+                Alt = "Landscape format image",
+                Caption = "Classic landscape orientation",
+                Title = "Horizon Line",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            // Wide panoramic
+            new()
+            {
+                Src = "https://picsum.photos/id/1044/1800/600",
+                ThumbnailUrl = "https://picsum.photos/id/1044/450/150",
+                Width = 1800, Height = 600,
+                Alt = "Panoramic wide image",
+                Caption = "Ultra-wide panoramic view",
+                Title = "Panoramic Sweep",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            // Tall portrait
+            new()
+            {
+                Src = "https://picsum.photos/id/1047/600/1400",
+                ThumbnailUrl = "https://picsum.photos/id/1047/150/350",
+                Width = 600, Height = 1400,
+                Alt = "Tall portrait image",
+                Caption = "Extra tall portrait format",
+                Title = "Vertical Drama",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            // Standard landscape
+            new()
+            {
+                Src = "https://picsum.photos/id/1051/1400/950",
+                ThumbnailUrl = "https://picsum.photos/id/1051/350/237",
+                Width = 1400, Height = 950,
+                Alt = "Standard landscape",
+                Caption = "Classic landscape proportions",
+                Title = "Natural Frame",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            // Compact square
+            new()
+            {
+                Src = "https://picsum.photos/id/1055/900/900",
+                ThumbnailUrl = "https://picsum.photos/id/1055/225/225",
+                Width = 900, Height = 900,
+                Alt = "Compact square",
+                Caption = "Clean square format",
+                Title = "Perfect Square",
+                GridColumnSpan = 1, GridRowSpan = 1
+            }
+        };
+
+        // Apply initial layout configuration
+        ApplyLayoutConfiguration();
+    }
+
+    private void SetLayoutType(LayoutType layoutType)
+    {
+        var startTime = DateTime.UtcNow;
+
+        _currentLayoutType = layoutType;
+        ApplyLayoutConfiguration();
+
+        _lastLayoutChangeTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+        Logger.LogInformation("Layout type changed to: {LayoutType}", layoutType);
+    }
+
+    private void ApplyLayoutConfiguration()
+    {
+        // Reset all spanning to defaults first
+        foreach (var item in _currentGalleryItems)
+        {
+            item.GridColumnSpan = 1;
+            item.GridRowSpan = 1;
+            item.GridItemClass = "";
+        }
+
+        // Apply layout-specific configurations
+        switch (_currentLayoutType)
+        {
+            case LayoutType.MixedLayout:
+                // First image spans 2 rows (will be handled by CSS)
+                if (_currentGalleryItems.Count > 0)
+                {
+                    // Mixed layout is handled by CSS, not individual item properties
+                }
+                break;
+
+            case LayoutType.CustomSpanning:
+                // Set up some interesting default spanning for demonstration
+                if (_currentGalleryItems.Count >= 8)
+                {
+                    _currentGalleryItems[0].GridColumnSpan = 2; // Hero image wider
+                    _currentGalleryItems[0].GridRowSpan = 2;   // And taller
+                    _currentGalleryItems[3].GridColumnSpan = 2; // Wide panoramic
+                    _currentGalleryItems[6].GridRowSpan = 2;   // Tall image
+                }
+                break;
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetGalleryLayoutClass()
+    {
+        return _currentLayoutType switch
+        {
+            LayoutType.BasicGrid => "photoswipe-gallery",
+            LayoutType.MixedLayout => "photoswipe-gallery pswp-gallery--mixed-layout",
+            LayoutType.TwoColumn => "photoswipe-gallery pswp-gallery--two-column",
+            LayoutType.ThreeColumn => "photoswipe-gallery pswp-gallery--three-column",
+            LayoutType.FourColumn => "photoswipe-gallery pswp-gallery--four-column",
+            LayoutType.CustomSpanning => "photoswipe-gallery pswp-gallery--custom-spanning",
+            _ => "photoswipe-gallery"
+        };
+    }
+
+    private string GetLayoutDisplayName(LayoutType layoutType)
+    {
+        return layoutType switch
+        {
+            LayoutType.BasicGrid => "Basic Grid",
+            LayoutType.MixedLayout => "Mixed Layout",
+            LayoutType.TwoColumn => "Two Column",
+            LayoutType.ThreeColumn => "Three Column",
+            LayoutType.FourColumn => "Four Column",
+            LayoutType.CustomSpanning => "Custom Spanning",
+            _ => layoutType.ToString()
+        };
+    }
+
+    private List<PhotoSwipeItem> GetDisplayItems()
+    {
+        return _currentLayoutType switch
+        {
+            LayoutType.MixedLayout => _currentGalleryItems.Take(6).ToList(), // Mixed layout needs exactly 6 images for proper grid
+            _ => _currentGalleryItems
+        };
+    }
+
+    private int GetSpanningItemsCount()
+    {
+        return _currentGalleryItems.Count(i => i.GridColumnSpan > 1 || i.GridRowSpan > 1);
+    }
+
+    private void SetItemColumnSpan(int itemIndex, int span)
+    {
+        if (itemIndex >= 0 && itemIndex < _currentGalleryItems.Count)
+        {
+            _currentGalleryItems[itemIndex].GridColumnSpan = span;
+            Logger.LogInformation("Item {Index} column span set to {Span}", itemIndex, span);
+            StateHasChanged();
+        }
+    }
+
+    private void SetItemRowSpan(int itemIndex, int span)
+    {
+        if (itemIndex >= 0 && itemIndex < _currentGalleryItems.Count)
+        {
+            _currentGalleryItems[itemIndex].GridRowSpan = span;
+            Logger.LogInformation("Item {Index} row span set to {Span}", itemIndex, span);
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleMobileSimulation()
+    {
+        _simulateMobile = !_simulateMobile;
+        Logger.LogInformation("Mobile simulation: {Enabled}", _simulateMobile);
+    }
+
+    private async Task CycleLayouts()
+    {
+        var layouts = Enum.GetValues<LayoutType>().ToArray();
+        var currentIndex = Array.IndexOf(layouts, _currentLayoutType);
+        var nextIndex = (currentIndex + 1) % layouts.Length;
+
+        SetLayoutType(layouts[nextIndex]);
+
+        // Brief pause to show the change
+        await Task.Delay(500);
+    }
+
+    private void ApplyRandomSpanning()
+    {
+        if (_currentLayoutType != LayoutType.CustomSpanning) return;
+
+        var random = Random.Shared;
+
+        // Reset all to default first
+        foreach (var item in _currentGalleryItems)
+        {
+            item.GridColumnSpan = 1;
+            item.GridRowSpan = 1;
+        }
+
+        // Apply random spanning to some items
+        var itemsToSpan = Math.Min(3, _currentGalleryItems.Count / 2);
+        var selectedIndices = new HashSet<int>();
+
+        while (selectedIndices.Count < itemsToSpan)
+        {
+            selectedIndices.Add(random.Next(_currentGalleryItems.Count));
+        }
+
+        foreach (var index in selectedIndices)
+        {
+            var item = _currentGalleryItems[index];
+            item.GridColumnSpan = random.Next(1, 4); // 1-3 columns
+            item.GridRowSpan = random.Next(1, 3);    // 1-2 rows
+        }
+
+        Logger.LogInformation("Applied random spanning to {Count} items", itemsToSpan);
+        StateHasChanged();
+    }
+
+    private void ResetToDefaults()
+    {
+        _currentLayoutType = LayoutType.MixedLayout;
+        _simulateMobile = false;
+        InitializeGallery();
+        Logger.LogInformation("Reset to default configuration");
+    }
+
+    private async Task ShowLayoutShowcase()
+    {
+        if (_isTestingAllLayouts) return;
+
+        _isTestingAllLayouts = true;
+        var layouts = Enum.GetValues<LayoutType>().ToArray();
+
+        Logger.LogInformation("Starting layout showcase with {Count} layouts", layouts.Length);
+
+        foreach (var layout in layouts)
+        {
+            SetLayoutType(layout);
+            await Task.Delay(2000); // Show each layout for 2 seconds
+        }
+
+        _isTestingAllLayouts = false;
+        Logger.LogInformation("Layout showcase completed");
+    }
+
+    private void AddMoreImages()
+    {
+        var newImages = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1060/1100/800",
+                ThumbnailUrl = "https://picsum.photos/id/1060/275/200",
+                Width = 1100, Height = 800,
+                Alt = "Additional landscape",
+                Caption = "Newly added landscape image",
+                Title = "Fresh Addition",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1062/700/1050",
+                ThumbnailUrl = "https://picsum.photos/id/1062/175/262",
+                Width = 700, Height = 1050,
+                Alt = "Additional portrait",
+                Caption = "Newly added portrait image",
+                Title = "Vertical Addition",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1064/950/950",
+                ThumbnailUrl = "https://picsum.photos/id/1064/237/237",
+                Width = 950, Height = 950,
+                Alt = "Additional square",
+                Caption = "Newly added square image",
+                Title = "Square Addition",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1065/1500/750",
+                ThumbnailUrl = "https://picsum.photos/id/1065/375/187",
+                Width = 1500, Height = 750,
+                Alt = "Additional wide",
+                Caption = "Newly added wide image",
+                Title = "Wide Addition",
+                GridColumnSpan = 1, GridRowSpan = 1
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1067/1200/1600",
+                ThumbnailUrl = "https://picsum.photos/id/1067/225/300",
+                Width = 1200, Height = 1600,
+                Alt = "Additional tall",
+                Caption = "Newly added tall image",
+                Title = "Tall Addition",
+                GridColumnSpan = 1, GridRowSpan = 1
+            }
+        };
+
+        _currentGalleryItems.AddRange(newImages);
+        ApplyLayoutConfiguration();
+        Logger.LogInformation("Added {Count} more images. Total: {Total}", newImages.Count, _currentGalleryItems.Count);
+    }
+
+    private async Task TestAllLayouts()
+    {
+        await ShowLayoutShowcase();
+    }
+
+    private void ResetGallery()
+    {
+        InitializeGallery();
+        Logger.LogInformation("Gallery reset to initial state");
+    }
+
+    private void LogCurrentConfiguration()
+    {
+        var spanningItems = GetSpanningItemsCount();
+        Logger.LogInformation("Current Configuration: Layout={Layout}, Mobile={Mobile}, Images={Count}, SpanningItems={Spanning}",
+            _currentLayoutType, _simulateMobile, _currentGalleryItems.Count, spanningItems);
+
+        if (_currentLayoutType == LayoutType.CustomSpanning && spanningItems > 0)
+        {
+            foreach (var item in _currentGalleryItems.Where(i => i.GridColumnSpan > 1 || i.GridRowSpan > 1))
+            {
+                var index = _currentGalleryItems.IndexOf(item);
+                Logger.LogInformation("Spanning Item {Index}: {ColSpan}×{RowSpan} - {Title}",
+                    index, item.GridColumnSpan, item.GridRowSpan, item.Title);
+            }
+        }
+    }
+}
+
+@using PhotoSwipe.Blazor.Components
+@using PhotoSwipe.Blazor.Models
