@@ -9,34 +9,40 @@
 <div id="@ElementId" class="photoswipe-gallery @CssClass">
     @if (ItemTemplate != null && Items != null)
     {
+        int itemIndex = 0;
         @foreach (var item in Items)
         {
-            <a href="@item.Src" 
-               data-pswp-width="@item.Width" 
+            <a href="@item.Src"
+               data-pswp-width="@item.Width"
                data-pswp-height="@item.Height"
                data-caption="@item.Caption"
                data-pswp-srcset="@item.SrcSet"
                data-enhance-nav="false"
-               class="photoswipe-item">
+               class="photoswipe-item @GetGridItemClass(item)"
+               style="@GetGridItemStyle(item, itemIndex)">
                 @ItemTemplate(item)
             </a>
+            itemIndex++;
         }
     }
     else if (Items != null)
     {
+        int itemIndex = 0;
         @foreach (var item in Items)
         {
-            <a href="@item.Src" 
-               data-pswp-width="@item.Width" 
+            <a href="@item.Src"
+               data-pswp-width="@item.Width"
                data-pswp-height="@item.Height"
                data-caption="@item.Caption"
                data-pswp-srcset="@item.SrcSet"
                data-enhance-nav="false"
-               class="photoswipe-item">
-                <img src="@(item.ThumbnailUrl ?? item.Src)" 
-                     alt="@item.Alt" 
+               class="photoswipe-item @GetGridItemClass(item)"
+               style="@GetGridItemStyle(item, itemIndex)">
+                <img src="@(item.ThumbnailUrl ?? item.Src)"
+                     alt="@item.Alt"
                      class="@item.ThumbnailClass" />
             </a>
+            itemIndex++;
         }
     }
     else
@@ -155,19 +161,73 @@
     {
         if (Items == null && _previousItems == null)
             return false;
-        
+
         if (Items == null || _previousItems == null)
             return true;
-        
+
         // For dynamic collections (like Lists), compare count and sequence
         var currentItems = Items.ToList();
         var previousItems = _previousItems.ToList();
-        
+
         if (currentItems.Count != previousItems.Count)
             return true;
-        
+
         // Compare item sources (basic change detection)
         return !currentItems.Select(i => i.Src).SequenceEqual(previousItems.Select(i => i.Src));
+    }
+
+    private string GetGridItemClass(PhotoSwipeItem item)
+    {
+        var classes = new List<string>();
+
+        // Add custom grid item class if specified
+        if (!string.IsNullOrEmpty(item.GridItemClass))
+        {
+            classes.Add(item.GridItemClass);
+        }
+
+        // Add grid span classes for common patterns
+        if (item.GridColumnSpan > 1)
+        {
+            classes.Add($"grid-col-span-{item.GridColumnSpan}");
+        }
+
+        if (item.GridRowSpan > 1)
+        {
+            classes.Add($"grid-row-span-{item.GridRowSpan}");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetGridItemStyle(PhotoSwipeItem item, int itemIndex)
+    {
+        var styles = new List<string>();
+
+        // Apply CSS Grid properties directly if spanning is specified
+        if (item.GridColumnSpan > 1)
+        {
+            styles.Add($"grid-column: span {item.GridColumnSpan}");
+        }
+
+        if (item.GridRowSpan > 1)
+        {
+            styles.Add($"grid-row: span {item.GridRowSpan}");
+        }
+
+        // Set height to auto for spanning items to allow proper grid sizing
+        if (item.GridRowSpan > 1 || item.GridColumnSpan > 1)
+        {
+            styles.Add("--photoswipe-item-height: auto");
+        }
+
+        // Special handling for mixed layout galleries - first item gets spanned by CSS
+        if (!string.IsNullOrEmpty(CssClass) && CssClass.Contains("pswp-gallery--mixed-layout") && itemIndex == 0)
+        {
+            styles.Add("--photoswipe-item-height: auto");
+        }
+
+        return string.Join("; ", styles);
     }
 
     public async ValueTask DisposeAsync()

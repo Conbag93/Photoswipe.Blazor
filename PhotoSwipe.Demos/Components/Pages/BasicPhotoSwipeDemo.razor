@@ -111,7 +111,25 @@
         </div>
     </section>
 
-    <!-- Demo 8: Gallery with Captions -->
+    <!-- Demo 8: Mixed Layout Gallery -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>🏗️ Mixed Layout Gallery (PhotoSwipe.com Style)</h2>
+            <p>Recreates the iconic PhotoSwipe.com homepage layout - one large prominent image with smaller images in a unified CSS Grid. Uses <code>CssClass="pswp-gallery--mixed-layout"</code> for automatic layout or <code>GridRowSpan=2</code> for manual control.</p>
+        </div>
+        <PhotoSwipeGallery Items="@mixedLayoutImages" Options="@mixedLayoutOptions" CssClass="pswp-gallery--mixed-layout" />
+    </section>
+
+    <!-- Demo 9: Custom Grid Spanning -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>🎛️ Custom Grid Spanning Control</h2>
+            <p>Demonstrates individual item control using <code>GridRowSpan</code> and <code>GridColumnSpan</code> properties. Each item can span multiple grid cells for advanced layouts.</p>
+        </div>
+        <PhotoSwipeGallery Items="@customGridImages" Options="@customGridOptions" CssClass="pswp-gallery--three-column" />
+    </section>
+
+    <!-- Demo 10: Gallery with Captions -->
     <section class="demo-section">
         <div class="demo-info">
             <h2>💬 Gallery with Custom Captions</h2>
@@ -133,7 +151,7 @@
             </div>
             <div class="status-item">
                 <span class="status-label">Demo Patterns:</span>
-                <span class="status-value">8 Different Usage Examples</span>
+                <span class="status-value">10 Different Usage Examples</span>
             </div>
             <div class="status-item">
                 <span class="status-label">Framework:</span>
@@ -144,7 +162,7 @@
 </div>
 
 @code {
-    private int totalDemoCount = 8;
+    private int totalDemoCount = 10;
     private List<PhotoSwipeItem> dynamicImages = new();
 
     #region Demo 1: Basic Images
@@ -353,6 +371,102 @@
     private readonly PhotoSwipeOptions captionOptions = new()
     {
         BackgroundOpacity = 0.85
+    };
+    #endregion
+
+    #region Demo 8: Mixed Layout Gallery - Matching Vanilla JS
+    private readonly List<PhotoSwipeItem> mixedLayoutImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1018/1600/1067",
+            ThumbnailUrl = "https://picsum.photos/id/1018/400/267",
+            Width = 1600, Height = 1067,
+            Alt = "Mountain Landscape", Caption = "Beautiful mountain landscape - Main featured image"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1015/1200/1600",
+            ThumbnailUrl = "https://picsum.photos/id/1015/300/400",
+            Width = 1200, Height = 1600,
+            Alt = "Lake Sunset", Caption = "Tranquil lake reflection at sunset"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1016/1200/1600",
+            ThumbnailUrl = "https://picsum.photos/id/1016/300/400",
+            Width = 1200, Height = 1600,
+            Alt = "Architecture", Caption = "Modern architectural elements and shadows"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1019/1600/1067",
+            ThumbnailUrl = "https://picsum.photos/id/1019/400/267",
+            Width = 1600, Height = 1067,
+            Alt = "Golden Mountains", Caption = "Golden hour mountain vista"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1020/1200/1600",
+            ThumbnailUrl = "https://picsum.photos/id/1020/300/400",
+            Width = 1200, Height = 1600,
+            Alt = "Coastal Cliffs", Caption = "Dramatic cliff formations and coastal views"
+        }
+    };
+
+    private readonly PhotoSwipeOptions mixedLayoutOptions = new()
+    {
+        ShowHideAnimationType = "fade",
+        BackgroundOpacity = 0.9
+    };
+    #endregion
+
+    #region Demo 9: Custom Grid Spanning
+    private readonly List<PhotoSwipeItem> customGridImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Beach Custom", Caption = "Grid item spanning 2 columns",
+            GridColumnSpan = 2
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-200.jpg",
+            Width = 1669, Height = 2500,
+            Alt = "Stairs Custom", Caption = "Regular grid item"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-200.jpg",
+            Width = 2500, Height = 1666,
+            Alt = "Chair Custom", Caption = "Grid item spanning 2 rows",
+            GridRowSpan = 2
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Lake Custom", Caption = "Regular grid item"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/5/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/5/img-200.jpg",
+            Width = 2500, Height = 1667,
+            Alt = "Mountain Custom", Caption = "Regular grid item"
+        }
+    };
+
+    private readonly PhotoSwipeOptions customGridOptions = new()
+    {
+        Loop = true,
+        EscKey = true
     };
     #endregion
 

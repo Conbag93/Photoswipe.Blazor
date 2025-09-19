@@ -319,7 +319,7 @@
     background: #fff;
     border: 1px solid #e5e7eb;
     text-decoration: none;
-    height: 200px;
+    height: var(--photoswipe-item-height, 200px);
 }
 
 ::deep .photoswipe-gallery .photoswipe-item:hover {

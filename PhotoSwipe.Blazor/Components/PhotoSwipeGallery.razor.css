@@ -5,6 +5,42 @@
     padding: 10px;
 }
 
+/* Mixed Layout Gallery - PhotoSwipe.com homepage style */
+.photoswipe-gallery.pswp-gallery--mixed-layout {
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    max-width: 800px;
+    margin: 0 auto;
+    height: 400px;
+}
+
+.photoswipe-gallery.pswp-gallery--mixed-layout .photoswipe-item:first-child {
+    grid-row: span 2;
+}
+
+/* Mixed Layout items use individual height control via inline styles */
+
+/* Masonry Layout */
+.photoswipe-gallery.pswp-gallery--masonry {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-rows: masonry;
+}
+
+/* Two Column Layout */
+.photoswipe-gallery.pswp-gallery--two-column {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* Three Column Layout */
+.photoswipe-gallery.pswp-gallery--three-column {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Four Column Layout */
+.photoswipe-gallery.pswp-gallery--four-column {
+    grid-template-columns: repeat(4, 1fr);
+}
+
 .photoswipe-item {
     display: block;
     position: relative;
@@ -12,8 +48,10 @@
     border-radius: 8px;
     background-color: #f0f0f0;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    height: 200px;
     text-decoration: none;
+    /* Default height - can be overridden by grid layouts or custom CSS */
+    height: var(--photoswipe-item-height, 200px);
+    width: var(--photoswipe-item-width, auto);
 }
 
 .photoswipe-item:hover {
@@ -29,6 +67,39 @@
     transition: opacity 0.2s ease;
 }
 
+/* Mixed Layout Specific Image Styling */
+.photoswipe-gallery.pswp-gallery--mixed-layout .photoswipe-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+/* Grid Span Classes for Individual Item Control */
+.grid-col-span-2 {
+    grid-column: span 2;
+}
+
+.grid-col-span-3 {
+    grid-column: span 3;
+}
+
+.grid-col-span-4 {
+    grid-column: span 4;
+}
+
+.grid-row-span-2 {
+    grid-row: span 2;
+}
+
+.grid-row-span-3 {
+    grid-row: span 3;
+}
+
+.grid-row-span-4 {
+    grid-row: span 4;
+}
+
 .photoswipe-item:hover img {
     opacity: 0.9;
 }
@@ -39,10 +110,31 @@
         gap: 8px;
         padding: 8px;
     }
-    
+
     .photoswipe-item {
         border-radius: 6px;
-        height: 150px;
+        --photoswipe-item-height: 150px;
+    }
+
+    /* Mixed Layout Responsive Design */
+    .photoswipe-gallery.pswp-gallery--mixed-layout {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr 1fr;
+        height: 450px;
+    }
+
+    .photoswipe-gallery.pswp-gallery--mixed-layout .photoswipe-item:first-child {
+        grid-column: span 2;
+        grid-row: span 1;
+    }
+
+    /* Responsive adjustments for other layouts */
+    .photoswipe-gallery.pswp-gallery--four-column {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .photoswipe-gallery.pswp-gallery--three-column {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -54,6 +146,6 @@
     }
     
     .photoswipe-item {
-        height: 120px;
+        --photoswipe-item-height: 120px;
     }
 }

@@ -25,8 +25,11 @@ export async function initializePhotoSwipeDemos() {
         
         // Demo 4: Custom Thumbnails Gallery with advanced options
         initCustomGallery(PhotoSwipeLightbox);
-        
-        // Demo 5: Caption Gallery with custom UI elements
+
+        // Demo 5: Mixed Layout Gallery - PhotoSwipe.com homepage style
+        initMixedLayoutGallery(PhotoSwipeLightbox);
+
+        // Demo 6: Caption Gallery with custom UI elements
         initCaptionGallery(PhotoSwipeLightbox);
         
         // Demo 6: Array-based Gallery (button triggered)
@@ -129,7 +132,20 @@ function initCustomGallery(PhotoSwipeLightbox) {
     console.log('✅ Custom thumbnails gallery initialized');
 }
 
-// Demo 5: Caption Gallery with custom UI elements
+// Demo 5: Mixed Layout Gallery - PhotoSwipe.com homepage style
+function initMixedLayoutGallery(PhotoSwipeLightbox) {
+    const mixedLayoutLightbox = new PhotoSwipeLightbox({
+        gallery: '#gallery-mixed-layout',
+        children: 'a',
+        pswpModule: () => import('/_content/PhotoSwipe.Blazor/js/photoswipe.esm.min.js')
+    });
+
+    mixedLayoutLightbox.init();
+    lightboxInstances.push(mixedLayoutLightbox);
+    console.log('✅ Mixed layout gallery initialized');
+}
+
+// Demo 6: Caption Gallery with custom UI elements
 function initCaptionGallery(PhotoSwipeLightbox) {
     const captionLightbox = new PhotoSwipeLightbox({
         gallery: '#gallery-caption',

@@ -125,7 +125,47 @@
         </div>
     </section>
 
-    <!-- Demo 6: Custom Thumbnails -->
+    <!-- Demo 6: Mixed Layout Gallery (PhotoSwipe.com Style) -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>🏗️ Mixed Layout Gallery</h2>
+            <p>Recreates the iconic PhotoSwipe.com homepage layout - one large prominent image with smaller images in a unified CSS Grid. Demonstrates advanced grid positioning with <code>grid-row: span 2</code>.</p>
+        </div>
+        <div id="gallery-mixed-layout" class="pswp-gallery pswp-gallery--mixed-layout">
+            <a href="https://picsum.photos/id/1018/1600/1067"
+               data-pswp-width="1600"
+               data-pswp-height="1067"
+               data-caption="Beautiful mountain landscape - Main featured image">
+                <img src="https://picsum.photos/id/1018/400/267" alt="Mountain Landscape" />
+            </a>
+            <a href="https://picsum.photos/id/1015/1200/1600"
+               data-pswp-width="1200"
+               data-pswp-height="1600"
+               data-caption="Tranquil lake reflection at sunset">
+                <img src="https://picsum.photos/id/1015/300/400" alt="Lake Sunset" />
+            </a>
+            <a href="https://picsum.photos/id/1016/1200/1600"
+               data-pswp-width="1200"
+               data-pswp-height="1600"
+               data-caption="Modern architectural elements and shadows">
+                <img src="https://picsum.photos/id/1016/300/400" alt="Architecture" />
+            </a>
+            <a href="https://picsum.photos/id/1019/1600/1067"
+               data-pswp-width="1600"
+               data-pswp-height="1067"
+               data-caption="Golden hour mountain vista">
+                <img src="https://picsum.photos/id/1019/400/267" alt="Golden Mountains" />
+            </a>
+            <a href="https://picsum.photos/id/1020/1200/1600"
+               data-pswp-width="1200"
+               data-pswp-height="1600"
+               data-caption="Dramatic cliff formations and coastal views">
+                <img src="https://picsum.photos/id/1020/300/400" alt="Coastal Cliffs" />
+            </a>
+        </div>
+    </section>
+
+    <!-- Demo 7: Custom Thumbnails -->
     <section class="demo-section">
         <div class="demo-info">
             <h2>✨ Custom Thumbnails & Animations</h2>
@@ -250,8 +290,8 @@
     {
         try
         {
-            // Load the collocated JavaScript module following Blazor best practices
-            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Components/Pages/VanillaJSDemo.razor.js");
+            // Load the collocated JavaScript module from PhotoSwipe.Demos
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/PhotoSwipe.Demos/Components/Pages/VanillaJSDemo.razor.js");
             
             // Initialize PhotoSwipe demos using proper module import
             await _module.InvokeVoidAsync("initializePhotoSwipeDemos");
