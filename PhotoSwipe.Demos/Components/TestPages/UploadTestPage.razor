@@ -22,6 +22,7 @@
             MaxFileSize="@(_maxFileSizeMB * 1024 * 1024)"
             MaxFiles="@_maxFiles"
             UploadMode="@_uploadMode"
+            UploadPosition="@_uploadPosition"
             OnItemsChanged="@OnGalleryChanged"
             OnItemsUploaded="@OnItemsUploaded"
             Options="@_galleryOptions" />
@@ -38,6 +39,22 @@
             <label class="radio-option">
                 <input type="radio" name="upload-mode" value="Replace" checked="@(_uploadMode == PhotoSwipeUploadMode.Replace)" @onchange="@(() => _uploadMode = PhotoSwipeUploadMode.Replace)" />
                 Replace Mode
+            </label>
+        </div>
+
+        <div class="control-group">
+            <label><strong>Upload Position:</strong></label>
+            <label class="radio-option">
+                <input type="radio" name="upload-position" value="Above" checked="@(_uploadPosition == PhotoSwipeUploadPosition.Above)" @onchange="@(() => SetUploadPosition(PhotoSwipeUploadPosition.Above))" />
+                Above Gallery
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="upload-position" value="Below" checked="@(_uploadPosition == PhotoSwipeUploadPosition.Below)" @onchange="@(() => SetUploadPosition(PhotoSwipeUploadPosition.Below))" />
+                Below Gallery
+            </label>
+            <label class="radio-option" disabled>
+                <input type="radio" name="upload-position" value="Contained" disabled />
+                Contained (Future)
             </label>
         </div>
 
@@ -72,6 +89,10 @@
             <div class="status-item">
                 <span class="status-label">Upload Mode:</span>
                 <span class="status-value">@_uploadMode</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Upload Position:</span>
+                <span class="status-value">@_uploadPosition</span>
             </div>
             <div class="status-item">
                 <span class="status-label">Total Images:</span>
@@ -179,6 +200,7 @@
 @code {
     // Upload configuration
     private PhotoSwipeUploadMode _uploadMode = PhotoSwipeUploadMode.Add;
+    private PhotoSwipeUploadPosition _uploadPosition = PhotoSwipeUploadPosition.Above;
     private bool _allowMultipleFiles = true;
     private bool _allowDragDrop = true;
     private int _maxFileSizeMB = 10;
@@ -408,6 +430,13 @@
 
         StateHasChanged();
         Logger.LogWarning("Simulated upload error: {Error}", errorMessage);
+    }
+
+    private void SetUploadPosition(PhotoSwipeUploadPosition position)
+    {
+        _uploadPosition = position;
+        StateHasChanged();
+        Logger.LogInformation("Upload position changed to: {Position}", position);
     }
 
     private void ClearErrors()
