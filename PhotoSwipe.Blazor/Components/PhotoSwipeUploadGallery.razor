@@ -144,19 +144,18 @@
         
         <ItemTemplate Context="item">
             <div class="gallery-item-wrapper">
-                <!-- Selection Overlay - Move data attributes to input elements for better Blazor event binding -->
+                <!-- Selection Overlay with configurable position -->
                 @if (EnableSelection)
                 {
-                    <div class="selection-overlay">
+                    <PhotoSwipeOverlayControl Position="@SelectionPosition"
+                                            ControlType="selection"
+                                            PreventGallery="true">
                         @if (AllowMultiSelect)
                         {
                             <input type="checkbox"
                                    class="selection-checkbox"
                                    checked="@_selectedItems.Contains(item)"
-                                   @onchange="@(e => ToggleSelection(item, (bool)e.Value!))"
-                                   data-pswp-overlay-control="true"
-                                   data-pswp-control-type="selection"
-                                   data-pswp-prevent-gallery="true" />
+                                   @onchange="@(e => ToggleSelection(item, (bool)e.Value!))" />
                         }
                         else
                         {
@@ -164,12 +163,9 @@
                                    class="selection-radio"
                                    name="single-select-@_galleryElementId"
                                    checked="@(SelectedItem == item)"
-                                   @onchange="@(e => SelectSingle(item, !string.IsNullOrEmpty(e.Value?.ToString())))"
-                                   data-pswp-overlay-control="true"
-                                   data-pswp-control-type="selection"
-                                   data-pswp-prevent-gallery="true" />
+                                   @onchange="@(e => SelectSingle(item, !string.IsNullOrEmpty(e.Value?.ToString())))" />
                         }
-                    </div>
+                    </PhotoSwipeOverlayControl>
                 }
 
                 <!-- Delete Overlay using new PhotoSwipeOverlayControl -->
@@ -295,6 +291,7 @@
     [Parameter] public PhotoSwipeItem? SelectedItem { get; set; }
     [Parameter] public IEnumerable<PhotoSwipeItem>? SelectedItems { get; set; }
     [Parameter] public bool EnableSelection { get; set; } = false;
+    [Parameter] public PhotoSwipeOverlayControl.OverlayPosition SelectionPosition { get; set; } = PhotoSwipeOverlayControl.OverlayPosition.TopLeft;
 
     // Reordering parameters
     [Parameter] public bool AllowReorder { get; set; } = false;
