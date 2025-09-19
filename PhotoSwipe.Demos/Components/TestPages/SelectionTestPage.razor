@@ -9,6 +9,23 @@
         <p>Isolated testing environment for PhotoSwipe selection functionality. Focus on single vs multi-selection behavior, state management, and interaction patterns.</p>
     </div>
 
+    <!-- Test Gallery -->
+    <div class="selection-test-gallery">
+        <PhotoSwipeUploadGallery
+            Id="selection-test-gallery"
+            Items="@_galleryItems"
+            AllowAdd="false"
+            AllowDelete="false"
+            AllowReorder="false"
+            EnableSelection="@(_selectionMode != SelectionMode.None)"
+            AllowMultiSelect="@(_selectionMode == SelectionMode.Multi)"
+            SelectedItem="@(_selectionMode == SelectionMode.Single ? _selectedItems.FirstOrDefault() : null)"
+            SelectedItems="@(_selectionMode == SelectionMode.Multi ? _selectedItems : null)"
+            SelectedItemChanged="@OnSingleSelectionChanged"
+            SelectedItemsChanged="@OnMultiSelectionChanged"
+            Options="@_galleryOptions" />
+    </div>
+
     <!-- Selection Mode Controls -->
     <div class="selection-mode-controls">
         <div class="control-group">
@@ -67,23 +84,6 @@
         {
             <button type="button" class="btn btn-secondary" @onclick="SelectAll">Select All</button>
         }
-    </div>
-
-    <!-- Test Gallery -->
-    <div class="selection-test-gallery">
-        <PhotoSwipeUploadGallery
-            Id="selection-test-gallery"
-            Items="@_galleryItems"
-            AllowAdd="false"
-            AllowDelete="false"
-            AllowReorder="false"
-            EnableSelection="@(_selectionMode != SelectionMode.None)"
-            AllowMultiSelect="@(_selectionMode == SelectionMode.Multi)"
-            SelectedItem="@(_selectionMode == SelectionMode.Single ? _selectedItems.FirstOrDefault() : null)"
-            SelectedItems="@(_selectionMode == SelectionMode.Multi ? _selectedItems : null)"
-            SelectedItemChanged="@OnSingleSelectionChanged"
-            SelectedItemsChanged="@OnMultiSelectionChanged"
-            Options="@_galleryOptions" />
     </div>
 
     <!-- Performance Testing Section -->

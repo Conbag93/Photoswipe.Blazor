@@ -9,6 +9,21 @@
         <p>Isolated testing environment for PhotoSwipe reordering functionality. Focus on up/down arrow behavior, boundary conditions, index label updates, and PhotoSwipe synchronization.</p>
     </div>
 
+    <!-- Test Gallery -->
+    <div class="reordering-test-gallery">
+        <h3>🖼️ Reordering Test Gallery</h3>
+
+        <PhotoSwipeUploadGallery
+            Id="reordering-test-gallery"
+            Items="@_galleryItems"
+            CssClass="test-gallery"
+            AllowReorder="true"
+            ShowIndexLabels="@_showIndexLabels"
+            Options="@_galleryOptions"
+            OnItemsReordered="@OnItemsReordered">
+        </PhotoSwipeUploadGallery>
+    </div>
+
     <!-- Reordering Configuration Controls -->
     <div class="reordering-config-controls">
         <div class="control-group">
@@ -75,21 +90,6 @@
         <button type="button" class="btn btn-warning" @onclick="ReverseOrder">
             🔁 Reverse Order
         </button>
-    </div>
-
-    <!-- Test Gallery -->
-    <div class="reordering-test-gallery">
-        <h3>🖼️ Reordering Test Gallery</h3>
-
-        <PhotoSwipeUploadGallery
-            Id="reordering-test-gallery"
-            Items="@_galleryItems"
-            CssClass="test-gallery"
-            AllowReorder="true"
-            ShowIndexLabels="@_showIndexLabels"
-            Options="@_galleryOptions"
-            OnItemsReordered="@OnItemsReordered">
-        </PhotoSwipeUploadGallery>
     </div>
 
     <!-- Current Order Summary -->

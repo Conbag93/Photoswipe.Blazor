@@ -9,6 +9,35 @@
         <p>Isolated testing environment for PhotoSwipe deletion functionality. Focus on individual and bulk deletion, confirmation modals, and state management.</p>
     </div>
 
+    <!-- Test Gallery with Deletion -->
+    <div class="deletion-test-gallery">
+        <PhotoSwipeUploadGallery
+            Id="deletion-test-gallery"
+            Items="@_galleryItems"
+            AllowAdd="false"
+            AllowDelete="false"
+            AllowReorder="false"
+            EnableSelection="@_enableBulkDelete"
+            AllowMultiSelect="@_enableBulkDelete"
+            SelectedItems="@_selectedItems"
+            SelectedItemsChanged="@OnSelectionChanged"
+            OnItemDeleted="@OnItemDeleted"
+            OnItemsChanged="@OnGalleryChanged"
+            Options="@_galleryOptions">
+            <CustomOverlayControls>
+                <PhotoSwipeOverlayControl
+                    Position="@_deleteButtonPosition"
+                    Title="Delete this image"
+                    AriaLabel="Delete image"
+                    CssClass="btn-delete-item"
+                    Icon="@GetDeleteIcon()"
+                    ButtonCssClass="@GetDeleteButtonCssClass()"
+                    OnClick="@(() => DeleteItem(context))"
+                    PreventGallery="true" />
+            </CustomOverlayControls>
+        </PhotoSwipeUploadGallery>
+    </div>
+
     <!-- Deletion Configuration Controls -->
     <div class="deletion-mode-controls">
         <div class="control-group">
@@ -125,35 +154,6 @@
             <button type="button" class="btn btn-warning" @onclick="UndoLastDeletion">Undo Last Deletion</button>
         }
         <button type="button" class="btn btn-danger" @onclick="SimulateDeleteError">Simulate Delete Error</button>
-    </div>
-
-    <!-- Test Gallery with Deletion -->
-    <div class="deletion-test-gallery">
-        <PhotoSwipeUploadGallery
-            Id="deletion-test-gallery"
-            Items="@_galleryItems"
-            AllowAdd="false"
-            AllowDelete="false"
-            AllowReorder="false"
-            EnableSelection="@_enableBulkDelete"
-            AllowMultiSelect="@_enableBulkDelete"
-            SelectedItems="@_selectedItems"
-            SelectedItemsChanged="@OnSelectionChanged"
-            OnItemDeleted="@OnItemDeleted"
-            OnItemsChanged="@OnGalleryChanged"
-            Options="@_galleryOptions">
-            <CustomOverlayControls>
-                <PhotoSwipeOverlayControl
-                    Position="@_deleteButtonPosition"
-                    Title="Delete this image"
-                    AriaLabel="Delete image"
-                    CssClass="btn-delete-item"
-                    Icon="@GetDeleteIcon()"
-                    ButtonCssClass="@GetDeleteButtonCssClass()"
-                    OnClick="@(() => DeleteItem(context))"
-                    PreventGallery="true" />
-            </CustomOverlayControls>
-        </PhotoSwipeUploadGallery>
     </div>
 
     <!-- Deletion Confirmation Modal -->

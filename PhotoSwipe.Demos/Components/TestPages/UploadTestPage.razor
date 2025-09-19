@@ -9,6 +9,24 @@
         <p>Isolated testing environment for PhotoSwipe upload functionality. Focus on file upload, drag & drop, validation, and upload modes.</p>
     </div>
 
+    <!-- Test Gallery with Upload -->
+    <div class="upload-test-gallery">
+        <PhotoSwipeUploadGallery
+            Id="upload-test-gallery"
+            Items="@_galleryItems"
+            AllowAdd="true"
+            AllowDelete="false"
+            AllowReorder="false"
+            EnableSelection="false"
+            AllowMultipleFiles="@_allowMultipleFiles"
+            MaxFileSize="@(_maxFileSizeMB * 1024 * 1024)"
+            MaxFiles="@_maxFiles"
+            UploadMode="@_uploadMode"
+            OnItemsChanged="@OnGalleryChanged"
+            OnItemsUploaded="@OnItemsUploaded"
+            Options="@_galleryOptions" />
+    </div>
+
     <!-- Upload Configuration Controls -->
     <div class="upload-mode-controls">
         <div class="control-group">
@@ -82,24 +100,6 @@
         {
             <button type="button" class="btn btn-warning" @onclick="ClearErrors">Clear Errors</button>
         }
-    </div>
-
-    <!-- Test Gallery with Upload -->
-    <div class="upload-test-gallery">
-        <PhotoSwipeUploadGallery
-            Id="upload-test-gallery"
-            Items="@_galleryItems"
-            AllowAdd="true"
-            AllowDelete="false"
-            AllowReorder="false"
-            EnableSelection="false"
-            AllowMultipleFiles="@_allowMultipleFiles"
-            MaxFileSize="@(_maxFileSizeMB * 1024 * 1024)"
-            MaxFiles="@_maxFiles"
-            UploadMode="@_uploadMode"
-            OnItemsChanged="@OnGalleryChanged"
-            OnItemsUploaded="@OnItemsUploaded"
-            Options="@_galleryOptions" />
     </div>
 
     <!-- Upload Errors -->
