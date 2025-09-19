@@ -1,0 +1,1525 @@
+@page "/test/positioning"
+@inject ILogger<PositioningTestPage> Logger
+
+<PageTitle>Positioning Test Page</PageTitle>
+
+<div class="positioning-test-container">
+    <div class="test-header">
+        <h1>🎯 Positioning Feature Test Page</h1>
+        <p>Isolated testing environment for PhotoSwipe overlay control positioning functionality. Focus on smart positioning logic, constrained space detection, and intelligent direction selection.</p>
+    </div>
+
+
+    <!-- Control Configuration -->
+    <div class="overlay-selection-section">
+        <!-- Configuration Mode Selection -->
+        <div class="mode-selection-prominent">
+            <h2>🔧 Layout Configuration Mode</h2>
+            <div class="mode-options-prominent">
+                <label class="mode-option-prominent @(_useControlGroups ? "selected" : "")">
+                    <input type="radio" name="config-mode" value="groups" checked="@_useControlGroups" @onchange="OnConfigurationModeChanged" />
+                    <span class="mode-title">📦 Control Group</span>
+                    <span class="mode-description">Recommended: Use PhotoSwipeOverlayControlGroup for coordinated layout</span>
+                </label>
+                <label class="mode-option-prominent @(!_useControlGroups ? "selected" : "")">
+                    <input type="radio" name="config-mode" value="individual" checked="@(!_useControlGroups)" @onchange="OnConfigurationModeChanged" />
+                    <span class="mode-title">🎯 Individual Controls</span>
+                    <span class="mode-description">Legacy: Configure each control separately (no layout coordination)</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="selection-header">
+            @if (!_useControlGroups)
+            {
+                <div class="current-overlay-info">
+                    <label><strong>Configuring Overlay:</strong></label>
+                    <select @onchange="@((e) => SetCurrentConfigIndex(int.Parse(e.Value?.ToString() ?? "0")))" value="@_currentConfigIndex">
+                        @for (int i = 0; i < _controlCount; i++)
+                        {
+                            <option value="@i">Control @(i + 1) - @GetControlIcon(i) @GetControlTitle(i)</option>
+                        }
+                    </select>
+                </div>
+            }
+            else
+            {
+                <div class="group-overlay-info">
+                    <label><strong>Configuring Control Group:</strong></label>
+                    <span class="group-info">@_controlCount controls in group at @_groupConfig.Position</span>
+                </div>
+            }
+            <div class="control-count-controls">
+                <label><strong>Number of Controls:</strong></label>
+                <div class="control-options">
+                    <label class="radio-option">
+                        <input type="radio" name="control-count" checked="@(_controlCount == 1)" @onchange="@(() => SetControlCount(1))" />
+                        <span>1</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="control-count" checked="@(_controlCount == 2)" @onchange="@(() => SetControlCount(2))" />
+                        <span>2</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="control-count" checked="@(_controlCount == 3)" @onchange="@(() => SetControlCount(3))" />
+                        <span>3</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="control-count" checked="@(_controlCount == 4)" @onchange="@(() => SetControlCount(4))" />
+                        <span>4</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Position Configuration Controls -->
+    <div class="positioning-mode-controls">
+        <div class="controls-layout">
+            <!-- Position Grid (Left Side) -->
+            <div class="position-grid-section">
+                <label><strong>Position:</strong></label>
+                <div class="position-grid">
+                    <label class="position-grid-item" title="Top Left">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.TopLeft))" />
+                        <span class="position-icon">↖️</span>
+                        <span class="position-label">TL</span>
+                    </label>
+                    <label class="position-grid-item" title="Top Center">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.TopCenter)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.TopCenter))" />
+                        <span class="position-icon">⬆️</span>
+                        <span class="position-label">TC</span>
+                    </label>
+                    <label class="position-grid-item" title="Top Right">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.TopRight)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.TopRight))" />
+                        <span class="position-icon">↗️</span>
+                        <span class="position-label">TR</span>
+                    </label>
+                    <label class="position-grid-item" title="Center Left">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.CenterLeft)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.CenterLeft))" />
+                        <span class="position-icon">⬅️</span>
+                        <span class="position-label">CL</span>
+                    </label>
+                    <label class="position-grid-item" title="Center">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.Center)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.Center))" />
+                        <span class="position-icon">🎯</span>
+                        <span class="position-label">C</span>
+                    </label>
+                    <label class="position-grid-item" title="Center Right">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.CenterRight)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.CenterRight))" />
+                        <span class="position-icon">➡️</span>
+                        <span class="position-label">CR</span>
+                    </label>
+                    <label class="position-grid-item" title="Bottom Left">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.BottomLeft))" />
+                        <span class="position-icon">↙️</span>
+                        <span class="position-label">BL</span>
+                    </label>
+                    <label class="position-grid-item" title="Bottom Center">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.BottomCenter)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.BottomCenter))" />
+                        <span class="position-icon">⬇️</span>
+                        <span class="position-label">BC</span>
+                    </label>
+                    <label class="position-grid-item" title="Bottom Right">
+                        <input type="radio" name="overlay-position" checked="@(GetCurrentPosition() == PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" @onchange="@(() => SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.BottomRight))" />
+                        <span class="position-icon">↘️</span>
+                        <span class="position-label">BR</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Other Controls (Right Side - 3 Rows) -->
+            <div class="other-controls-section">
+                <!-- Row 1: Core Controls -->
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label><strong>ButtonSize:</strong></label>
+                        <div class="range-control">
+                            <input type="range" min="28" max="64" value="@GetCurrentButtonSize()" @oninput="@((e) => SetButtonSize(int.Parse(e.Value?.ToString() ?? "44")))" @onchange="@((e) => SetButtonSize(int.Parse(e.Value?.ToString() ?? "44")))" />
+                            <span class="range-value">@GetCurrentButtonSize() px</span>
+                        </div>
+                    </div>
+                    @if (_useControlGroups)
+                    {
+                        <div class="control-group">
+                            <label><strong>Spacing:</strong></label>
+                            <div class="range-control">
+                                <input type="range" min="0" max="16" value="@GetCurrentSpacing()" @oninput="@((e) => SetSpacing(int.Parse(e.Value?.ToString() ?? "4")))" @onchange="@((e) => SetSpacing(int.Parse(e.Value?.ToString() ?? "4")))" />
+                                <span class="range-value">@GetCurrentSpacing() px</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="control-group">
+                            <label><strong>ControlGap:</strong></label>
+                            <div class="range-control">
+                                <input type="range" min="0" max="16" value="@GetCurrentSpacing()" @oninput="@((e) => SetSpacing(int.Parse(e.Value?.ToString() ?? "4")))" @onchange="@((e) => SetSpacing(int.Parse(e.Value?.ToString() ?? "4")))" />
+                                <span class="range-value">@GetCurrentSpacing() px</span>
+                            </div>
+                        </div>
+                    }
+                    <div class="control-group">
+                        <label><strong>Offset:</strong></label>
+                        <div class="control-options">
+                            <select @onchange="@((e) => SetOffset(e.Value?.ToString() ?? ""))">
+                                <option value="" selected="@(string.IsNullOrEmpty(GetCurrentOffset()))">Default (12px)</option>
+                                <option value="8px" selected="@(GetCurrentOffset() == "8px")">8px</option>
+                                <option value="16px" selected="@(GetCurrentOffset() == "16px")">16px</option>
+                                <option value="20px" selected="@(GetCurrentOffset() == "20px")">20px</option>
+                                <option value="1rem" selected="@(GetCurrentOffset() == "1rem")">1rem</option>
+                                <option value="custom" selected="@(!string.IsNullOrEmpty(GetCurrentOffset()) && !new[]{"8px", "16px", "20px", "1rem"}.Contains(GetCurrentOffset()))">Custom</option>
+                            </select>
+                            @if (!string.IsNullOrEmpty(GetCurrentOffset()) && !new[]{"8px", "16px", "20px", "1rem"}.Contains(GetCurrentOffset()))
+                            {
+                                <input type="text" placeholder="e.g., 24px, 1.5rem" value="@GetCurrentOffset()" @onchange="@((e) => SetOffset(e.Value?.ToString() ?? ""))" style="width: 100px;" />
+                            }
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label><strong>@(_useControlGroups ? "Layout Direction:" : "Direction:")</strong></label>
+                        <div class="control-options">
+                            <label class="radio-option">
+                                <input type="radio" name="grow-direction" checked="@(GetCurrentDirectionSelection() == PhotoSwipeOverlayControl.GrowDirection.Auto)" @onchange="@(() => SetGrowDirection(PhotoSwipeOverlayControl.GrowDirection.Auto))" />
+                                Auto
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="grow-direction" checked="@(GetCurrentDirectionSelection() == PhotoSwipeOverlayControl.GrowDirection.Right)" @onchange="@(() => SetGrowDirection(PhotoSwipeOverlayControl.GrowDirection.Right))" />
+                                Right
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="grow-direction" checked="@(GetCurrentDirectionSelection() == PhotoSwipeOverlayControl.GrowDirection.Left)" @onchange="@(() => SetGrowDirection(PhotoSwipeOverlayControl.GrowDirection.Left))" />
+                                Left
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="grow-direction" checked="@(GetCurrentDirectionSelection() == PhotoSwipeOverlayControl.GrowDirection.Down)" @onchange="@(() => SetGrowDirection(PhotoSwipeOverlayControl.GrowDirection.Down))" />
+                                Down
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="grow-direction" checked="@(GetCurrentDirectionSelection() == PhotoSwipeOverlayControl.GrowDirection.Up)" @onchange="@(() => SetGrowDirection(PhotoSwipeOverlayControl.GrowDirection.Up))" />
+                                Up
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Advanced Controls -->
+                <div class="controls-row">
+                    <div class="control-group">
+                        <label><strong>ControlType:</strong></label>
+                        <input type="text" placeholder="custom" value="@GetCurrentConfig().ControlType" @onchange="@((e) => SetControlType(e.Value?.ToString() ?? "custom"))" style="width: 120px;" />
+                    </div>
+                    <div class="control-group">
+                        <label><strong>CssClass:</strong></label>
+                        <input type="text" placeholder="my-custom-class" value="@GetCurrentConfig().CssClass" @onchange="@((e) => SetCssClass(e.Value?.ToString() ?? ""))" style="width: 120px;" />
+                    </div>
+                    <div class="control-group">
+                        <label><strong>ButtonCssClass:</strong></label>
+                        <input type="text" placeholder="btn-primary" value="@GetCurrentConfig().ButtonCssClass" @onchange="@((e) => SetButtonCssClass(e.Value?.ToString() ?? ""))" style="width: 120px;" />
+                    </div>
+                    <label class="checkbox-option">
+                        <input type="checkbox" checked="@_simulateMobile" @onchange="@((e) => ToggleMobileSimulation((bool)e.Value!))" />
+                        📱 Mobile Simulation
+                    </label>
+                    <div class="control-group">
+                        <label><strong>CustomPosition:</strong></label>
+                        <input type="text" placeholder="top: 25%; right: 10px;" value="@GetCurrentConfig().CustomPosition" @onchange="@((e) => SetCustomPosition(e.Value?.ToString() ?? ""))" style="width: 150px;" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Gallery -->
+    <div class="positioning-test-gallery @(_simulateMobile ? "mobile-simulation" : "")">
+        <div class="gallery-container">
+            <PhotoSwipeUploadGallery
+                Id="positioning-test-gallery"
+                Items="@_galleryItems"
+                AllowAdd="false"
+                AllowDelete="false"
+                AllowReorder="false"
+                EnableSelection="false"
+                Options="@_galleryOptions">
+                <CustomOverlayControls>
+                    @if (_useControlGroups)
+                    {
+                        <!-- Control Group Mode -->
+                        <PhotoSwipeOverlayControlGroup
+                            Position="@_groupConfig.Position"
+                            LayoutDirection="@_groupConfig.LayoutDirection"
+                            Spacing="@_groupConfig.Spacing"
+                            ButtonSize="@_groupConfig.ButtonSize"
+                            Offset="@(string.IsNullOrEmpty(_groupConfig.CustomOffset) ? null : _groupConfig.CustomOffset)"
+                            CssClass="@($"positioning-test-control-group {_groupConfig.CssClass}".Trim())"
+                            CustomPosition="@(string.IsNullOrEmpty(_groupConfig.CustomPosition) ? null : _groupConfig.CustomPosition)">
+
+                            @for (int i = 0; i < _controlCount; i++)
+                            {
+                                var index = i; // Capture for lambda
+                                var config = _overlayConfigs[index];
+                                var isCurrentlyConfigured = (index == _currentConfigIndex); // Highlight the control currently being configured
+                                <PhotoSwipeOverlayControl
+                                    ControlType="@config.ControlType"
+                                    CssClass="@($"positioning-test-control {(isCurrentlyConfigured ? "currently-configured" : "")} {config.CssClass}".Trim())"
+                                    ButtonCssClass="@($"{GetControlButtonClass(index)} {config.ButtonCssClass}".Trim())"
+                                    Title="@(!string.IsNullOrEmpty(config.Title) ? config.Title : GetControlTitle(index))"
+                                    AriaLabel="@GetControlAriaLabel(index)"
+                                    Icon="@(!string.IsNullOrEmpty(config.Icon) ? config.Icon : GetControlIcon(index))"
+                                    OnClick="@(() => OnControlClick(index))" />
+                            }
+                        </PhotoSwipeOverlayControlGroup>
+                    }
+                    else
+                    {
+                        <!-- Individual Controls Mode -->
+                        @for (int i = 0; i < _controlCount; i++)
+                        {
+                            var index = i; // Capture for lambda
+                            var config = _overlayConfigs[index];
+                            var isCurrentlyConfigured = (index == _currentConfigIndex); // Highlight the control currently being configured
+                            <PhotoSwipeOverlayControl
+                                Position="@config.Position"
+                                ButtonSize="@config.ButtonSize"
+                                Offset="@(string.IsNullOrEmpty(config.CustomOffset) ? null : config.CustomOffset)"
+                                ControlType="@config.ControlType"
+                                CssClass="@($"positioning-test-control {(isCurrentlyConfigured ? "currently-configured" : "")} {config.CssClass}".Trim())"
+                                ButtonCssClass="@($"{GetControlButtonClass(index)} {config.ButtonCssClass}".Trim())"
+                                CustomPosition="@(string.IsNullOrEmpty(config.CustomPosition) ? null : config.CustomPosition)"
+                                Title="@(!string.IsNullOrEmpty(config.Title) ? config.Title : GetControlTitle(index))"
+                                AriaLabel="@GetControlAriaLabel(index)"
+                                Icon="@(!string.IsNullOrEmpty(config.Icon) ? config.Icon : GetControlIcon(index))"
+                                OnClick="@(() => OnControlClick(index))" />
+                        }
+                    }
+                </CustomOverlayControls>
+            </PhotoSwipeUploadGallery>
+        </div>
+
+        @if (_simulateMobile)
+        {
+            <div class="mobile-indicator">
+                📱 Mobile Simulation Active (375px width)
+            </div>
+        }
+    </div>
+
+    <!-- Live Code Snippet -->
+    <div class="code-snippet-panel">
+        <h3>📄 Live Code Snippet</h3>
+        <div class="code-snippet">
+            <pre><code>@GetLiveCodeSnippet()</code></pre>
+            <button type="button" class="btn btn-outline-secondary btn-sm copy-code-btn" @onclick="CopyCodeToClipboard">
+                📋 Copy Code
+            </button>
+        </div>
+    </div>
+
+    <!-- Test Actions -->
+    <div class="test-actions">
+        <button type="button" class="btn btn-primary" @onclick="TestAllPositions">Test All Positions</button>
+        <button type="button" class="btn btn-secondary" @onclick="TestConstrainedSpace">Test Constrained Space</button>
+        <button type="button" class="btn btn-secondary" @onclick="@(() => ToggleMobileSimulation())">@(_simulateMobile ? "Desktop View" : "Mobile View")</button>
+        <button type="button" class="btn btn-outline-secondary" @onclick="ResetToDefaults">Reset to Defaults</button>
+        <button type="button" class="btn btn-info" @onclick="GenerateRandomConfiguration">Random Config</button>
+    </div>
+
+    <!-- Real-time Status Panel -->
+    <div class="test-status-panel">
+        <div class="status-row">
+            <div class="status-item">
+                <span class="status-label">Mode:</span>
+                <span class="status-value status-@(_useControlGroups ? "group" : "individual")">@(_useControlGroups ? "Control Group" : "Individual Controls")</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Position:</span>
+                <span class="status-value">@GetCurrentPosition()</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Control Count:</span>
+                <span class="status-value">@_controlCount</span>
+            </div>
+            @if (!_useControlGroups)
+            {
+                <div class="status-item">
+                    <span class="status-label">Current Config Index:</span>
+                    <span class="status-value">@_currentConfigIndex</span>
+                </div>
+            }
+            <div class="status-item">
+                <span class="status-label">Constrained Space:</span>
+                <span class="status-value status-@(_isConstrainedSpace ? "true" : "false")">@(_isConstrainedSpace ? "Yes" : "No")</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">@(_useControlGroups ? "Layout Direction:" : "Effective Direction:")</span>
+                <span class="status-value">@_effectiveDirection</span>
+            </div>
+        </div>
+
+        @if (_positionResult != null)
+        {
+            <div class="coordinates-detail">
+                <div class="coords-section">
+                    <span class="detail-label">Calculated Coordinates:</span>
+                    <span class="coord-value">X: @_positionResult.X.ToString("F1")px</span>
+                    <span class="coord-value">Y: @_positionResult.Y.ToString("F1")px</span>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_positionResult.CssTransform))
+                {
+                    <div class="css-section">
+                        <span class="detail-label">CSS Transform:</span>
+                        <code class="css-value">@_positionResult.CssTransform</code>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_positionResult.CssPositioning))
+                {
+                    <div class="css-section">
+                        <span class="detail-label">CSS Positioning:</span>
+                        <code class="css-value">@_positionResult.CssPositioning</code>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (_lastCalculationTime.HasValue)
+        {
+            <div class="performance-info">
+                <span class="detail-label">Calculation Time:</span>
+                <span class="perf-value">@_lastCalculationTime.Value.ToString("F2") ms</span>
+            </div>
+        }
+    </div>
+
+    <!-- Positioning Analysis -->
+    @if (_positionResult != null)
+    {
+        <div class="positioning-analysis">
+            <h3>📐 Analysis</h3>
+            <div class="analysis-summary">
+                <span><strong>Mode:</strong> @(_useControlGroups ? "Control Group" : "Individual Controls")</span>
+                <span><strong>Position:</strong> @GetCurrentPosition()</span>
+                <span><strong>Constrained:</strong> @(_isConstrainedSpace ? "Yes" : "No")</span>
+                <span><strong>@(_useControlGroups ? "Layout Direction:" : "Effective Direction:")</strong> @_effectiveDirection</span>
+                <span><strong>Controls:</strong> @_controlCount</span>
+                @if (!_useControlGroups)
+                {
+                    <span><strong>Current Config Index:</strong> @_currentConfigIndex</span>
+                    <span><strong>Individual Spacing:</strong> @(_currentConfigIndex * (GetCurrentConfig().ButtonSize + GetCurrentConfig().ControlGap))px</span>
+                }
+                else
+                {
+                    <span><strong>Group Spacing:</strong> @GetCurrentSpacing()px</span>
+                    <span><strong>Button Size:</strong> @GetCurrentButtonSize()px</span>
+                }
+                @if (_lastCalculationTime.HasValue)
+                {
+                    <span><strong>Calc Time:</strong> @_lastCalculationTime.Value.ToString("F2")ms</span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Performance Testing Section -->
+    <div class="performance-testing">
+        <h3>⚡ Performance Testing</h3>
+        <div class="perf-controls">
+            <button type="button" class="btn btn-outline-primary" @onclick="RunCalculationBenchmark">Calculation Benchmark</button>
+            <button type="button" class="btn btn-outline-primary" @onclick="TestRapidChanges">Test Rapid Changes</button>
+            <button type="button" class="btn btn-outline-info" @onclick="LogCurrentConfiguration">Log Configuration</button>
+        </div>
+        <div class="perf-stats">
+            @if (_benchmarkResults.Any())
+            {
+                <div class="benchmark-results">
+                    <span>Benchmark Results: Avg @_benchmarkResults.Average().ToString("F2")ms | Min @_benchmarkResults.Min().ToString("F2")ms | Max @_benchmarkResults.Max().ToString("F2")ms | Count: @_benchmarkResults.Count</span>
+                </div>
+            }
+            @if (_rapidChangeResults.Any())
+            {
+                <div class="rapid-change-results">
+                    <span>Rapid Changes: Total @_rapidChangeResults.Sum().ToString("F2")ms | Avg @_rapidChangeResults.Average().ToString("F2")ms</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    // Helper classes for positioning calculations
+    public record PositionResult(
+        double X,
+        double Y,
+        string CssTransform,
+        string CssPositioning,
+        bool IsConstrained);
+
+    public record ContainerSize(double Width, double Height);
+
+    // Individual overlay configuration
+    public class OverlayConfig
+    {
+        public PhotoSwipeOverlayControl.OverlayPosition Position { get; set; } = PhotoSwipeOverlayControl.OverlayPosition.BottomRight;
+        public int ButtonSize { get; set; } = 44;
+        public string CustomOffset { get; set; } = "";
+        public string ControlType { get; set; } = "custom";
+        public string CssClass { get; set; } = "";
+        public string ButtonCssClass { get; set; } = "";
+        public string CustomPosition { get; set; } = "";
+        public bool PreventGallery { get; set; } = true;
+        public string Icon { get; set; } = "";
+        public string Title { get; set; } = "";
+
+        // Deprecated - only used for test page backward compatibility
+        public bool UseIntelligentDirection { get; set; } = true;
+        public PhotoSwipeOverlayControl.GrowDirection ExplicitDirection { get; set; } = PhotoSwipeOverlayControl.GrowDirection.Right;
+        public int ControlGap { get; set; } = 4;
+    }
+
+    // Control group configuration
+    public class GroupConfig
+    {
+        public PhotoSwipeOverlayControl.OverlayPosition Position { get; set; } = PhotoSwipeOverlayControl.OverlayPosition.BottomRight;
+        public PhotoSwipeOverlayControl.GrowDirection LayoutDirection { get; set; } = PhotoSwipeOverlayControl.GrowDirection.Auto;
+        public int Spacing { get; set; } = 4;
+        public int? ButtonSize { get; set; } = 44;
+        public string CustomOffset { get; set; } = "";
+        public string CssClass { get; set; } = "";
+        public string CustomPosition { get; set; } = "";
+    }
+
+    // State
+    private int _controlCount = 2; // How many controls to show
+    private int _currentConfigIndex = 0; // Which overlay is currently being configured
+    private List<OverlayConfig> _overlayConfigs = new();
+    private bool _simulateMobile = false;
+
+    // Configuration mode
+    private bool _useControlGroups = true; // Switch between individual controls and control groups
+    private GroupConfig _groupConfig = new();
+
+    // Calculated state
+    private bool _isConstrainedSpace = false;
+    private PhotoSwipeOverlayControl.GrowDirection _effectiveDirection = PhotoSwipeOverlayControl.GrowDirection.Left;
+    private PositionResult? _positionResult;
+    private ContainerSize _containerSize = new(1200, 800);
+    private double? _lastCalculationTime;
+
+    // Testing state
+    private List<double> _benchmarkResults = new();
+    private List<double> _rapidChangeResults = new();
+    private bool _isTestingAllPositions = false;
+
+    // Gallery items
+    private List<PhotoSwipeItem> _galleryItems = new();
+
+    // PhotoSwipe options
+    private readonly PhotoSwipeOptions _galleryOptions = new()
+    {
+        ShowHideAnimationType = "zoom",
+        BackgroundOpacity = 0.85,
+        ShowAnimationDuration = 350
+    };
+
+    protected override void OnInitialized()
+    {
+        InitializeTestGallery();
+        InitializeOverlayConfigs();
+        UpdateCalculations();
+        Logger.LogInformation("Positioning Test Page initialized");
+    }
+
+    private void InitializeOverlayConfigs()
+    {
+        _overlayConfigs = new List<OverlayConfig>();
+        for (int i = 0; i < 4; i++) // Support up to 4 controls
+        {
+            _overlayConfigs.Add(new OverlayConfig
+            {
+                Position = PhotoSwipeOverlayControl.OverlayPosition.BottomRight,
+                UseIntelligentDirection = true,
+                ExplicitDirection = PhotoSwipeOverlayControl.GrowDirection.Right,
+                ButtonSize = 44,
+                ControlGap = 4,
+                CustomOffset = "",
+                ControlType = "custom",
+                CssClass = "",
+                ButtonCssClass = "",
+                CustomPosition = "",
+                PreventGallery = true,
+                Icon = GetControlIcon(i),
+                Title = GetControlTitle(i)
+            });
+        }
+    }
+
+    private void InitializeTestGallery()
+    {
+        _galleryItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1011/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1011/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Mountain lake reflection",
+                Caption = "Crystal clear mountain lake with perfect reflection",
+                Title = "Alpine Lake"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1012/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1012/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Forest canopy view",
+                Caption = "Looking up through dense forest canopy",
+                Title = "Forest Canopy"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1013/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1013/300/175",
+                Width = 1200,
+                Height = 700,
+                Alt = "Desert landscape",
+                Caption = "Vast desert landscape at golden hour",
+                Title = "Desert Vista"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1014/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1014/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Ocean waves",
+                Caption = "Powerful ocean waves crashing on rocks",
+                Title = "Ocean Power"
+            }
+        };
+    }
+
+    private void UpdateCalculations()
+    {
+        var startTime = DateTime.UtcNow;
+
+        // Update container size based on mobile simulation
+        _containerSize = _simulateMobile ? new(375, 667) : new(1200, 800);
+
+        // Calculate position based on current mode
+        if (_useControlGroups)
+        {
+            // For control groups, calculate based on group configuration
+            _positionResult = CalculatePosition(
+                _containerSize,
+                _groupConfig.Position,
+                0, // Groups don't use spacing index
+                _groupConfig.LayoutDirection,
+                _groupConfig.ButtonSize ?? 44,
+                _groupConfig.Spacing,
+                string.IsNullOrEmpty(_groupConfig.CustomOffset) ? null : _groupConfig.CustomOffset
+            );
+        }
+        else
+        {
+            // For individual controls, use current individual configuration
+            var currentConfig = GetCurrentConfig();
+            _positionResult = CalculatePosition(
+                _containerSize,
+                currentConfig.Position,
+                _currentConfigIndex,
+                currentConfig.UseIntelligentDirection ? PhotoSwipeOverlayControl.GrowDirection.Right : currentConfig.ExplicitDirection,
+                currentConfig.ButtonSize,
+                currentConfig.ControlGap,
+                string.IsNullOrEmpty(currentConfig.CustomOffset) ? null : currentConfig.CustomOffset
+            );
+        }
+
+        _isConstrainedSpace = _positionResult.IsConstrained;
+
+        // Determine effective direction (replicate component logic)
+        _effectiveDirection = GetEffectiveGrowDirection();
+
+        _lastCalculationTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+
+        StateHasChanged();
+    }
+
+    private PhotoSwipeOverlayControl.GrowDirection GetEffectiveGrowDirection()
+    {
+        if (_useControlGroups)
+        {
+            // For control groups, replicate the group's intelligent direction logic
+            var direction = _groupConfig.LayoutDirection;
+
+            // If Auto, apply intelligent defaults based on position
+            if (direction == PhotoSwipeOverlayControl.GrowDirection.Auto)
+            {
+                return _groupConfig.Position switch
+                {
+                    PhotoSwipeOverlayControl.OverlayPosition.TopLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+                    PhotoSwipeOverlayControl.OverlayPosition.TopRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+                    PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+                    PhotoSwipeOverlayControl.OverlayPosition.BottomRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+                    PhotoSwipeOverlayControl.OverlayPosition.TopCenter => PhotoSwipeOverlayControl.GrowDirection.Down,
+                    PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => PhotoSwipeOverlayControl.GrowDirection.Up,
+                    PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+                    PhotoSwipeOverlayControl.OverlayPosition.CenterRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+                    PhotoSwipeOverlayControl.OverlayPosition.Center => PhotoSwipeOverlayControl.GrowDirection.Right,
+                    _ => PhotoSwipeOverlayControl.GrowDirection.Right
+                };
+            }
+
+            // Otherwise, use the explicit direction
+            return direction;
+        }
+        else
+        {
+            // For individual controls, use the existing intelligent direction logic
+            var currentConfig = GetCurrentConfig();
+
+            // Replicate the intelligent direction logic from the component
+            if (_isConstrainedSpace)
+            {
+                return currentConfig.Position switch
+                {
+                    PhotoSwipeOverlayControl.OverlayPosition.BottomRight => PhotoSwipeOverlayControl.GrowDirection.Up,
+                    PhotoSwipeOverlayControl.OverlayPosition.TopRight => PhotoSwipeOverlayControl.GrowDirection.Down,
+                    _ => PhotoSwipeOverlayControl.GrowDirection.Right
+                };
+            }
+
+            if (!currentConfig.UseIntelligentDirection)
+            {
+                return currentConfig.ExplicitDirection;
+            }
+
+            return currentConfig.Position switch
+            {
+                PhotoSwipeOverlayControl.OverlayPosition.TopLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+                PhotoSwipeOverlayControl.OverlayPosition.TopRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+                PhotoSwipeOverlayControl.OverlayPosition.TopCenter => PhotoSwipeOverlayControl.GrowDirection.Down,
+                PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+                PhotoSwipeOverlayControl.OverlayPosition.BottomRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+                PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => PhotoSwipeOverlayControl.GrowDirection.Up,
+                PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+                PhotoSwipeOverlayControl.OverlayPosition.CenterRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+                PhotoSwipeOverlayControl.OverlayPosition.Center => PhotoSwipeOverlayControl.GrowDirection.Right,
+                _ => PhotoSwipeOverlayControl.GrowDirection.Right
+            };
+        }
+    }
+
+    private OverlayConfig GetCurrentConfig()
+    {
+        if (_currentConfigIndex >= 0 && _currentConfigIndex < _overlayConfigs.Count)
+            return _overlayConfigs[_currentConfigIndex];
+
+        // Fallback - should not happen in normal usage
+        return new OverlayConfig();
+    }
+
+    private PhotoSwipeOverlayControl.OverlayPosition GetCurrentPosition()
+    {
+        return _useControlGroups ? _groupConfig.Position : GetCurrentConfig().Position;
+    }
+
+    private PhotoSwipeOverlayControl.GrowDirection GetCurrentDirectionSelection()
+    {
+        if (_useControlGroups)
+        {
+            return _groupConfig.LayoutDirection;
+        }
+        else
+        {
+            var config = GetCurrentConfig();
+            return config.UseIntelligentDirection ? PhotoSwipeOverlayControl.GrowDirection.Auto : config.ExplicitDirection;
+        }
+    }
+
+    private int GetCurrentButtonSize()
+    {
+        return _useControlGroups ? (_groupConfig.ButtonSize ?? 44) : GetCurrentConfig().ButtonSize;
+    }
+
+    private int GetCurrentSpacing()
+    {
+        return _useControlGroups ? _groupConfig.Spacing : GetCurrentConfig().ControlGap;
+    }
+
+    private string GetCurrentOffset()
+    {
+        return _useControlGroups ? _groupConfig.CustomOffset : GetCurrentConfig().CustomOffset;
+    }
+
+    // Configuration change handlers
+    private void OnConfigurationModeChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+        var useControlGroups = value == "groups";
+        Logger.LogInformation("Configuration mode change event triggered: {Value} -> {UseControlGroups}", value, useControlGroups);
+        SetConfigurationMode(useControlGroups);
+    }
+
+    private void SetConfigurationMode(bool useControlGroups)
+    {
+        _useControlGroups = useControlGroups;
+
+        // When switching to control groups, sync the group position with current individual control position
+        if (_useControlGroups && _overlayConfigs.Count > 0)
+        {
+            var currentConfig = GetCurrentConfig();
+            _groupConfig.Position = currentConfig.Position;
+            _groupConfig.LayoutDirection = currentConfig.UseIntelligentDirection ?
+                PhotoSwipeOverlayControl.GrowDirection.Auto : currentConfig.ExplicitDirection;
+            _groupConfig.Spacing = currentConfig.ControlGap;
+            _groupConfig.ButtonSize = currentConfig.ButtonSize;
+            _groupConfig.CustomOffset = currentConfig.CustomOffset;
+        }
+
+        UpdateCalculations();
+        StateHasChanged(); // Ensure UI updates immediately
+        Logger.LogInformation("Configuration mode changed to: {Mode}", _useControlGroups ? "Control Groups" : "Individual Controls");
+    }
+
+    private void SetCurrentConfigIndex(int index)
+    {
+        _currentConfigIndex = Math.Max(0, Math.Min(_controlCount - 1, index));
+        UpdateCalculations();
+        Logger.LogInformation("Current config index changed to: {Index}", _currentConfigIndex);
+    }
+    private void SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition position)
+    {
+        if (_useControlGroups)
+        {
+            _groupConfig.Position = position;
+            Logger.LogInformation("Group position changed to: {Position}", position);
+        }
+        else
+        {
+            GetCurrentConfig().Position = position;
+            Logger.LogInformation("Position changed to: {Position} for overlay {Index}", position, _currentConfigIndex);
+        }
+        UpdateCalculations();
+    }
+
+    private void SetControlCount(int count)
+    {
+        _controlCount = Math.Max(1, Math.Min(4, count));
+        // Ensure current config index doesn't exceed available controls
+        if (_currentConfigIndex >= _controlCount)
+        {
+            _currentConfigIndex = _controlCount - 1;
+        }
+        UpdateCalculations();
+        Logger.LogInformation("Control count changed to: {Count}", _controlCount);
+    }
+
+
+    private void SetGrowDirection(PhotoSwipeOverlayControl.GrowDirection direction)
+    {
+        if (_useControlGroups)
+        {
+            _groupConfig.LayoutDirection = direction;
+            Logger.LogInformation("Group layout direction changed to: {Direction}", direction);
+        }
+        else
+        {
+            var config = GetCurrentConfig();
+            if (direction == PhotoSwipeOverlayControl.GrowDirection.Auto)
+            {
+                config.UseIntelligentDirection = true;
+                Logger.LogInformation("Grow direction changed to Auto (intelligent) for overlay {Index}", _currentConfigIndex);
+            }
+            else
+            {
+                config.UseIntelligentDirection = false;
+                config.ExplicitDirection = direction;
+                Logger.LogInformation("Grow direction changed to: {Direction} (explicit) for overlay {Index}", direction, _currentConfigIndex);
+            }
+        }
+        UpdateCalculations();
+    }
+
+    private void SetButtonSize(int size)
+    {
+        var clampedSize = Math.Max(28, Math.Min(64, size));
+        if (_useControlGroups)
+        {
+            _groupConfig.ButtonSize = clampedSize;
+        }
+        else
+        {
+            GetCurrentConfig().ButtonSize = clampedSize;
+        }
+        UpdateCalculations();
+    }
+
+    private void SetSpacing(int spacing)
+    {
+        var clampedSpacing = Math.Max(0, Math.Min(16, spacing));
+        if (_useControlGroups)
+        {
+            _groupConfig.Spacing = clampedSpacing;
+        }
+        else
+        {
+            GetCurrentConfig().ControlGap = clampedSpacing;
+        }
+        UpdateCalculations();
+    }
+
+    private void SetControlGap(int gap)
+    {
+        GetCurrentConfig().ControlGap = Math.Max(0, Math.Min(16, gap));
+        UpdateCalculations();
+    }
+
+    private void SetOffset(string offset)
+    {
+        if (_useControlGroups)
+        {
+            _groupConfig.CustomOffset = offset;
+        }
+        else
+        {
+            GetCurrentConfig().CustomOffset = offset;
+        }
+        UpdateCalculations();
+    }
+
+    private void SetControlType(string controlType)
+    {
+        GetCurrentConfig().ControlType = controlType;
+        StateHasChanged();
+    }
+
+    private void SetCssClass(string cssClass)
+    {
+        GetCurrentConfig().CssClass = cssClass;
+        StateHasChanged();
+    }
+
+    private void SetButtonCssClass(string buttonCssClass)
+    {
+        GetCurrentConfig().ButtonCssClass = buttonCssClass;
+        StateHasChanged();
+    }
+
+    private void SetCustomPosition(string customPosition)
+    {
+        GetCurrentConfig().CustomPosition = customPosition;
+        StateHasChanged();
+    }
+
+    private void SetPreventGallery(bool preventGallery)
+    {
+        GetCurrentConfig().PreventGallery = preventGallery;
+        StateHasChanged();
+    }
+
+    private void SetIcon(string icon)
+    {
+        GetCurrentConfig().Icon = icon;
+        StateHasChanged();
+    }
+
+    private void SetTitle(string title)
+    {
+        GetCurrentConfig().Title = title;
+        StateHasChanged();
+    }
+
+    private void ToggleMobileSimulation(bool? simulate = null)
+    {
+        _simulateMobile = simulate ?? !_simulateMobile;
+        UpdateCalculations();
+        Logger.LogInformation("Mobile simulation: {Enabled}", _simulateMobile);
+    }
+
+    // Test actions
+    private async Task TestAllPositions()
+    {
+        if (_isTestingAllPositions) return;
+
+        _isTestingAllPositions = true;
+        var positions = Enum.GetValues<PhotoSwipeOverlayControl.OverlayPosition>()
+            .Where(p => p != PhotoSwipeOverlayControl.OverlayPosition.Custom)
+            .ToList();
+
+        Logger.LogInformation("Testing all {Count} positions", positions.Count);
+
+        foreach (var position in positions)
+        {
+            SetOverlayPosition(position);
+            await Task.Delay(1000); // Allow time to see each position
+        }
+
+        _isTestingAllPositions = false;
+        Logger.LogInformation("Completed testing all positions");
+    }
+
+    private void TestConstrainedSpace()
+    {
+        // Set up the classic constrained space scenario
+        SetOverlayPosition(PhotoSwipeOverlayControl.OverlayPosition.BottomRight);
+        SetCurrentConfigIndex(1);
+        ToggleMobileSimulation(true);
+        Logger.LogInformation("Set up constrained space test scenario");
+    }
+
+    private void ResetToDefaults()
+    {
+        _controlCount = 2;
+        _currentConfigIndex = 0;
+        _simulateMobile = false;
+
+        // Reset all overlay configs to defaults
+        InitializeOverlayConfigs();
+
+        UpdateCalculations();
+        Logger.LogInformation("Reset to default configuration");
+    }
+
+    private void GenerateRandomConfiguration()
+    {
+        var random = Random.Shared;
+        var positions = Enum.GetValues<PhotoSwipeOverlayControl.OverlayPosition>()
+            .Where(p => p != PhotoSwipeOverlayControl.OverlayPosition.Custom)
+            .ToArray();
+        var directions = Enum.GetValues<PhotoSwipeOverlayControl.GrowDirection>().ToArray();
+
+        var config = GetCurrentConfig();
+        config.Position = positions[random.Next(positions.Length)];
+        config.UseIntelligentDirection = random.Next(0, 2) == 0;
+        config.ExplicitDirection = directions[random.Next(directions.Length)];
+        config.ButtonSize = new[] { 32, 40, 44, 48, 56 }[random.Next(5)];
+        config.ControlGap = new[] { 2, 4, 6, 8 }[random.Next(4)];
+        _simulateMobile = random.Next(0, 2) == 0;
+
+        UpdateCalculations();
+        Logger.LogInformation("Generated random configuration for overlay {Index}", _currentConfigIndex);
+    }
+
+    // Performance testing
+    private async Task RunCalculationBenchmark()
+    {
+        _benchmarkResults.Clear();
+        const int iterations = 100;
+
+        Logger.LogInformation("Running calculation benchmark with {Iterations} iterations", iterations);
+
+        for (int i = 0; i < iterations; i++)
+        {
+            var startTime = DateTime.UtcNow;
+
+            var config = GetCurrentConfig();
+            CalculatePosition(
+                _containerSize,
+                config.Position,
+                _currentConfigIndex,
+                config.UseIntelligentDirection ? PhotoSwipeOverlayControl.GrowDirection.Right : config.ExplicitDirection,
+                config.ButtonSize,
+                config.ControlGap,
+                string.IsNullOrEmpty(config.CustomOffset) ? null : config.CustomOffset
+            );
+
+            var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            _benchmarkResults.Add(elapsed);
+
+            if (i % 10 == 0)
+            {
+                StateHasChanged();
+                await Task.Delay(1);
+            }
+        }
+
+        StateHasChanged();
+        Logger.LogInformation("Benchmark completed: Avg {Avg}ms, Min {Min}ms, Max {Max}ms",
+            _benchmarkResults.Average().ToString("F2"),
+            _benchmarkResults.Min().ToString("F2"),
+            _benchmarkResults.Max().ToString("F2"));
+    }
+
+    private async Task TestRapidChanges()
+    {
+        _rapidChangeResults.Clear();
+        const int changes = 20;
+
+        Logger.LogInformation("Testing rapid configuration changes");
+
+        var positions = Enum.GetValues<PhotoSwipeOverlayControl.OverlayPosition>()
+            .Where(p => p != PhotoSwipeOverlayControl.OverlayPosition.Custom)
+            .ToArray();
+
+        for (int i = 0; i < changes; i++)
+        {
+            var startTime = DateTime.UtcNow;
+
+            var randomPosition = positions[Random.Shared.Next(positions.Length)];
+            var randomSpacing = Random.Shared.Next(0, 4);
+
+            SetOverlayPosition(randomPosition);
+            SetCurrentConfigIndex(randomSpacing);
+
+            var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            _rapidChangeResults.Add(elapsed);
+
+            await Task.Delay(50);
+        }
+
+        StateHasChanged();
+        Logger.LogInformation("Rapid changes test completed");
+    }
+
+    private void LogCurrentConfiguration()
+    {
+        var config = GetCurrentConfig();
+        Logger.LogInformation("Current Configuration: Position={Position}, ConfigIndex={ConfigIndex}, Direction={Direction}, ButtonSize={ButtonSize}, ControlGap={ControlGap}, Mobile={Mobile}, Constrained={Constrained}",
+            config.Position, _currentConfigIndex, _effectiveDirection, config.ButtonSize, config.ControlGap, _simulateMobile, _isConstrainedSpace);
+    }
+
+    // Control helpers
+    private string GetControlTitle(int index)
+    {
+        return index switch
+        {
+            0 => "Primary Control",
+            1 => "Secondary Control",
+            2 => "Tertiary Control",
+            _ => $"Control {index + 1}"
+        };
+    }
+
+    private string GetControlAriaLabel(int index)
+    {
+        var position = _overlayConfigs[index].Position;
+        return $"Test control {index + 1} at position {position}";
+    }
+
+    private string GetControlIcon(int index)
+    {
+        return index switch
+        {
+            0 => "🎯",
+            1 => "📍",
+            2 => "⭐",
+            3 => "🔹",
+            4 => "🔸",
+            _ => "📌"
+        };
+    }
+
+    private string GetControlButtonClass(int index)
+    {
+        return index switch
+        {
+            0 => "btn-primary",
+            1 => "btn-secondary",
+            2 => "btn-info",
+            _ => "btn-outline-primary"
+        };
+    }
+
+    private void OnControlClick(int index)
+    {
+        Logger.LogInformation("Test control {Index} clicked at position {Position}", index, _overlayConfigs[index].Position);
+
+        // Optionally switch to configuring the clicked control
+        SetCurrentConfigIndex(index);
+    }
+
+    private string GetPositionDisplayName(PhotoSwipeOverlayControl.OverlayPosition position)
+    {
+        return position switch
+        {
+            PhotoSwipeOverlayControl.OverlayPosition.TopLeft => "Top Left",
+            PhotoSwipeOverlayControl.OverlayPosition.TopRight => "Top Right",
+            PhotoSwipeOverlayControl.OverlayPosition.TopCenter => "Top Center",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => "Bottom Left",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomRight => "Bottom Right",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => "Bottom Center",
+            PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => "Center Left",
+            PhotoSwipeOverlayControl.OverlayPosition.CenterRight => "Center Right",
+            PhotoSwipeOverlayControl.OverlayPosition.Center => "Center",
+            _ => position.ToString()
+        };
+    }
+
+    // Simplified positioning calculation (based on OverlayPositionCalculator)
+    private PositionResult CalculatePosition(
+        ContainerSize containerSize,
+        PhotoSwipeOverlayControl.OverlayPosition position,
+        int spacingIndex = 0,
+        PhotoSwipeOverlayControl.GrowDirection direction = PhotoSwipeOverlayControl.GrowDirection.Right,
+        int buttonSize = 44,
+        int controlGap = 4,
+        string? customOffset = null)
+    {
+        // Determine if we're in a constrained space
+        var isConstrained = IsConstrainedSpace(position, spacingIndex);
+
+        // Get the effective grow direction
+        var effectiveDirection = GetEffectiveDirection(position, direction, isConstrained);
+
+        // Calculate spacing offset
+        var spacingOffset = spacingIndex * (buttonSize + controlGap);
+
+        // Parse custom offset or use default
+        var offset = string.IsNullOrEmpty(customOffset) ? 12.0 : ParseOffset(customOffset);
+
+        // Calculate base position
+        var (baseX, baseY, transform) = CalculateBasePosition(position, containerSize, offset);
+
+        // Apply spacing adjustments
+        var (finalX, finalY, finalTransform) = ApplySpacingAdjustments(
+            baseX, baseY, transform, position, effectiveDirection, spacingOffset);
+
+        // Generate CSS representation
+        var cssPositioning = GenerateCssPositioning(position, offset, spacingIndex, spacingOffset, effectiveDirection);
+
+        return new PositionResult(finalX, finalY, finalTransform, cssPositioning, isConstrained);
+    }
+
+    private bool IsConstrainedSpace(PhotoSwipeOverlayControl.OverlayPosition position, int spacingIndex)
+    {
+        return spacingIndex > 0 &&
+               (position == PhotoSwipeOverlayControl.OverlayPosition.BottomRight ||
+                position == PhotoSwipeOverlayControl.OverlayPosition.TopRight);
+    }
+
+    private PhotoSwipeOverlayControl.GrowDirection GetEffectiveDirection(
+        PhotoSwipeOverlayControl.OverlayPosition position,
+        PhotoSwipeOverlayControl.GrowDirection explicitDirection,
+        bool isConstrained)
+    {
+        var intelligentDirection = position switch
+        {
+            PhotoSwipeOverlayControl.OverlayPosition.TopLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+            PhotoSwipeOverlayControl.OverlayPosition.TopRight => isConstrained ? PhotoSwipeOverlayControl.GrowDirection.Down : PhotoSwipeOverlayControl.GrowDirection.Left,
+            PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+            PhotoSwipeOverlayControl.OverlayPosition.BottomRight => isConstrained ? PhotoSwipeOverlayControl.GrowDirection.Up : PhotoSwipeOverlayControl.GrowDirection.Left,
+            PhotoSwipeOverlayControl.OverlayPosition.TopCenter => PhotoSwipeOverlayControl.GrowDirection.Down,
+            PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => PhotoSwipeOverlayControl.GrowDirection.Up,
+            PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+            PhotoSwipeOverlayControl.OverlayPosition.CenterRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+            PhotoSwipeOverlayControl.OverlayPosition.Center => PhotoSwipeOverlayControl.GrowDirection.Right,
+            _ => PhotoSwipeOverlayControl.GrowDirection.Right
+        };
+
+        if (!isConstrained && explicitDirection != PhotoSwipeOverlayControl.GrowDirection.Right)
+        {
+            return explicitDirection;
+        }
+
+        return intelligentDirection;
+    }
+
+    private double ParseOffset(string customOffset)
+    {
+        if (customOffset.EndsWith("px") && double.TryParse(customOffset[..^2], out var value))
+            return value;
+        return 12.0;
+    }
+
+    private (double X, double Y, string Transform) CalculateBasePosition(
+        PhotoSwipeOverlayControl.OverlayPosition position,
+        ContainerSize containerSize,
+        double offset)
+    {
+        return position switch
+        {
+            PhotoSwipeOverlayControl.OverlayPosition.TopLeft =>
+                (offset, offset, ""),
+            PhotoSwipeOverlayControl.OverlayPosition.TopRight =>
+                (containerSize.Width - offset, offset, ""),
+            PhotoSwipeOverlayControl.OverlayPosition.TopCenter =>
+                (containerSize.Width / 2, offset, "translateX(-50%)"),
+            PhotoSwipeOverlayControl.OverlayPosition.BottomLeft =>
+                (offset, containerSize.Height - offset, ""),
+            PhotoSwipeOverlayControl.OverlayPosition.BottomRight =>
+                (containerSize.Width - offset, containerSize.Height - offset, ""),
+            PhotoSwipeOverlayControl.OverlayPosition.BottomCenter =>
+                (containerSize.Width / 2, containerSize.Height - offset, "translateX(-50%)"),
+            PhotoSwipeOverlayControl.OverlayPosition.CenterLeft =>
+                (offset, containerSize.Height / 2, "translateY(-50%)"),
+            PhotoSwipeOverlayControl.OverlayPosition.CenterRight =>
+                (containerSize.Width - offset, containerSize.Height / 2, "translateY(-50%)"),
+            PhotoSwipeOverlayControl.OverlayPosition.Center =>
+                (containerSize.Width / 2, containerSize.Height / 2, "translate(-50%, -50%)"),
+            _ => (offset, offset, "")
+        };
+    }
+
+    private (double X, double Y, string Transform) ApplySpacingAdjustments(
+        double baseX, double baseY, string baseTransform,
+        PhotoSwipeOverlayControl.OverlayPosition position,
+        PhotoSwipeOverlayControl.GrowDirection direction,
+        double spacingOffset)
+    {
+        if (spacingOffset == 0) return (baseX, baseY, baseTransform);
+
+        var adjustedX = baseX;
+        var adjustedY = baseY;
+
+        var adjustments = (position, direction) switch
+        {
+            (PhotoSwipeOverlayControl.OverlayPosition.TopLeft, PhotoSwipeOverlayControl.GrowDirection.Right) =>
+                (spacingOffset, 0.0),
+            (PhotoSwipeOverlayControl.OverlayPosition.TopLeft, PhotoSwipeOverlayControl.GrowDirection.Down) =>
+                (0.0, spacingOffset),
+            (PhotoSwipeOverlayControl.OverlayPosition.TopRight, PhotoSwipeOverlayControl.GrowDirection.Left) =>
+                (-spacingOffset, 0.0),
+            (PhotoSwipeOverlayControl.OverlayPosition.TopRight, PhotoSwipeOverlayControl.GrowDirection.Down) =>
+                (0.0, spacingOffset),
+            (PhotoSwipeOverlayControl.OverlayPosition.BottomLeft, PhotoSwipeOverlayControl.GrowDirection.Right) =>
+                (spacingOffset, 0.0),
+            (PhotoSwipeOverlayControl.OverlayPosition.BottomLeft, PhotoSwipeOverlayControl.GrowDirection.Up) =>
+                (0.0, -spacingOffset),
+            (PhotoSwipeOverlayControl.OverlayPosition.BottomRight, PhotoSwipeOverlayControl.GrowDirection.Left) =>
+                (-spacingOffset, 0.0),
+            (PhotoSwipeOverlayControl.OverlayPosition.BottomRight, PhotoSwipeOverlayControl.GrowDirection.Up) =>
+                (0.0, -spacingOffset),
+            (PhotoSwipeOverlayControl.OverlayPosition.TopCenter, PhotoSwipeOverlayControl.GrowDirection.Down) =>
+                (0.0, spacingOffset),
+            (PhotoSwipeOverlayControl.OverlayPosition.BottomCenter, PhotoSwipeOverlayControl.GrowDirection.Up) =>
+                (0.0, -spacingOffset),
+            (PhotoSwipeOverlayControl.OverlayPosition.CenterLeft, PhotoSwipeOverlayControl.GrowDirection.Right) =>
+                (spacingOffset, 0.0),
+            (PhotoSwipeOverlayControl.OverlayPosition.CenterRight, PhotoSwipeOverlayControl.GrowDirection.Left) =>
+                (-spacingOffset, 0.0),
+            _ => (0.0, 0.0)
+        };
+
+        adjustedX += adjustments.Item1;
+        adjustedY += adjustments.Item2;
+
+        return (adjustedX, adjustedY, baseTransform);
+    }
+
+    private string GenerateCssPositioning(
+        PhotoSwipeOverlayControl.OverlayPosition position,
+        double offset,
+        int spacingIndex,
+        double spacingOffset,
+        PhotoSwipeOverlayControl.GrowDirection direction)
+    {
+        var offsetStr = $"{offset}px";
+
+        if (spacingIndex == 0)
+        {
+            return position switch
+            {
+                PhotoSwipeOverlayControl.OverlayPosition.TopLeft => $"top: {offsetStr}; left: {offsetStr};",
+                PhotoSwipeOverlayControl.OverlayPosition.TopRight => $"top: {offsetStr}; right: {offsetStr};",
+                PhotoSwipeOverlayControl.OverlayPosition.TopCenter => $"top: {offsetStr}; left: 50%; transform: translateX(-50%);",
+                PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => $"bottom: {offsetStr}; left: {offsetStr};",
+                PhotoSwipeOverlayControl.OverlayPosition.BottomRight => $"bottom: {offsetStr}; right: {offsetStr};",
+                PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => $"bottom: {offsetStr}; left: 50%; transform: translateX(-50%);",
+                PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => $"top: 50%; left: {offsetStr}; transform: translateY(-50%);",
+                PhotoSwipeOverlayControl.OverlayPosition.CenterRight => $"top: 50%; right: {offsetStr}; transform: translateY(-50%);",
+                PhotoSwipeOverlayControl.OverlayPosition.Center => $"top: 50%; left: 50%; transform: translate(-50%, -50%);",
+                _ => ""
+            };
+        }
+
+        var spacingOffsetStr = $"{spacingOffset}px";
+        return (position, direction) switch
+        {
+            (PhotoSwipeOverlayControl.OverlayPosition.BottomRight, PhotoSwipeOverlayControl.GrowDirection.Up) =>
+                $"bottom: calc({offsetStr} + {spacingOffsetStr});",
+            (PhotoSwipeOverlayControl.OverlayPosition.BottomRight, PhotoSwipeOverlayControl.GrowDirection.Left) =>
+                $"right: calc({offsetStr} + {spacingOffsetStr});",
+            _ => ""
+        };
+    }
+
+    // Live code snippet generation
+    private string GetLiveCodeSnippet()
+    {
+        var snippet = new System.Text.StringBuilder();
+
+        if (_useControlGroups)
+        {
+            // Control Group pattern
+            snippet.AppendLine("<!-- Control Group Pattern -->");
+            snippet.AppendLine("<PhotoSwipeOverlayControlGroup");
+            snippet.AppendLine($"    Position=\"OverlayPosition.{_groupConfig.Position}\"");
+            snippet.AppendLine($"    LayoutDirection=\"GrowDirection.{_groupConfig.LayoutDirection}\"");
+
+            // Spacing (only if not default 4)
+            if (_groupConfig.Spacing != 4)
+                snippet.AppendLine($"    Spacing=\"{_groupConfig.Spacing}\"");
+
+            // ButtonSize (only if not default or not specified)
+            if (_groupConfig.ButtonSize.HasValue && _groupConfig.ButtonSize != 44)
+                snippet.AppendLine($"    ButtonSize=\"{_groupConfig.ButtonSize}\"");
+
+            // Offset (only if not empty)
+            if (!string.IsNullOrEmpty(_groupConfig.CustomOffset))
+                snippet.AppendLine($"    Offset=\"{_groupConfig.CustomOffset}\"");
+
+            // CssClass (only if not empty)
+            if (!string.IsNullOrEmpty(_groupConfig.CssClass))
+                snippet.AppendLine($"    CssClass=\"{_groupConfig.CssClass}\"");
+
+            // CustomPosition (only if not empty)
+            if (!string.IsNullOrEmpty(_groupConfig.CustomPosition))
+                snippet.AppendLine($"    CustomPosition=\"{_groupConfig.CustomPosition}\"");
+
+            snippet.AppendLine(">");
+            snippet.AppendLine();
+
+            // Add child controls
+            for (int i = 0; i < _controlCount; i++)
+            {
+                var config = _overlayConfigs[i];
+                snippet.AppendLine($"    <PhotoSwipeOverlayControl");
+
+                // ControlType (only if not default "custom")
+                if (config.ControlType != "custom")
+                    snippet.AppendLine($"        ControlType=\"{config.ControlType}\"");
+
+                // CssClass (only if not empty)
+                if (!string.IsNullOrEmpty(config.CssClass))
+                    snippet.AppendLine($"        CssClass=\"{config.CssClass}\"");
+
+                // ButtonCssClass (only if not empty)
+                if (!string.IsNullOrEmpty(config.ButtonCssClass))
+                    snippet.AppendLine($"        ButtonCssClass=\"{config.ButtonCssClass}\"");
+
+                // Icon and Title
+                var icon = !string.IsNullOrEmpty(config.Icon) ? config.Icon : GetControlIcon(i);
+                var title = !string.IsNullOrEmpty(config.Title) ? config.Title : GetControlTitle(i);
+
+                snippet.AppendLine($"        Icon=\"{icon}\"");
+                snippet.AppendLine($"        Title=\"{title}\"");
+                snippet.AppendLine($"        OnClick=\"@(() => OnControl{i + 1}Click())\" />");
+                snippet.AppendLine();
+            }
+
+            snippet.AppendLine("</PhotoSwipeOverlayControlGroup>");
+        }
+        else
+        {
+            // Individual Controls pattern (Legacy - No layout coordination)
+            if (_controlCount > 1)
+            {
+                snippet.AppendLine("<!-- Individual Controls Pattern (Legacy) -->");
+                snippet.AppendLine("<!-- Note: Individual controls don't coordinate layout - use PhotoSwipeOverlayControlGroup instead -->");
+                for (int i = 0; i < _controlCount; i++)
+            {
+                var config = _overlayConfigs[i];
+                snippet.AppendLine($"<PhotoSwipeOverlayControl");
+                snippet.AppendLine($"    Position=\"OverlayPosition.{config.Position}\"");
+
+                // ButtonSize (only if not default 44)
+                if (config.ButtonSize != 44)
+                    snippet.AppendLine($"    ButtonSize=\"{config.ButtonSize}\"");
+
+                // Offset (only if not empty)
+                if (!string.IsNullOrEmpty(config.CustomOffset))
+                    snippet.AppendLine($"    Offset=\"{config.CustomOffset}\"");
+
+                // ControlType (only if not default "custom")
+                if (config.ControlType != "custom")
+                    snippet.AppendLine($"    ControlType=\"{config.ControlType}\"");
+
+                // CssClass (only if not empty)
+                if (!string.IsNullOrEmpty(config.CssClass))
+                    snippet.AppendLine($"    CssClass=\"{config.CssClass}\"");
+
+                // ButtonCssClass (only if not empty)
+                if (!string.IsNullOrEmpty(config.ButtonCssClass))
+                    snippet.AppendLine($"    ButtonCssClass=\"{config.ButtonCssClass}\"");
+
+                // CustomPosition (only if not empty)
+                if (!string.IsNullOrEmpty(config.CustomPosition))
+                    snippet.AppendLine($"    CustomPosition=\"{config.CustomPosition}\"");
+
+                // PreventGallery (only if not default true)
+                if (!config.PreventGallery)
+                    snippet.AppendLine($"    PreventGallery=\"{config.PreventGallery.ToString().ToLower()}\"");
+
+                // Icon and Title
+                var icon = !string.IsNullOrEmpty(config.Icon) ? config.Icon : GetControlIcon(i);
+                var title = !string.IsNullOrEmpty(config.Title) ? config.Title : GetControlTitle(i);
+
+                snippet.AppendLine($"    Icon=\"{icon}\"");
+                snippet.AppendLine($"    Title=\"{title}\"");
+                snippet.AppendLine($"    OnClick=\"@(() => OnControl{i + 1}Click())\" />");
+                snippet.AppendLine();
+                }
+            }
+            else
+            {
+                var config = GetCurrentConfig();
+                snippet.AppendLine("<PhotoSwipeOverlayControl");
+                snippet.AppendLine($"    Position=\"OverlayPosition.{config.Position}\"");
+
+
+
+                // ButtonSize (only if not default 44)
+                if (config.ButtonSize != 44)
+                    snippet.AppendLine($"    ButtonSize=\"{config.ButtonSize}\"");
+
+
+                // Offset (only if not empty)
+                if (!string.IsNullOrEmpty(config.CustomOffset))
+                    snippet.AppendLine($"    Offset=\"{config.CustomOffset}\"");
+
+                // ControlType (only if not default "custom")
+                if (config.ControlType != "custom")
+                    snippet.AppendLine($"    ControlType=\"{config.ControlType}\"");
+
+                // CssClass (only if not empty)
+                if (!string.IsNullOrEmpty(config.CssClass))
+                    snippet.AppendLine($"    CssClass=\"{config.CssClass}\"");
+
+                // ButtonCssClass (only if not empty)
+                if (!string.IsNullOrEmpty(config.ButtonCssClass))
+                    snippet.AppendLine($"    ButtonCssClass=\"{config.ButtonCssClass}\"");
+
+                // CustomPosition (only if not empty)
+                if (!string.IsNullOrEmpty(config.CustomPosition))
+                    snippet.AppendLine($"    CustomPosition=\"{config.CustomPosition}\"");
+
+                // PreventGallery (only if not default true)
+                if (!config.PreventGallery)
+                    snippet.AppendLine($"    PreventGallery=\"{config.PreventGallery.ToString().ToLower()}\"");
+
+                // Icon and Title
+                var icon = !string.IsNullOrEmpty(config.Icon) ? config.Icon : "🎯";
+                var title = !string.IsNullOrEmpty(config.Title) ? config.Title : "Test Control";
+
+                snippet.AppendLine($"    Icon=\"{icon}\"");
+                snippet.AppendLine($"    Title=\"{title}\"");
+                snippet.AppendLine($"    OnClick=\"@(() => OnControlClick())\"");
+                snippet.AppendLine($"    AriaLabel=\"Test control at position {config.Position}\" />");
+            }
+        }
+
+        return snippet.ToString();
+    }
+
+    private async Task CopyCodeToClipboard()
+    {
+        var code = GetLiveCodeSnippet();
+        try
+        {
+            // Use the Clipboard API through JavaScript interop
+            // Note: This requires HTTPS in production
+            await Task.CompletedTask; // Placeholder - would need JSRuntime injection for actual clipboard
+            Logger.LogInformation("Code snippet copied to clipboard");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning("Failed to copy to clipboard: {Error}", ex.Message);
+        }
+    }
+
+}
+
+@using PhotoSwipe.Blazor.Components
