@@ -39,6 +39,31 @@
             </label>
         </div>
 
+        @if (_selectionMode != SelectionMode.None)
+        {
+            <div class="control-group">
+                <label>
+                    <strong>Selection Position:</strong>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="selection-position" checked="@(_selectionPosition == PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" @onchange="@(() => _selectionPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft)" />
+                    Top Left (Default)
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="selection-position" checked="@(_selectionPosition == PhotoSwipeOverlayControl.OverlayPosition.TopRight)" @onchange="@(() => _selectionPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight)" />
+                    Top Right
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="selection-position" checked="@(_selectionPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" @onchange="@(() => _selectionPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomLeft)" />
+                    Bottom Left
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="selection-position" checked="@(_selectionPosition == PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" @onchange="@(() => _selectionPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight)" />
+                    Bottom Right
+                </label>
+            </div>
+        }
+
         @if (_allowAdd)
         {
             <div class="control-group">
@@ -92,6 +117,7 @@
             AllowMultipleFiles="@_allowMultipleFiles"
             EnableSelection="@(_selectionMode != SelectionMode.None)"
             AllowMultiSelect="@(_selectionMode == SelectionMode.Multi)"
+            SelectionPosition="@_selectionPosition"
             SelectedItem="@(_selectionMode == SelectionMode.Single ? _selectedItems.FirstOrDefault() : null)"
             SelectedItems="@(_selectionMode == SelectionMode.Multi ? _selectedItems : null)"
             MaxFileSize="@(10 * 1024 * 1024)"
@@ -112,6 +138,7 @@
 
     // Mode states
     private SelectionMode _selectionMode = SelectionMode.Multi;
+    private PhotoSwipeOverlayControl.OverlayPosition _selectionPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft;
     private bool _allowAdd = true;
     private bool _allowDelete = true;
     private bool _allowMultipleFiles = true;
@@ -284,3 +311,5 @@
         StateHasChanged();
     }
 }
+
+@using PhotoSwipe.Blazor.Components
