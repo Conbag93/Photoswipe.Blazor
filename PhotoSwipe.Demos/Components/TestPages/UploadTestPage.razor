@@ -23,6 +23,8 @@
             MaxFiles="@_maxFiles"
             UploadMode="@_uploadMode"
             UploadPosition="@_uploadPosition"
+            ContainedUploadPosition="@_containedUploadPosition"
+            UploadPlaceholderText="Add Images"
             OnItemsChanged="@OnGalleryChanged"
             OnItemsUploaded="@OnItemsUploaded"
             Options="@_galleryOptions" />
@@ -52,11 +54,26 @@
                 <input type="radio" name="upload-position" value="Below" checked="@(_uploadPosition == PhotoSwipeUploadPosition.Below)" @onchange="@(() => SetUploadPosition(PhotoSwipeUploadPosition.Below))" />
                 Below Gallery
             </label>
-            <label class="radio-option" disabled>
-                <input type="radio" name="upload-position" value="Contained" disabled />
-                Contained (Future)
+            <label class="radio-option">
+                <input type="radio" name="upload-position" value="Contained" checked="@(_uploadPosition == PhotoSwipeUploadPosition.Contained)" @onchange="@(() => SetUploadPosition(PhotoSwipeUploadPosition.Contained))" />
+                Contained (in gallery)
             </label>
         </div>
+
+        @if (_uploadPosition == PhotoSwipeUploadPosition.Contained)
+        {
+            <div class="control-group">
+                <label><strong>Contained Position:</strong></label>
+                <label class="radio-option">
+                    <input type="radio" name="contained-position" checked="@(_containedUploadPosition == PhotoSwipeContainedUploadPosition.First)" @onchange="@(() => _containedUploadPosition = PhotoSwipeContainedUploadPosition.First)" />
+                    First Item
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="contained-position" checked="@(_containedUploadPosition == PhotoSwipeContainedUploadPosition.Last)" @onchange="@(() => _containedUploadPosition = PhotoSwipeContainedUploadPosition.Last)" />
+                    Last Item
+                </label>
+            </div>
+        }
 
         <div class="control-group">
             <label><strong>File Upload Settings:</strong></label>
@@ -92,7 +109,7 @@
             </div>
             <div class="status-item">
                 <span class="status-label">Upload Position:</span>
-                <span class="status-value">@_uploadPosition</span>
+                <span class="status-value">@_uploadPosition@(_uploadPosition == PhotoSwipeUploadPosition.Contained ? $" ({_containedUploadPosition})" : "")</span>
             </div>
             <div class="status-item">
                 <span class="status-label">Total Images:</span>
@@ -200,7 +217,8 @@
 @code {
     // Upload configuration
     private PhotoSwipeUploadMode _uploadMode = PhotoSwipeUploadMode.Add;
-    private PhotoSwipeUploadPosition _uploadPosition = PhotoSwipeUploadPosition.Above;
+    private PhotoSwipeUploadPosition _uploadPosition = PhotoSwipeUploadPosition.Contained;
+    private PhotoSwipeContainedUploadPosition _containedUploadPosition = PhotoSwipeContainedUploadPosition.Last;
     private bool _allowMultipleFiles = true;
     private bool _allowDragDrop = true;
     private int _maxFileSizeMB = 10;

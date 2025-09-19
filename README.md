@@ -28,6 +28,14 @@ PhotoSwipe.Blazor is more than just a wrapper - it's a feature-rich Blazor compo
 - **Preview System** - Review uploads before confirming
 - **Progress Indicators** - Real-time upload and processing feedback
 
+### Placeholder System
+- **Display Items vs Data Items** - Architectural separation of UI elements from gallery data
+- **Interactive Placeholders** - Upload, SeeMore, Pagination, and LoadMore placeholder types
+- **PhotoSwipe Prevention** - Placeholders don't trigger PhotoSwipe lightbox opening
+- **Index Management** - Proper index mapping for reordering and data operations
+- **Extensible Types** - Type-safe placeholder system with configurable metadata
+- **Custom Positioning** - Flexible placement within gallery (First/Last/Custom)
+
 ## Components
 
 - **PhotoSwipeGallery** - Standard responsive image gallery with lightbox
@@ -327,6 +335,210 @@ test('should open lightbox when clicking image', async ({ page }) => {
 });
 ```
 
+## API Reference
+
+### Placeholder System Models
+
+#### PhotoSwipePlaceholderType
+
+Defines the types of placeholders available in the gallery system:
+
+```csharp
+public enum PhotoSwipePlaceholderType
+{
+    Upload,      // Upload placeholder - allows adding new items to the gallery
+    SeeMore,     // See more placeholder - expands or navigates to additional content
+    Pagination,  // Pagination placeholder - for loading additional pages of content
+    LoadMore     // Load more placeholder - for infinite scroll or manual load more functionality
+}
+```
+
+#### PhotoSwipePlaceholderInfo
+
+Comprehensive placeholder metadata and configuration class:
+
+```csharp
+public class PhotoSwipePlaceholderInfo
+{
+    public PhotoSwipePlaceholderType Type { get; set; }
+    public PhotoSwipeContainedUploadPosition Position { get; set; } = PhotoSwipeContainedUploadPosition.Last;
+    public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public string? Text { get; set; } = "Add files...";
+    public string? CssClass { get; set; }
+    public object? CustomData { get; set; }
+    public bool IsEnabled { get; set; } = true;
+
+    // Converts placeholder to PhotoSwipeItem for rendering
+    public PhotoSwipeItem ToDisplayItem();
+}
+```
+
+#### PhotoSwipeContainedUploadPosition
+
+Controls where placeholders appear within the gallery:
+
+```csharp
+public enum PhotoSwipeContainedUploadPosition
+{
+    First,  // Placeholder appears as the first item in the gallery
+    Last    // Placeholder appears as the last item in the gallery
+}
+```
+
+#### PhotoSwipeItemExtensions
+
+Extension methods for placeholder detection and management:
+
+```csharp
+public static class PhotoSwipeItemExtensions
+{
+    public static bool IsPlaceholder(this PhotoSwipeItem item);
+    public static PhotoSwipePlaceholderType? GetPlaceholderType(this PhotoSwipeItem item);
+    public static string? GetPlaceholderId(this PhotoSwipeItem item);
+}
+```
+
+### PhotoSwipeUploadGallery Placeholder Parameters
+
+Configure placeholder behavior with these component parameters:
+
+```csharp
+[Parameter] public PhotoSwipeContainedUploadPosition ContainedUploadPosition { get; set; } = PhotoSwipeContainedUploadPosition.Last;
+[Parameter] public string UploadPlaceholderText { get; set; } = "Add Files";
+```
+
+**Usage Example:**
+```razor
+<PhotoSwipeUploadGallery Items="@galleryItems"
+                        UploadPosition="PhotoSwipeUploadPosition.Contained"
+                        ContainedUploadPosition="PhotoSwipeContainedUploadPosition.First"
+                        UploadPlaceholderText="Upload Images..."
+                        AllowAdd="true" />
+```
+
+### Architecture: Display Items vs Data Items
+
+The placeholder system implements a dual-collection architecture:
+
+**Data Items (`_dataItems`):**
+- Contains only actual gallery content (images, media)
+- Used for data operations (save, export, API calls)
+- Maintains clean data model without UI artifacts
+- Proper index mapping for reordering operations
+
+**Display Items (`_displayItems`):**
+- Combined collection of data items + placeholders
+- Used for UI rendering
+- Includes interactive placeholder elements
+- Handles PhotoSwipe prevention for placeholders
+
+**Benefits:**
+- **Clean Data Model** - Gallery data stays pure without UI elements
+- **Correct Index Mapping** - Reordering works on data indices, not display indices
+- **Extensible UI** - Add multiple placeholder types without affecting data
+- **Event Handling** - Placeholder-specific interactions and callbacks
+
+### Extensibility Guide for Library Consumers
+
+The placeholder system is designed for extensibility. Library consumers can leverage this architecture for custom interactive gallery elements:
+
+#### Current Implementation (Upload Placeholder)
+
+The upload placeholder demonstrates the full pattern:
+
+```csharp
+// 1. Configure placeholder in PhotoSwipeUploadGallery
+var uploadPlaceholder = new PhotoSwipePlaceholderInfo
+{
+    Type = PhotoSwipePlaceholderType.Upload,
+    Position = PhotoSwipeContainedUploadPosition.Last,
+    Text = "Add files...",
+    IsEnabled = true
+};
+
+// 2. Placeholder is automatically converted to PhotoSwipeItem
+var displayItem = uploadPlaceholder.ToDisplayItem();
+
+// 3. Custom rendering prevents PhotoSwipe opening
+// Uses data-pswp-prevent-gallery="true"
+// Implements custom click handlers
+```
+
+#### Future Extension Points
+
+**Custom Placeholder Types:**
+```csharp
+// Future: Custom placeholder types via configuration
+public enum CustomPlaceholderType
+{
+    LoadMore,     // Infinite scroll trigger
+    SeeMore,      // Expand gallery view
+    AddFolder,    // Directory creation
+    ImportCloud,  // Cloud service integration
+    Pagination    // Page navigation
+}
+```
+
+**Template Customization:**
+```csharp
+// Future: Custom placeholder templates
+[Parameter] public RenderFragment<PhotoSwipePlaceholderInfo>? PlaceholderTemplate { get; set; }
+
+// Usage:
+<PhotoSwipeUploadGallery>
+    <PlaceholderTemplate Context="placeholder">
+        <div class="custom-placeholder-@placeholder.Type.ToString().ToLower()">
+            <MyCustomIcon Type="@placeholder.Type" />
+            <span>@placeholder.Text</span>
+        </div>
+    </PlaceholderTemplate>
+</PhotoSwipeUploadGallery>
+```
+
+**Multi-Placeholder Support:**
+```csharp
+// Future: Multiple placeholder configuration
+[Parameter] public List<PhotoSwipePlaceholderInfo> Placeholders { get; set; } = new();
+
+// Usage: Mix upload, pagination, and see-more placeholders
+Placeholders = new List<PhotoSwipePlaceholderInfo>
+{
+    new() { Type = PhotoSwipePlaceholderType.Upload, Position = PhotoSwipeContainedUploadPosition.First },
+    new() { Type = PhotoSwipePlaceholderType.LoadMore, Position = PhotoSwipeContainedUploadPosition.Last },
+    new() { Type = PhotoSwipePlaceholderType.SeeMore, Position = PhotoSwipeContainedUploadPosition.Last }
+};
+```
+
+**Event Handling:**
+```csharp
+// Future: Placeholder-specific event callbacks
+[Parameter] public EventCallback<PlaceholderClickEventArgs> OnPlaceholderClick { get; set; }
+
+public class PlaceholderClickEventArgs
+{
+    public PhotoSwipePlaceholderType Type { get; set; }
+    public string PlaceholderId { get; set; }
+    public object? CustomData { get; set; }
+}
+```
+
+#### Key Architectural Patterns
+
+**For Library Maintainers:**
+1. **Type Safety** - Use enums and strongly-typed models
+2. **Metadata Attachment** - Leverage `CustomData` for type-specific configuration
+3. **PhotoSwipe Prevention** - Always use `data-pswp-prevent-gallery="true"` for interactive placeholders
+4. **Index Mapping** - Operations should work on `_dataItems`, not `_displayItems`
+5. **Event Isolation** - Placeholder events should not interfere with gallery events
+
+**For Consumer Applications:**
+1. **Placeholder Detection** - Use `item.IsPlaceholder()` extension method
+2. **Type Checking** - Use `item.GetPlaceholderType()` for conditional logic
+3. **Clean Data Access** - Always work with data items for persistence/API operations
+4. **UI Customization** - Override CSS classes or leverage future template support
+
+This architecture ensures the placeholder system can grow to support complex interactive gallery scenarios while maintaining clean separation between data and UI concerns.
+
 ## Documentation
 
 - **[Development Guide](CLAUDE.md)** - Architecture, patterns, and development conventions
@@ -334,14 +546,20 @@ test('should open lightbox when clicking image', async ({ page }) => {
 
 ## Roadmap
 
-While PhotoSwipe.Blazor already provides comprehensive gallery and upload functionality, we're planning additional features:
+PhotoSwipe.Blazor now includes a comprehensive placeholder system and advanced gallery features. We continue to plan additional enhancements:
 
-### Planned Enhancements
-- **Edit Mode Toggle** - Dynamic switching between read-only and edit modes
+### Recently Implemented ✅
+- **Placeholder System** - Interactive UI elements (Upload, SeeMore, Pagination, LoadMore) with PhotoSwipe prevention
+- **Display Items Architecture** - Clean separation of data items from UI elements with proper index mapping
 - **Selection UI** - Visual selection indicators with checkboxes/overlays
 - **Multi-Select Operations** - Bulk actions on selected items (delete, download, etc.)
-- **Unified Editable Gallery** - Single component combining all view/edit/upload features
 - **Drag & Drop Reordering** - Rearrange gallery items with drag and drop
+
+### Planned Enhancements
+- **Custom Placeholder Templates** - RenderFragment support for custom placeholder UI
+- **Multi-Placeholder Support** - Multiple placeholder types in a single gallery
+- **Placeholder Event System** - Type-specific event callbacks for placeholder interactions
+- **Edit Mode Toggle** - Dynamic switching between read-only and edit modes
 - **Advanced Keyboard Shortcuts** - Ctrl+Click, Shift+Click for selection
 
 ### Future Considerations

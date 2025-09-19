@@ -1,10 +1,12 @@
 @using PhotoSwipe.Blazor.Models
 @using PhotoSwipe.Blazor.Services
+@using PhotoSwipe.Blazor.Extensions
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.Extensions.Logging
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @inject ILogger<PhotoSwipeUploadGallery> Logger
+@inject ILogger<PhotoSwipeInterop> InteropLogger
 
 <div class="photoswipe-upload-gallery @CssClass">
 
@@ -22,7 +24,7 @@
     }
 
     <!-- Selection Controls -->
-    @if (_combinedItems.Any() && EnableSelection)
+    @if (_displayItems.Any() && EnableSelection)
     {
         <div class="selection-controls">
             @if (AllowMultiSelect)
@@ -39,114 +41,140 @@
         </div>
     }
 
-    <!-- Gallery using PhotoSwipeGallery component -->
-    <PhotoSwipeGallery Id="@_galleryElementId" 
-                       Items="@_combinedItems" 
-                       Options="@Options" 
-                       CssClass="@($"upload-gallery-display {CssClass}")"
-                       OnOpen="OnOpen" 
-                       OnClose="OnClose" 
-                       OnChange="OnChange">
-        
-        <ItemTemplate Context="item">
-            <div class="gallery-item-wrapper">
-                <!-- Selection Overlay with configurable position -->
-                @if (EnableSelection)
-                {
-                    <PhotoSwipeOverlayControl Position="@SelectionPosition"
-                                            ControlType="selection"
-                                            PreventGallery="true">
-                        @if (AllowMultiSelect)
+    <!-- Gallery with custom rendering for placeholders -->
+    <div id="@_galleryElementId" class="photoswipe-gallery upload-gallery-display @CssClass">
+        @foreach (var item in _displayItems)
+        {
+            @if (item.IsPlaceholder())
+            {
+                <!-- Render placeholder as a div with data-pswp-prevent-gallery to prevent PhotoSwipe from opening -->
+                <div class="photoswipe-item placeholder-item"
+                     data-pswp-prevent-gallery="true"
+                     data-placeholder-type="@item.GetPlaceholderType()"
+                     data-placeholder-id="@item.GetPlaceholderId()">
+                    <div class="gallery-item-wrapper">
+                        <!-- Upload Placeholder UI -->
+                        <div class="upload-placeholder-content" @onclick="OnUploadPlaceholderClick">
+                            <div class="upload-placeholder-background">
+                                <img src="@item.ThumbnailUrl" alt="@item.Alt" class="upload-placeholder-image" />
+                                @if (!string.IsNullOrEmpty(item.Title))
+                                {
+                                    <div class="upload-placeholder-text">@item.Title</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Regular gallery item wrapped in anchor tag for PhotoSwipe -->
+                <a href="@item.Src"
+                   data-pswp-width="@item.Width"
+                   data-pswp-height="@item.Height"
+                   data-caption="@item.Caption"
+                   data-pswp-srcset="@item.SrcSet"
+                   data-enhance-nav="false"
+                   class="photoswipe-item">
+                    <div class="gallery-item-wrapper">
+                        <!-- Selection Overlay with configurable position -->
+                        @if (EnableSelection)
                         {
-                            <input type="checkbox"
-                                   class="selection-checkbox"
-                                   checked="@_selectedItems.Contains(item)"
-                                   @onchange="@(e => ToggleSelection(item, (bool)e.Value!))" />
+                            <PhotoSwipeOverlayControl Position="@SelectionPosition"
+                                                    ControlType="selection"
+                                                    PreventGallery="true">
+                                @if (AllowMultiSelect)
+                                {
+                                    <input type="checkbox"
+                                           class="selection-checkbox"
+                                           checked="@_selectedItems.Contains(item)"
+                                           @onchange="@(e => ToggleSelection(item, (bool)e.Value!))" />
+                                }
+                                else
+                                {
+                                    <input type="radio"
+                                           class="selection-radio"
+                                           name="single-select-@_galleryElementId"
+                                           checked="@(SelectedItem == item)"
+                                           @onchange="@(e => SelectSingle(item, !string.IsNullOrEmpty(e.Value?.ToString())))" />
+                                }
+                            </PhotoSwipeOverlayControl>
+                        }
+
+                        <!-- Delete Overlay using new PhotoSwipeOverlayControl -->
+                        @if (AllowDelete)
+                        {
+                            <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
+                                                    ControlType="delete"
+                                                    Icon="×"
+                                                    Title="Delete this image"
+                                                    AriaLabel="Delete image"
+                                                    CssClass="delete-overlay-control"
+                                                    ButtonCssClass="size-delete btn-delete-item"
+                                                    OnClick="@(() => ShowDeleteConfirmation(new List<PhotoSwipeItem> { item }))" />
+                        }
+
+                        <!-- Reordering Controls -->
+                        @if (AllowReorder && ShowIndexLabels)
+                        {
+                            <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.TopLeft"
+                                                    ControlType="index"
+                                                    Icon="@GetIndexLabel(item)"
+                                                    ButtonCssClass="index-label"
+                                                    Title="@GetIndexTooltip(item)"
+                                                    Disabled="true"
+                                                    SpacingIndex="0"
+                                                    Direction="PhotoSwipeOverlayControl.GrowDirection.Right"
+                                                    ControlGap="4" />
+                        }
+
+                        @if (AllowReorder)
+                        {
+                            <!-- Up Arrow (Top-Right) -->
+                            <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.TopRight"
+                                                    ControlType="reorder-up"
+                                                    Icon="@GetUpArrowSvg()"
+                                                    ButtonCssClass="@GetUpArrowButtonClass(item)"
+                                                    Title="@GetUpArrowTooltip(item)"
+                                                    OnClick="@(() => MoveItemUp(item))"
+                                                    Disabled="@IsUpArrowDisabled(item)"
+                                                    SpacingIndex="0"
+                                                    Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
+                                                    ControlGap="4" />
+
+                            <!-- Down Arrow (Bottom-Right) -->
+                            <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
+                                                    ControlType="reorder-down"
+                                                    Icon="@GetDownArrowSvg()"
+                                                    ButtonCssClass="@GetDownArrowButtonClass(item)"
+                                                    Title="@GetDownArrowTooltip(item)"
+                                                    OnClick="@(() => MoveItemDown(item))"
+                                                    Disabled="@IsDownArrowDisabled(item)"
+                                                    SpacingIndex="@(AllowDelete ? 1 : 0)"
+                                                    Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
+                                                    ControlGap="4" />
+                        }
+
+                        <!-- Custom Overlay Controls (for user extensibility) -->
+                        @if (CustomOverlayControls != null)
+                        {
+                            @CustomOverlayControls(item)
+                        }
+
+                        <!-- Item Content -->
+                        @if (ItemTemplate != null)
+                        {
+                            @ItemTemplate(item)
                         }
                         else
                         {
-                            <input type="radio"
-                                   class="selection-radio"
-                                   name="single-select-@_galleryElementId"
-                                   checked="@(SelectedItem == item)"
-                                   @onchange="@(e => SelectSingle(item, !string.IsNullOrEmpty(e.Value?.ToString())))" />
+                            <img src="@item.ThumbnailUrl" alt="@item.Alt" class="gallery-image" />
                         }
-                    </PhotoSwipeOverlayControl>
-                }
-
-                <!-- Delete Overlay using new PhotoSwipeOverlayControl -->
-                @if (AllowDelete)
-                {
-                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
-                                            ControlType="delete"
-                                            Icon="×"
-                                            Title="Delete this image"
-                                            AriaLabel="Delete image"
-                                            CssClass="delete-overlay-control"
-                                            ButtonCssClass="size-delete btn-delete-item"
-                                            OnClick="@(() => ShowDeleteConfirmation(new List<PhotoSwipeItem> { item }))" />
-                }
-
-                <!-- Reordering Controls -->
-                @if (AllowReorder && ShowIndexLabels)
-                {
-                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.TopLeft"
-                                            ControlType="index"
-                                            Icon="@GetIndexLabel(item)"
-                                            ButtonCssClass="index-label"
-                                            Title="@GetIndexTooltip(item)"
-                                            Disabled="true"
-                                            SpacingIndex="0"
-                                            Direction="PhotoSwipeOverlayControl.GrowDirection.Right"
-                                            ControlGap="4" />
-                }
-
-                @if (AllowReorder)
-                {
-                    <!-- Up Arrow (Top-Right) -->
-                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.TopRight"
-                                            ControlType="reorder-up"
-                                            Icon="@GetUpArrowSvg()"
-                                            ButtonCssClass="@GetUpArrowButtonClass(item)"
-                                            Title="@GetUpArrowTooltip(item)"
-                                            OnClick="@(() => MoveItemUp(item))"
-                                            Disabled="@IsUpArrowDisabled(item)"
-                                            SpacingIndex="0"
-                                            Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
-                                            ControlGap="4" />
-
-                    <!-- Down Arrow (Bottom-Right) -->
-                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
-                                            ControlType="reorder-down"
-                                            Icon="@GetDownArrowSvg()"
-                                            ButtonCssClass="@GetDownArrowButtonClass(item)"
-                                            Title="@GetDownArrowTooltip(item)"
-                                            OnClick="@(() => MoveItemDown(item))"
-                                            Disabled="@IsDownArrowDisabled(item)"
-                                            SpacingIndex="@(AllowDelete ? 1 : 0)"
-                                            Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
-                                            ControlGap="4" />
-                }
-
-                <!-- Custom Overlay Controls (for user extensibility) -->
-                @if (CustomOverlayControls != null)
-                {
-                    @CustomOverlayControls(item)
-                }
-
-                <!-- Item Content -->
-                @if (ItemTemplate != null)
-                {
-                    @ItemTemplate(item)
-                }
-                else
-                {
-                    <img src="@item.ThumbnailUrl" alt="@item.Alt" class="gallery-image" />
-                }
-            </div>
-        </ItemTemplate>
-        
-    </PhotoSwipeGallery>
+                    </div>
+                </a>
+            }
+        }
+    </div>
 
     <!-- Upload Area - Below Position -->
     @if (AllowAdd && UploadPosition == PhotoSwipeUploadPosition.Below)
@@ -162,7 +190,7 @@
     }
 
     <!-- Empty State -->
-    @if (!_combinedItems.Any())
+    @if (!_displayItems.Any())
     {
         <div class="empty-gallery">
             <p>No images in gallery.</p>
@@ -187,6 +215,28 @@
             </div>
         </div>
     }
+
+    <!-- Contained Upload Modal -->
+    @if (UploadPosition == PhotoSwipeUploadPosition.Contained && _showContainedUpload)
+    {
+        <div class="contained-upload-modal">
+            <div class="modal-overlay" @onclick="CloseContainedUpload"></div>
+            <div class="modal-content contained-upload-content">
+                <div class="modal-header">
+                    <h3>Upload Images</h3>
+                    <button class="btn-close-modal" @onclick="CloseContainedUpload">×</button>
+                </div>
+                <PhotoSwipeUploadArea Id="@($"{_galleryElementId}-upload-contained")"
+                                    UploadMode="@UploadMode"
+                                    MaxFileSize="@MaxFileSize"
+                                    MaxFiles="@MaxFiles"
+                                    AllowMultipleFiles="@AllowMultipleFiles"
+                                    OnItemsUploaded="@OnContainedUploadCompleted"
+                                    OnUploadModeChanged="@OnUploadAreaModeChanged"
+                                    OnUploadError="@OnUploadAreaError" />
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -202,6 +252,8 @@
     [Parameter] public bool AllowDelete { get; set; } = false;
     [Parameter] public PhotoSwipeUploadMode UploadMode { get; set; } = PhotoSwipeUploadMode.Add;
     [Parameter] public PhotoSwipeUploadPosition UploadPosition { get; set; } = PhotoSwipeUploadPosition.Above;
+    [Parameter] public PhotoSwipeContainedUploadPosition ContainedUploadPosition { get; set; } = PhotoSwipeContainedUploadPosition.Last;
+    [Parameter] public string UploadPlaceholderText { get; set; } = "Add Files";
     [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
     [Parameter] public int MaxFiles { get; set; } = 20;
     [Parameter] public bool AllowMultipleFiles { get; set; } = true;
@@ -233,19 +285,36 @@
     private readonly List<PhotoSwipeItem> _confirmedItems = [];
     private readonly List<PhotoSwipeItem> _selectedItems = [];
 
-    private IEnumerable<PhotoSwipeItem> _combinedItems = [];
+    // Separate collections for data vs display
+    private IEnumerable<PhotoSwipeItem> _dataItems = [];
+    private List<PhotoSwipeItem> _displayItems = [];
     private List<PhotoSwipeItem> _itemsToDelete = [];
     private bool _showDeleteConfirmation = false;
-    
+
     // Store the gallery ElementId for consistent PhotoSwipe interop
     private string? _galleryElementId;
 
+    // PhotoSwipe interop
+    private PhotoSwipeInterop? _interop;
+    private string? _instanceId;
+    private IEnumerable<PhotoSwipeItem>? _previousDataItems;
+
+    // Placeholder management
+    private readonly List<PhotoSwipePlaceholderInfo> _placeholders = [];
+    private PhotoSwipePlaceholderInfo? _uploadPlaceholder;
+
+    // State for contained upload modal/area
+    private bool _showContainedUpload = false;
+
     protected override void OnInitialized()
     {
-        // Generate a consistent ElementId for the PhotoSwipeGallery
-        // This must be set before PhotoSwipeGallery.OnInitialized runs
+        // Generate a consistent ElementId for the gallery
         _galleryElementId = Id ?? $"photoswipe-upload-{Guid.NewGuid():N}";
-        UpdateCombinedItems();
+
+        // Initialize PhotoSwipe interop
+        _interop = new PhotoSwipeInterop(JS, InteropLogger);
+
+        UpdateDisplayItems();
     }
 
     protected override void OnParametersSet()
@@ -270,17 +339,155 @@
             _selectedItems.AddRange(SelectedItems);
         }
 
-        UpdateCombinedItems();
+        UpdateDisplayItems();
     }
 
-    private void UpdateCombinedItems()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        _combinedItems = UploadMode switch
+        Logger.LogDebug("🔄 OnAfterRenderAsync called for {ElementId}, firstRender: {FirstRender}, interop: {HasInterop}", _galleryElementId, firstRender, _interop != null);
+
+        if (firstRender && _interop != null && _galleryElementId != null)
+        {
+            try
+            {
+                Logger.LogInformation("🚀 Initializing PhotoSwipe for element {ElementId}", _galleryElementId);
+                _instanceId = await _interop.InitializeLightboxAsync(_galleryElementId, Options);
+                Logger.LogInformation("✅ PhotoSwipe initialized with instance ID: {InstanceId}", _instanceId);
+
+                // Add event handlers if delegates are present
+                if (OnOpen.HasDelegate)
+                {
+                    await _interop.AddEventHandlerAsync(_instanceId, "openPswp", OnOpen);
+                    Logger.LogDebug("📡 Added OnOpen event handler");
+                }
+
+                if (OnClose.HasDelegate)
+                {
+                    await _interop.AddEventHandlerAsync(_instanceId, "closePswp", OnClose);
+                    Logger.LogDebug("📡 Added OnClose event handler");
+                }
+
+                if (OnChange.HasDelegate)
+                {
+                    await _interop.AddEventHandlerAsync(_instanceId, "change", OnChange);
+                    Logger.LogDebug("📡 Added OnChange event handler");
+                }
+
+                _previousDataItems = _dataItems;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "❌ Error in OnAfterRenderAsync for {ElementId}: {Error}", _galleryElementId, ex.Message);
+            }
+        }
+        else if (!firstRender && _interop != null && _instanceId != null)
+        {
+            // Check if data items collection has changed
+            if (HasDataItemsChanged())
+            {
+                try
+                {
+                    Logger.LogInformation("🔄 Data items collection changed, refreshing PhotoSwipe for {ElementId}", _galleryElementId);
+                    await _interop.RefreshGalleryAsync(_instanceId);
+                    _previousDataItems = _dataItems;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "❌ Error refreshing PhotoSwipe for {ElementId}: {Error}", _galleryElementId, ex.Message);
+                }
+            }
+        }
+    }
+
+    private bool HasDataItemsChanged()
+    {
+        if (_dataItems == null && _previousDataItems == null)
+            return false;
+
+        if (_dataItems == null || _previousDataItems == null)
+            return true;
+
+        // For dynamic collections (like Lists), compare count and sequence
+        var currentItems = _dataItems.ToList();
+        var previousItems = _previousDataItems.ToList();
+
+        if (currentItems.Count != previousItems.Count)
+            return true;
+
+        // Compare item sources (basic change detection)
+        return !currentItems.Select(i => i.Src).SequenceEqual(previousItems.Select(i => i.Src));
+    }
+
+    private void UpdateDisplayItems()
+    {
+        // Build data items collection (without placeholders)
+        _dataItems = UploadMode switch
         {
             PhotoSwipeUploadMode.Add => _originalItems.Concat(_confirmedItems),
             PhotoSwipeUploadMode.Replace => _confirmedItems.Any() ? _confirmedItems : _originalItems,
             _ => _originalItems
         };
+
+        // Update placeholders collection
+        UpdatePlaceholders();
+
+        // Build display items collection (data items + placeholders)
+        _displayItems.Clear();
+
+        var dataItemsList = _dataItems.ToList();
+        var placeholderItems = _placeholders
+            .Where(p => p.IsEnabled)
+            .Select(p => p.ToDisplayItem())
+            .ToList();
+
+        // Add placeholders in the correct positions
+        if (placeholderItems.Any())
+        {
+            // For now, we only support contained upload position
+            // Future versions can add more sophisticated placeholder positioning
+            if (ContainedUploadPosition == PhotoSwipeContainedUploadPosition.First)
+            {
+                _displayItems.AddRange(placeholderItems);
+                _displayItems.AddRange(dataItemsList);
+            }
+            else // Last or default
+            {
+                _displayItems.AddRange(dataItemsList);
+                _displayItems.AddRange(placeholderItems);
+            }
+        }
+        else
+        {
+            _displayItems.AddRange(dataItemsList);
+        }
+    }
+
+    /// <summary>
+    /// Updates the placeholders collection based on current component state
+    /// </summary>
+    private void UpdatePlaceholders()
+    {
+        _placeholders.Clear();
+
+        // Add upload placeholder if in contained mode and uploads are allowed
+        if (UploadPosition == PhotoSwipeUploadPosition.Contained && AllowAdd)
+        {
+            _uploadPlaceholder = new PhotoSwipePlaceholderInfo
+            {
+                Type = PhotoSwipePlaceholderType.Upload,
+                Position = ContainedUploadPosition,
+                Text = UploadPlaceholderText,
+                IsEnabled = true
+            };
+            _placeholders.Add(_uploadPlaceholder);
+        }
+        else
+        {
+            _uploadPlaceholder = null;
+        }
+
+        // Future placeholder types can be added here
+        // Example: See More, Load More, etc.
     }
 
     // Event handlers for PhotoSwipeUploadArea
@@ -293,7 +500,7 @@
         }
 
         _confirmedItems.AddRange(uploadedItems);
-        UpdateCombinedItems();
+        UpdateDisplayItems();
 
         if (OnItemsUploaded.HasDelegate)
         {
@@ -302,7 +509,7 @@
 
         if (OnItemsChanged.HasDelegate)
         {
-            await OnItemsChanged.InvokeAsync(_combinedItems);
+            await OnItemsChanged.InvokeAsync(_dataItems);
         }
 
         StateHasChanged();
@@ -312,7 +519,7 @@
     private async Task OnUploadAreaModeChanged(PhotoSwipeUploadMode mode)
     {
         UploadMode = mode;
-        UpdateCombinedItems();
+        UpdateDisplayItems();
         StateHasChanged();
         await Task.CompletedTask;
     }
@@ -375,13 +582,14 @@
     private async Task SelectAll()
     {
         _selectedItems.Clear();
-        _selectedItems.AddRange(_combinedItems);
-        
+        // Select only data items (placeholders are never selectable)
+        _selectedItems.AddRange(_dataItems);
+
         if (SelectedItemsChanged.HasDelegate)
         {
             await SelectedItemsChanged.InvokeAsync(_selectedItems.ToList());
         }
-        
+
         StateHasChanged();
     }
 
@@ -417,7 +625,7 @@
                 _selectedItems.Remove(item);
             }
             
-            UpdateCombinedItems();
+            UpdateDisplayItems();
             
             // Notify parent components
             if (_itemsToDelete.Count == 1 && OnItemDeleted.HasDelegate)
@@ -432,7 +640,7 @@
             // Update OnItemsChanged
             if (OnItemsChanged.HasDelegate)
             {
-                await OnItemsChanged.InvokeAsync(_combinedItems);
+                await OnItemsChanged.InvokeAsync(_dataItems);
             }
             
             Logger.LogInformation("Deleted {ItemCount} items", _itemsToDelete.Count);
@@ -467,117 +675,120 @@
     // Reordering methods
     private async Task MoveItemUp(PhotoSwipeItem item)
     {
-        var items = _combinedItems.ToList();
-        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        // Don't allow reordering of upload placeholders
+        if (item.IsPlaceholder()) return;
+
+        var dataItems = _dataItems.ToList();
+        var currentIndex = dataItems.FindIndex(i => i.Src == item.Src);
         if (currentIndex > 0)
         {
-            // Swap with the item above
-            (items[currentIndex], items[currentIndex - 1]) = (items[currentIndex - 1], items[currentIndex]);
+            var targetIndex = currentIndex - 1;
 
-            // Update original or confirmed items based on which collection the item belongs to
-            UpdateItemCollections(items);
+            // Swap with the target item
+            (dataItems[currentIndex], dataItems[targetIndex]) = (dataItems[targetIndex], dataItems[currentIndex]);
 
-            // BUGFIX: Update _combinedItems directly to preserve the reordered sequence
-            // Don't call UpdateCombinedItems() which would regenerate from original order
-            _combinedItems = items;
+            // Update the underlying collections
+            UpdateDataCollections(dataItems);
+            UpdateDisplayItems();
 
             StateHasChanged();
             Logger.LogInformation("Image moved up: {Title} from position {OldPos} to {NewPos}",
-                item.Title ?? item.Alt, currentIndex + 1, currentIndex);
+                item.Title ?? item.Alt, currentIndex + 1, targetIndex + 1);
 
             if (OnItemsReordered.HasDelegate)
             {
-                await OnItemsReordered.InvokeAsync(items);
+                await OnItemsReordered.InvokeAsync(dataItems);
             }
 
             if (OnItemsChanged.HasDelegate)
             {
-                await OnItemsChanged.InvokeAsync(items);
+                await OnItemsChanged.InvokeAsync(dataItems);
             }
         }
     }
 
     private async Task MoveItemDown(PhotoSwipeItem item)
     {
-        var items = _combinedItems.ToList();
-        var currentIndex = items.FindIndex(i => i.Src == item.Src);
-        if (currentIndex < items.Count - 1)
+        // Don't allow reordering of upload placeholders
+        if (item.IsPlaceholder()) return;
+
+        var dataItems = _dataItems.ToList();
+        var currentIndex = dataItems.FindIndex(i => i.Src == item.Src);
+        if (currentIndex < dataItems.Count - 1)
         {
-            // Swap with the item below
-            (items[currentIndex], items[currentIndex + 1]) = (items[currentIndex + 1], items[currentIndex]);
+            var targetIndex = currentIndex + 1;
 
-            // Update original or confirmed items based on which collection the item belongs to
-            UpdateItemCollections(items);
+            // Swap with the target item
+            (dataItems[currentIndex], dataItems[targetIndex]) = (dataItems[targetIndex], dataItems[currentIndex]);
 
-            // BUGFIX: Update _combinedItems directly to preserve the reordered sequence
-            // Don't call UpdateCombinedItems() which would regenerate from original order
-            _combinedItems = items;
+            // Update the underlying collections
+            UpdateDataCollections(dataItems);
+            UpdateDisplayItems();
 
             StateHasChanged();
             Logger.LogInformation("Image moved down: {Title} from position {OldPos} to {NewPos}",
-                item.Title ?? item.Alt, currentIndex + 1, currentIndex + 2);
+                item.Title ?? item.Alt, currentIndex + 1, targetIndex + 1);
 
             if (OnItemsReordered.HasDelegate)
             {
-                await OnItemsReordered.InvokeAsync(items);
+                await OnItemsReordered.InvokeAsync(dataItems);
             }
 
             if (OnItemsChanged.HasDelegate)
             {
-                await OnItemsChanged.InvokeAsync(items);
+                await OnItemsChanged.InvokeAsync(dataItems);
             }
         }
     }
 
-    private void UpdateItemCollections(List<PhotoSwipeItem> reorderedItems)
+    private void UpdateDataCollections(List<PhotoSwipeItem> reorderedItems)
     {
-        // BUGFIX: For reordering to work across collections, we need to treat all items as one unified collection
-        // The original separation between _originalItems and _confirmedItems prevents cross-collection reordering
+        // Filter out any placeholders that might have been included
+        var dataOnlyItems = reorderedItems.Where(item => !item.IsPlaceholder()).ToList();
 
         if (UploadMode == PhotoSwipeUploadMode.Replace && _confirmedItems.Any())
         {
             // In replace mode with confirmed items, update confirmed items
             _confirmedItems.Clear();
-            _confirmedItems.AddRange(reorderedItems);
+            _confirmedItems.AddRange(dataOnlyItems);
         }
         else
         {
-            // Instead of maintaining artificial separation, put all reordered items in _originalItems
-            // and clear _confirmedItems, since the user has explicitly reordered them into a unified sequence
+            // Put all reordered items in _originalItems and clear _confirmedItems
             _originalItems.Clear();
             _confirmedItems.Clear();
 
-            _originalItems.AddRange(reorderedItems);
+            _originalItems.AddRange(dataOnlyItems);
         }
     }
 
     // Reordering helper methods
     private string GetIndexLabel(PhotoSwipeItem item)
     {
-        var items = _combinedItems.ToList();
-        var currentIndex = items.FindIndex(i => i.Src == item.Src);
-        return $"{currentIndex + 1}/{items.Count}";
+        var dataItems = _dataItems.ToList();
+        var currentIndex = dataItems.FindIndex(i => i.Src == item.Src);
+        return $"{currentIndex + 1}/{dataItems.Count}";
     }
 
     private string GetIndexTooltip(PhotoSwipeItem item)
     {
-        var items = _combinedItems.ToList();
-        var currentIndex = items.FindIndex(i => i.Src == item.Src);
-        return $"Image {currentIndex + 1} of {items.Count}";
+        var dataItems = _dataItems.ToList();
+        var currentIndex = dataItems.FindIndex(i => i.Src == item.Src);
+        return $"Image {currentIndex + 1} of {dataItems.Count}";
     }
 
     private bool IsUpArrowDisabled(PhotoSwipeItem item)
     {
-        var items = _combinedItems.ToList();
-        var currentIndex = items.FindIndex(i => i.Src == item.Src);
+        var dataItems = _dataItems.ToList();
+        var currentIndex = dataItems.FindIndex(i => i.Src == item.Src);
         return currentIndex <= 0; // Disabled if first item
     }
 
     private bool IsDownArrowDisabled(PhotoSwipeItem item)
     {
-        var items = _combinedItems.ToList();
-        var currentIndex = items.FindIndex(i => i.Src == item.Src);
-        return currentIndex >= items.Count - 1; // Disabled if last item
+        var dataItems = _dataItems.ToList();
+        var currentIndex = dataItems.FindIndex(i => i.Src == item.Src);
+        return currentIndex >= dataItems.Count - 1; // Disabled if last item
     }
 
     private string GetUpArrowButtonClass(PhotoSwipeItem item)
@@ -615,9 +826,46 @@
     }
 
 
+    /// <summary>
+    /// Handles click on upload placeholder to show contained upload interface
+    /// </summary>
+    private void OnUploadPlaceholderClick()
+    {
+        _showContainedUpload = true;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Closes the contained upload modal
+    /// </summary>
+    private void CloseContainedUpload()
+    {
+        _showContainedUpload = false;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Handles completion of uploads through the contained upload modal
+    /// </summary>
+    private async Task OnContainedUploadCompleted(IEnumerable<PhotoSwipeItem> uploadedItems)
+    {
+        // Close the modal first
+        _showContainedUpload = false;
+
+        // Process the uploaded items the same way as regular uploads
+        await OnUploadAreaItemsUploaded(uploadedItems);
+    }
+
     public async ValueTask DisposeAsync()
     {
-        // Component cleanup if needed
-        await Task.CompletedTask;
+        if (_interop != null && _instanceId != null)
+        {
+            await _interop.DestroyAsync(_instanceId);
+        }
+
+        if (_interop != null)
+        {
+            await _interop.DisposeAsync();
+        }
     }
 }

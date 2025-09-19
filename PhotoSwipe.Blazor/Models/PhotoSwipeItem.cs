@@ -12,4 +12,10 @@ public class PhotoSwipeItem
     public string? ThumbnailClass { get; set; }
     public string? SrcSet { get; set; }
     public object? Data { get; set; }
+
+    /// <summary>
+    /// Custom data object that can contain any additional metadata for this item.
+    /// Used by placeholders to store identification and configuration data.
+    /// </summary>
+    public object? CustomData { get; set; }
 }
