@@ -16,6 +16,7 @@
     {
         <button type="button"
                 class="overlay-control-button @ButtonCssClass"
+                style="@GetButtonSizeStyle()"
                 @onclick="OnClick"
                 @onclick:preventDefault="PreventDefault"
                 @onclick:stopPropagation="StopPropagation"
@@ -57,6 +58,7 @@
     /// </summary>
     public enum GrowDirection
     {
+        Auto,
         Right,
         Left,
         Down,
@@ -65,6 +67,7 @@
 
     /// <summary>
     /// Position of the overlay control relative to the gallery item
+    /// Only used when not inside a PhotoSwipeOverlayControlGroup
     /// </summary>
     [Parameter] public OverlayPosition Position { get; set; } = OverlayPosition.TopRight;
 
@@ -133,26 +136,33 @@
     /// </summary>
     [Parameter] public string? CustomPosition { get; set; }
 
-    /// <summary>
-    /// Spacing index for controls sharing the same position (0 = first, 1 = second, etc.)
-    /// </summary>
-    [Parameter] public int SpacingIndex { get; set; } = 0;
 
     /// <summary>
-    /// Direction to grow when multiple controls share the same position
+    /// Button size in pixels - defaults to responsive values (40px desktop, 44px mobile)
     /// </summary>
-    [Parameter] public GrowDirection Direction { get; set; } = GrowDirection.Right;
-
-    /// <summary>
-    /// Gap between controls when multiple controls share the same position (in pixels)
-    /// </summary>
-    [Parameter] public int ControlGap { get; set; } = 4;
+    [Parameter] public int? ButtonSize { get; set; }
 
     /// <summary>
     /// Additional HTML attributes
     /// </summary>
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>
+    /// Cascading parameter from PhotoSwipeOverlayControlGroup
+    /// </summary>
+    [CascadingParameter] public PhotoSwipeOverlayControlGroup? ControlGroup { get; set; }
+
+    private int _spacingIndex = 0;
+    private bool _isInGroup => ControlGroup != null;
+
+    protected override void OnInitialized()
+    {
+        if (_isInGroup)
+        {
+            _spacingIndex = ControlGroup!.RegisterControl();
+        }
+    }
 
     private string GetPositionClass()
     {
@@ -174,18 +184,22 @@
 
     private string? GetPositionStyle()
     {
+        // When inside a control group, let the group handle positioning
+        if (_isInGroup)
+        {
+            return !string.IsNullOrEmpty(CustomPosition) ? CustomPosition : null;
+        }
+
+        // Standalone positioning (when not in a group)
         if (!string.IsNullOrEmpty(CustomPosition))
         {
             return CustomPosition;
         }
 
-        // Calculate spacing offset based on spacing index and grow direction
-        var spacingOffset = SpacingIndex * (40 + ControlGap); // 40px is typical button width + gap
-        var spacingStyle = GetSpacingStyle(spacingOffset);
-
+        // Simple positioning with optional custom offset
         if (!string.IsNullOrEmpty(Offset))
         {
-            var baseStyle = Position switch
+            return Position switch
             {
                 OverlayPosition.TopLeft => $"top: {Offset}; left: {Offset};",
                 OverlayPosition.TopRight => $"top: {Offset}; right: {Offset};",
@@ -198,77 +212,41 @@
                 OverlayPosition.Center => $"top: 50%; left: 50%; transform: translate(-50%, -50%);",
                 _ => null
             };
-            return CombineStyles(baseStyle, spacingStyle);
         }
 
-        // Apply spacing even without custom offset
-        if (SpacingIndex > 0)
-        {
-            var baseStyle = Position switch
-            {
-                OverlayPosition.TopLeft => "top: 12px; left: 12px;",
-                OverlayPosition.TopRight => "top: 12px; right: 12px;",
-                OverlayPosition.TopCenter => "top: 12px; left: 50%; transform: translateX(-50%);",
-                OverlayPosition.BottomLeft => "bottom: 12px; left: 12px;",
-                OverlayPosition.BottomRight => "bottom: 12px; right: 12px;",
-                OverlayPosition.BottomCenter => "bottom: 12px; left: 50%; transform: translateX(-50%);",
-                OverlayPosition.CenterLeft => "top: 50%; left: 12px; transform: translateY(-50%);",
-                OverlayPosition.CenterRight => "top: 50%; right: 12px; transform: translateY(-50%);",
-                OverlayPosition.Center => "top: 50%; left: 50%; transform: translate(-50%, -50%);",
-                _ => null
-            };
-            return CombineStyles(baseStyle, spacingStyle);
-        }
-
+        // Default positioning uses CSS classes (no inline styles needed)
         return null;
     }
 
-    private string? GetSpacingStyle(int spacingOffset)
+
+    private int GetResponsiveButtonSize()
     {
-        if (SpacingIndex == 0 || spacingOffset == 0) return null;
-
-        return (Position, Direction) switch
+        // When in a group, use the group's button size
+        if (_isInGroup && ControlGroup!.ButtonSize.HasValue)
         {
-            // Top positions
-            (OverlayPosition.TopLeft, GrowDirection.Right) => $"left: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.TopLeft, GrowDirection.Down) => $"top: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.TopRight, GrowDirection.Left) => $"right: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.TopRight, GrowDirection.Down) => $"top: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.TopCenter, GrowDirection.Right) => $"left: calc(50% + {spacingOffset / 2}px); transform: translateX(-50%);",
-            (OverlayPosition.TopCenter, GrowDirection.Left) => $"left: calc(50% - {spacingOffset / 2}px); transform: translateX(-50%);",
-            (OverlayPosition.TopCenter, GrowDirection.Down) => $"top: calc(12px + {spacingOffset}px);",
+            return ControlGroup.ButtonSize.Value;
+        }
 
-            // Bottom positions
-            (OverlayPosition.BottomLeft, GrowDirection.Right) => $"left: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.BottomLeft, GrowDirection.Up) => $"bottom: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.BottomRight, GrowDirection.Left) => $"right: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.BottomRight, GrowDirection.Up) => $"bottom: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.BottomCenter, GrowDirection.Right) => $"left: calc(50% + {spacingOffset / 2}px); transform: translateX(-50%);",
-            (OverlayPosition.BottomCenter, GrowDirection.Left) => $"left: calc(50% - {spacingOffset / 2}px); transform: translateX(-50%);",
-            (OverlayPosition.BottomCenter, GrowDirection.Up) => $"bottom: calc(12px + {spacingOffset}px);",
+        // Use control's custom button size if provided
+        if (ButtonSize.HasValue) return ButtonSize.Value;
 
-            // Center positions
-            (OverlayPosition.CenterLeft, GrowDirection.Right) => $"left: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.CenterLeft, GrowDirection.Up) => $"top: calc(50% - {spacingOffset / 2}px); transform: translateY(-50%);",
-            (OverlayPosition.CenterLeft, GrowDirection.Down) => $"top: calc(50% + {spacingOffset / 2}px); transform: translateY(-50%);",
-            (OverlayPosition.CenterRight, GrowDirection.Left) => $"right: calc(12px + {spacingOffset}px);",
-            (OverlayPosition.CenterRight, GrowDirection.Up) => $"top: calc(50% - {spacingOffset / 2}px); transform: translateY(-50%);",
-            (OverlayPosition.CenterRight, GrowDirection.Down) => $"top: calc(50% + {spacingOffset / 2}px); transform: translateY(-50%);",
-            (OverlayPosition.Center, GrowDirection.Right) => $"left: calc(50% + {spacingOffset / 2}px); transform: translate(-50%, -50%);",
-            (OverlayPosition.Center, GrowDirection.Left) => $"left: calc(50% - {spacingOffset / 2}px); transform: translate(-50%, -50%);",
-            (OverlayPosition.Center, GrowDirection.Up) => $"top: calc(50% - {spacingOffset / 2}px); transform: translate(-50%, -50%);",
-            (OverlayPosition.Center, GrowDirection.Down) => $"top: calc(50% + {spacingOffset / 2}px); transform: translate(-50%, -50%);",
-
-            _ => null
-        };
+        // Default responsive sizing based on CSS variables
+        // 40px on desktop, 44px on mobile (matches CSS media query at 768px)
+        // Since we can't detect screen size in Blazor Server, we use the larger mobile size
+        // to ensure adequate spacing for the most constrained scenario
+        return 44;
     }
 
-    private string? CombineStyles(string? baseStyle, string? spacingStyle)
+    private string? GetButtonSizeStyle()
     {
-        if (string.IsNullOrEmpty(baseStyle) && string.IsNullOrEmpty(spacingStyle)) return null;
-        if (string.IsNullOrEmpty(baseStyle)) return spacingStyle;
-        if (string.IsNullOrEmpty(spacingStyle)) return baseStyle;
+        var effectiveSize = GetResponsiveButtonSize();
 
-        return $"{baseStyle} {spacingStyle}";
+        // Always apply size when we have an explicit value (either from group or control)
+        if ((_isInGroup && ControlGroup!.ButtonSize.HasValue) || ButtonSize.HasValue)
+        {
+            return $"width: {effectiveSize}px; height: {effectiveSize}px;";
+        }
+
+        return null;
     }
 }
