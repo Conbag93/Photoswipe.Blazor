@@ -1,0 +1,80 @@
+.photoswipe-overlay-control-group {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    pointer-events: none;
+}
+
+/* Position classes */
+.photoswipe-overlay-control-group.position-top-left {
+    top: 12px;
+    left: 12px;
+}
+
+.photoswipe-overlay-control-group.position-top-right {
+    top: 12px;
+    right: 12px;
+}
+
+.photoswipe-overlay-control-group.position-top-center {
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.photoswipe-overlay-control-group.position-bottom-left {
+    bottom: 12px;
+    left: 12px;
+}
+
+.photoswipe-overlay-control-group.position-bottom-right {
+    bottom: 12px;
+    right: 12px;
+}
+
+.photoswipe-overlay-control-group.position-bottom-center {
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.photoswipe-overlay-control-group.position-center-left {
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+}
+
+.photoswipe-overlay-control-group.position-center-right {
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+}
+
+.photoswipe-overlay-control-group.position-center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.photoswipe-overlay-control-group.position-custom {
+    /* Custom positioning via style attribute */
+}
+
+/* Layout direction classes - these will be added dynamically via CSS variables */
+.photoswipe-overlay-control-group {
+    --group-direction: row;
+    --group-spacing: 4px;
+    flex-direction: var(--group-direction);
+    gap: var(--group-spacing);
+}
+
+/* Enable pointer events for child controls */
+.photoswipe-overlay-control-group ::deep .photoswipe-overlay-control {
+    pointer-events: auto;
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    transform: none;
+}

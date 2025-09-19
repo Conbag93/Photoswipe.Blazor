@@ -1,0 +1,187 @@
+@using Microsoft.AspNetCore.Components
+@using System.Collections.Generic
+
+<div class="photoswipe-overlay-control-group @GetPositionClass() @CssClass"
+     data-pswp-overlay-control-group="true"
+     data-pswp-prevent-gallery="true"
+     style="@GetGroupPositionStyle()"
+     @attributes="AdditionalAttributes">
+
+    <CascadingValue Value="this">
+        @ChildContent
+    </CascadingValue>
+</div>
+
+@code {
+    /// <summary>
+    /// Position of the control group relative to the gallery item
+    /// </summary>
+    [Parameter] public PhotoSwipeOverlayControl.OverlayPosition Position { get; set; } = PhotoSwipeOverlayControl.OverlayPosition.TopRight;
+
+    /// <summary>
+    /// Direction controls should grow when multiple controls are in the group
+    /// </summary>
+    [Parameter] public PhotoSwipeOverlayControl.GrowDirection LayoutDirection { get; set; } = PhotoSwipeOverlayControl.GrowDirection.Auto;
+
+    /// <summary>
+    /// Spacing between controls in the group (in pixels)
+    /// </summary>
+    [Parameter] public int Spacing { get; set; } = 4;
+
+    /// <summary>
+    /// Custom offset from the edge (in CSS units like px, rem, etc.)
+    /// </summary>
+    [Parameter] public string? Offset { get; set; }
+
+    /// <summary>
+    /// Default button size for controls in this group (in pixels)
+    /// Individual controls can override this
+    /// </summary>
+    [Parameter] public int? ButtonSize { get; set; }
+
+    /// <summary>
+    /// Custom positioning styles for the entire group
+    /// </summary>
+    [Parameter] public string? CustomPosition { get; set; }
+
+    /// <summary>
+    /// Additional CSS classes for the group container
+    /// </summary>
+    [Parameter] public string? CssClass { get; set; }
+
+    /// <summary>
+    /// Child controls content
+    /// </summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
+    /// Additional HTML attributes
+    /// </summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private int _controlCount = 0;
+
+    /// <summary>
+    /// Register a control with this group and return its spacing index
+    /// </summary>
+    internal int RegisterControl()
+    {
+        return _controlCount++;
+    }
+
+    /// <summary>
+    /// Get the effective button size for controls in this group
+    /// </summary>
+    internal int GetEffectiveButtonSize()
+    {
+        return ButtonSize ?? 44; // Default responsive size
+    }
+
+    /// <summary>
+    /// Get spacing offset for a control at the given index
+    /// </summary>
+    internal int GetSpacingOffset(int index)
+    {
+        if (index == 0) return 0;
+        return index * (GetEffectiveButtonSize() + Spacing);
+    }
+
+    /// <summary>
+    /// Get the intelligent layout direction based on position and constraints
+    /// </summary>
+    internal PhotoSwipeOverlayControl.GrowDirection GetIntelligentDirection()
+    {
+        // Use explicit direction if provided (anything other than Auto)
+        if (LayoutDirection != PhotoSwipeOverlayControl.GrowDirection.Auto)
+        {
+            return LayoutDirection;
+        }
+
+        // Apply intelligent defaults based on position when in Auto mode
+        return Position switch
+        {
+            PhotoSwipeOverlayControl.OverlayPosition.TopLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+            PhotoSwipeOverlayControl.OverlayPosition.TopRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+            PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+            PhotoSwipeOverlayControl.OverlayPosition.BottomRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+            PhotoSwipeOverlayControl.OverlayPosition.TopCenter => PhotoSwipeOverlayControl.GrowDirection.Down,
+            PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => PhotoSwipeOverlayControl.GrowDirection.Up,
+            PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => PhotoSwipeOverlayControl.GrowDirection.Right,
+            PhotoSwipeOverlayControl.OverlayPosition.CenterRight => PhotoSwipeOverlayControl.GrowDirection.Left,
+            PhotoSwipeOverlayControl.OverlayPosition.Center => PhotoSwipeOverlayControl.GrowDirection.Right,
+            _ => PhotoSwipeOverlayControl.GrowDirection.Right
+        };
+    }
+
+    private string GetPositionClass()
+    {
+        return Position switch
+        {
+            PhotoSwipeOverlayControl.OverlayPosition.TopLeft => "position-top-left",
+            PhotoSwipeOverlayControl.OverlayPosition.TopRight => "position-top-right",
+            PhotoSwipeOverlayControl.OverlayPosition.TopCenter => "position-top-center",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => "position-bottom-left",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomRight => "position-bottom-right",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => "position-bottom-center",
+            PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => "position-center-left",
+            PhotoSwipeOverlayControl.OverlayPosition.CenterRight => "position-center-right",
+            PhotoSwipeOverlayControl.OverlayPosition.Center => "position-center",
+            PhotoSwipeOverlayControl.OverlayPosition.Custom => "position-custom",
+            _ => "position-top-right"
+        };
+    }
+
+    private string? GetGroupPositionStyle()
+    {
+        var styles = new List<string>();
+
+        // Always set CSS variables for spacing and direction
+        styles.Add($"--group-spacing: {Spacing}px");
+        styles.Add($"--group-direction: {GetFlexDirection()}");
+
+        // Add custom positioning if provided
+        if (!string.IsNullOrEmpty(CustomPosition))
+        {
+            styles.Add(CustomPosition);
+        }
+        // Add offset-based positioning if provided
+        else if (!string.IsNullOrEmpty(Offset))
+        {
+            var offsetStyle = Position switch
+            {
+                PhotoSwipeOverlayControl.OverlayPosition.TopLeft => $"top: {Offset}; left: {Offset}",
+                PhotoSwipeOverlayControl.OverlayPosition.TopRight => $"top: {Offset}; right: {Offset}",
+                PhotoSwipeOverlayControl.OverlayPosition.TopCenter => $"top: {Offset}; left: 50%; transform: translateX(-50%)",
+                PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => $"bottom: {Offset}; left: {Offset}",
+                PhotoSwipeOverlayControl.OverlayPosition.BottomRight => $"bottom: {Offset}; right: {Offset}",
+                PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => $"bottom: {Offset}; left: 50%; transform: translateX(-50%)",
+                PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => $"top: 50%; left: {Offset}; transform: translateY(-50%)",
+                PhotoSwipeOverlayControl.OverlayPosition.CenterRight => $"top: 50%; right: {Offset}; transform: translateY(-50%)",
+                PhotoSwipeOverlayControl.OverlayPosition.Center => $"top: 50%; left: 50%; transform: translate(-50%, -50%)",
+                _ => null
+            };
+
+            if (offsetStyle != null)
+            {
+                styles.Add(offsetStyle);
+            }
+        }
+
+        return styles.Count > 0 ? string.Join("; ", styles) : null;
+    }
+
+    private string GetFlexDirection()
+    {
+        var direction = GetIntelligentDirection();
+        return direction switch
+        {
+            PhotoSwipeOverlayControl.GrowDirection.Auto => "row", // Should not happen, but fallback to row
+            PhotoSwipeOverlayControl.GrowDirection.Right => "row",
+            PhotoSwipeOverlayControl.GrowDirection.Left => "row-reverse",
+            PhotoSwipeOverlayControl.GrowDirection.Down => "column",
+            PhotoSwipeOverlayControl.GrowDirection.Up => "column-reverse",
+            _ => "row"
+        };
+    }
+}
