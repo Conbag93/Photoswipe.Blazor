@@ -474,3 +474,261 @@ VS Code tasks are configured for all projects:
    - WASM: http://localhost:5225
 
 Both applications will have identical functionality thanks to the shared PhotoSwipe.Demos library.
+
+## Git Conventions and Version Management
+
+### Conventional Commits
+
+This project follows the **Conventional Commits** specification for automated versioning and changelog generation. ALWAYS use these commit formats:
+
+#### Commit Types and Version Impact
+
+| Type | Version Bump | Description | Example |
+|------|--------------|-------------|---------|
+| `feat:` | Minor (1.0.0 → 1.1.0) | New feature | `feat: add drag and drop upload support` |
+| `fix:` | Patch (1.0.0 → 1.0.1) | Bug fix | `fix: resolve memory leak in PhotoSwipe disposal` |
+| `perf:` | Patch | Performance improvement | `perf: optimize image loading performance` |
+| `refactor:` | Patch | Code refactoring | `refactor: extract overlay positioning logic` |
+| `docs:` | None | Documentation changes | `docs: update README installation guide` |
+| `test:` | None | Test additions/changes | `test: add unit tests for ImageProcessingService` |
+| `build:` | None | Build system changes | `build: update npm dependencies` |
+| `ci:` | None | CI/CD changes | `ci: add GitHub Actions workflow` |
+| `chore:` | None | Maintenance tasks | `chore: update .gitignore` |
+| `style:` | None | Code style changes | `style: format code with prettier` |
+
+#### Breaking Changes
+
+For breaking changes, use `!` after type or `BREAKING CHANGE:` in footer:
+```bash
+# Method 1: Exclamation mark
+feat!: remove deprecated PhotoSwipeOptions.autoplay property
+
+# Method 2: Footer notation
+feat: restructure PhotoSwipeItem model
+
+BREAKING CHANGE: The PhotoSwipeItem.Data property type changed from object to Dictionary<string, object>
+```
+
+Breaking changes trigger a major version bump (1.0.0 → 2.0.0).
+
+#### Commit Message Format
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Examples with scope:
+- `feat(upload): add image compression options`
+- `fix(gallery): resolve thumbnail alignment issues`
+- `docs(readme): add usage examples for overlay controls`
+
+### Version Management with Versionize
+
+The project uses **Versionize** for automatic version management based on commits:
+
+1. **Automatic Version Detection**: Versionize analyzes commits since the last release
+2. **Version Bumping**: Updates version in .csproj files automatically
+3. **Changelog Generation**: Creates/updates CHANGELOG.md from commit messages
+4. **Git Tagging**: Creates annotated git tags for releases
+
+#### Manual Versionize Usage
+```bash
+# Check what version would be created (dry run)
+versionize --dry-run
+
+# Create new version (updates files, commits, and tags)
+versionize
+
+# Skip dirty check for CI environments
+versionize --skip-dirty
+
+# Create pre-release version
+versionize --pre-release beta
+```
+
+### GitHub Actions CI/CD
+
+The `.github/workflows/nuget-publish.yml` workflow automatically:
+1. Builds and tests on every push/PR
+2. On main branch with version-worthy commits:
+   - Runs versionize to bump version
+   - Creates GitHub release with changelog
+   - Publishes to GitHub Packages (automatic)
+   - Publishes to NuGet.org (if API key configured)
+
+## NuGet Package Management
+
+### Package Configuration
+
+The `PhotoSwipe.Blazor.csproj` contains all NuGet package metadata:
+
+```xml
+<PropertyGroup>
+  <!-- Package Identity -->
+  <PackageId>PhotoSwipe.Blazor</PackageId>
+  <Version>1.0.0</Version> <!-- Managed by Versionize -->
+  <Authors>Connor</Authors>
+
+  <!-- Package Metadata -->
+  <Description>Comprehensive Blazor component library...</Description>
+  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  <PackageProjectUrl>https://github.com/conbag93/Photoswipe.Blazor</PackageProjectUrl>
+  <RepositoryUrl>https://github.com/conbag93/Photoswipe.Blazor</RepositoryUrl>
+  <PackageTags>blazor;photoswipe;gallery;lightbox</PackageTags>
+
+  <!-- Package Assets -->
+  <PackageReadmeFile>README.md</PackageReadmeFile>
+  <PackageIcon>icon.png</PackageIcon>
+
+  <!-- Build Configuration -->
+  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  <IncludeSymbols>true</IncludeSymbols>
+  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+</PropertyGroup>
+```
+
+### Local Package Development
+
+#### Building the Package
+```bash
+# Build PhotoSwipe assets first
+cd PhotoSwipe.Blazor
+npm install
+npm run build
+
+# Create NuGet package
+dotnet pack --configuration Release --output ./nupkg
+```
+
+#### Testing the Package Locally
+```bash
+# Add local package source
+dotnet nuget add source /path/to/nupkg --name LocalPhotoSwipe
+
+# Install in test project
+dotnet add package PhotoSwipe.Blazor --source LocalPhotoSwipe --version 1.0.0
+
+# Remove local source when done
+dotnet nuget remove source LocalPhotoSwipe
+```
+
+### Publishing Process
+
+#### GitHub Packages (Automatic)
+Every push to main with version-worthy commits automatically publishes to GitHub Packages.
+No additional configuration needed - uses built-in GITHUB_TOKEN.
+
+#### NuGet.org Publishing
+
+1. **Create NuGet API Key**:
+   - Go to nuget.org → API Keys
+   - Create key with "Push" scope
+   - Glob pattern: `PhotoSwipe.Blazor*`
+
+2. **Configure GitHub Secret**:
+   - Repository Settings → Secrets → Actions
+   - Add `NUGET_API_KEY` with your key
+
+3. **Automatic Publishing**:
+   - Push `feat:` or `fix:` commits to main
+   - Workflow handles versioning and publishing
+
+#### Manual Publishing
+```bash
+# Ensure you're on main with clean working directory
+git checkout main
+git pull
+
+# Run versionize to create new version
+versionize
+
+# Push changes and tags
+git push --follow-tags
+
+# Package will be built and published by GitHub Actions
+```
+
+### Package Content Structure
+
+The published NuGet package includes:
+```
+PhotoSwipe.Blazor.nupkg
+├── lib/net9.0/
+│   ├── PhotoSwipe.Blazor.dll
+│   └── PhotoSwipe.Blazor.xml (documentation)
+├── staticwebassets/
+│   ├── css/photoswipe.css
+│   ├── js/photoswipe.esm.min.js
+│   ├── js/photoswipe-lightbox.esm.min.js
+│   └── photoswipe-simple.js
+├── build/
+│   └── Microsoft.AspNetCore.StaticWebAssetEndpoints.props
+├── README.md
+└── icon.png
+```
+
+### Consuming the Package
+
+#### Installation
+```bash
+# From NuGet.org
+dotnet add package PhotoSwipe.Blazor
+
+# From GitHub Packages
+dotnet nuget add source https://nuget.pkg.github.com/conbag93/index.json --name GitHub
+dotnet add package PhotoSwipe.Blazor --source GitHub
+```
+
+#### Usage in Blazor Projects
+```csharp
+// Program.cs
+builder.Services.AddPhotoSwipeBlazor();
+```
+
+```html
+<!-- _Host.cshtml or index.html -->
+<link href="_content/PhotoSwipe.Blazor/css/photoswipe.css" rel="stylesheet" />
+<script type="module" src="_content/PhotoSwipe.Blazor/js/photoswipe-interop.js"></script>
+```
+
+### Version History and Changelog
+
+The `CHANGELOG.md` is automatically maintained by Versionize and follows this format:
+```markdown
+# Changelog
+
+## [1.1.0] - 2025-09-22
+
+### Features
+- feat: add NuGet package publishing infrastructure
+
+### Bug Fixes
+- fix: resolve memory leak in component disposal
+
+### Breaking Changes
+- BREAKING CHANGE: Removed deprecated properties
+```
+
+### Troubleshooting
+
+#### Package Not Publishing
+- Verify `NUGET_API_KEY` secret is set correctly
+- Check GitHub Actions logs for errors
+- Ensure commit messages follow conventional format
+- Verify no uncommitted changes before versionize
+
+#### Version Not Bumping
+- Check commit messages use correct conventional format
+- Ensure commits are on main branch
+- Run `versionize --dry-run` locally to test
+
+#### Package Content Issues
+- Run `dotnet pack` locally and inspect .nupkg with:
+  ```bash
+  unzip -l nupkg/PhotoSwipe.Blazor.1.0.0.nupkg
+  ```
+- Verify all static assets are in wwwroot/
+- Check .csproj PackageReference versions

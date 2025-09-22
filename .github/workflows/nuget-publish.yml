@@ -145,12 +145,18 @@ jobs:
           --skip-duplicate
 
     - name: Publish to NuGet.org
-      if: steps.versionize.outputs.has_changes == 'true' && secrets.NUGET_API_KEY != ''
+      if: steps.versionize.outputs.has_changes == 'true'
+      env:
+        NUGET_KEY: ${{ secrets.NUGET_API_KEY }}
       run: |
-        dotnet nuget push ./nupkg/*.nupkg \
-          --api-key ${{ secrets.NUGET_API_KEY }} \
-          --source https://api.nuget.org/v3/index.json \
-          --skip-duplicate
+        if [ -n "$NUGET_KEY" ]; then
+          dotnet nuget push ./nupkg/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+        else
+          echo "NuGet API key not configured - skipping NuGet.org publish"
+        fi
 
     - name: Create GitHub Release
       if: steps.versionize.outputs.has_changes == 'true'
