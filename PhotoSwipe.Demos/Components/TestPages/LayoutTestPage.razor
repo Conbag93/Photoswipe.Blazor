@@ -9,24 +9,100 @@
         <p>Isolated testing environment for PhotoSwipe grid layout functionality. Focus on CSS Grid layouts, item spanning, responsive design, and creative layout compositions.</p>
     </div>
 
-    <div class="layout-test-gallery @(_simulateMobile ? "mobile-simulation" : "")">
-        <div class="gallery-container">
-            <PhotoSwipeGallery
-                Id="layout-test-gallery"
-                Items="@GetDisplayItems()"
-                CssClass="@GetGalleryLayoutClass()"
-                Options="@_galleryOptions" />
+    <!-- Default Grid Responsive Testing Section -->
+    <div class="responsive-grid-testing">
+        <h2>📱 Default Grid Responsive Testing</h2>
+        <p>Test how the default grid layout responds at different screen sizes. This section shows the actual CSS Grid behavior and column counts.</p>
+
+        <div class="screen-size-controls">
+            <h3>🖥️ Screen Size Simulation</h3>
+            <div class="screen-size-options">
+                <button type="button" class="screen-size-btn @(_currentScreenSize == 1200 ? "active" : "")" @onclick="@(() => SetScreenSize(1200))">
+                    💻 Desktop<br><small>1200px</small>
+                </button>
+                <button type="button" class="screen-size-btn @(_currentScreenSize == 768 ? "active" : "")" @onclick="@(() => SetScreenSize(768))">
+                    📱 Tablet<br><small>768px</small>
+                </button>
+                <button type="button" class="screen-size-btn @(_currentScreenSize == 600 ? "active" : "")" @onclick="@(() => SetScreenSize(600))">
+                    📱 Small Tablet<br><small>600px</small>
+                </button>
+                <button type="button" class="screen-size-btn @(_currentScreenSize == 480 ? "active" : "")" @onclick="@(() => SetScreenSize(480))">
+                    📱 Large Phone<br><small>480px</small>
+                </button>
+                <button type="button" class="screen-size-btn @(_currentScreenSize == 375 ? "active" : "")" @onclick="@(() => SetScreenSize(375))">
+                    📱 Phone<br><small>375px</small>
+                </button>
+            </div>
         </div>
 
-        @if (_simulateMobile)
-        {
-            <div class="mobile-indicator">
-                📱 Mobile Simulation Active (375px width)
+        <div class="@GetResponsiveContainerClass()">
+            <div class="responsive-gallery-info">
+                <div class="info-badge current-width">
+                    <strong>Current Screen:</strong> @_currentScreenSize px
+                </div>
+                <div class="info-badge expected-columns">
+                    <strong>Expected Columns:</strong> @GetExpectedColumnCount()
+                </div>
+                <div class="info-badge">
+                    <strong>CSS Breakpoint:</strong> @GetActiveBreakpoint()
+                </div>
             </div>
-        }
+
+            <div class="responsive-demo-gallery screen-@_currentScreenSize">
+                <PhotoSwipeGallery
+                    Id="responsive-demo-gallery"
+                    Items="@GetResponsiveDemoItems()"
+                    CssClass="photoswipe-gallery"
+                    Options="@_galleryOptions" />
+            </div>
+        </div>
+
+        <div class="breakpoint-explanation">
+            <h4>📐 CSS Grid Breakpoints Explained</h4>
+            <div class="breakpoint-list">
+                <div class="breakpoint-item">
+                    <strong>1200px+ (Desktop):</strong> auto-fill, minmax(250px, 1fr) → 2-4 columns depending on available space
+                </div>
+                <div class="breakpoint-item">
+                    <strong>768px (Tablet):</strong> repeat(2, 1fr) → exactly 2 columns
+                </div>
+                <div class="breakpoint-item">
+                    <strong>600px (Small Tablet):</strong> repeat(2, 1fr) → exactly 2 columns
+                </div>
+                <div class="breakpoint-item">
+                    <strong>480px (Large Phone):</strong> repeat(2, 1fr) → exactly 2 columns
+                </div>
+                <div class="breakpoint-item">
+                    <strong>375px (Phone):</strong> 1fr → single column
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Layout Configuration -->
+    <!-- Layout Configuration Demo -->
+    <div class="layout-configuration-demo">
+        <h2>🎨 Layout Configuration Demo</h2>
+        <p>This gallery tests different layout types and configurations. Use the controls below to switch between layout modes.</p>
+
+        <div class="layout-test-gallery @(_simulateMobile ? "mobile-simulation" : "")">
+            <div class="gallery-container">
+                <PhotoSwipeGallery
+                    Id="layout-test-gallery"
+                    Items="@GetDisplayItems()"
+                    CssClass="@GetGalleryLayoutClass()"
+                    Options="@_galleryOptions" />
+            </div>
+
+            @if (_simulateMobile)
+            {
+                <div class="mobile-indicator">
+                    📱 Mobile Simulation Active (375px width)
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Layout Configuration Controls -->
     <div class="layout-configuration-section">
         <!-- Layout Type Selection -->
         <div class="layout-type-selection">
@@ -216,6 +292,10 @@
     private double? _lastLayoutChangeTime;
     private bool _isTestingAllLayouts = false;
 
+    // Responsive testing state
+    private int _currentScreenSize = 1200;
+    private List<PhotoSwipeItem> _responsiveDemoItems = new();
+
     // PhotoSwipe options
     private readonly PhotoSwipeOptions _galleryOptions = new()
     {
@@ -227,6 +307,7 @@
     protected override void OnInitialized()
     {
         InitializeGallery();
+        InitializeResponsiveDemoItems();
         Logger.LogInformation("Layout Test Page initialized with {Count} images", _currentGalleryItems.Count);
     }
 
@@ -603,6 +684,119 @@
                     index, item.GridColumnSpan, item.GridRowSpan, item.Title);
             }
         }
+    }
+
+    // Responsive testing methods
+    private void InitializeResponsiveDemoItems()
+    {
+        _responsiveDemoItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1022/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1022/300/200",
+                Width = 1200, Height = 800,
+                Alt = "Demo image 1",
+                Caption = "Responsive demo image 1",
+                Title = "Demo 1"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1023/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1023/300/200",
+                Width = 1200, Height = 800,
+                Alt = "Demo image 2",
+                Caption = "Responsive demo image 2",
+                Title = "Demo 2"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1024/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1024/300/200",
+                Width = 1200, Height = 800,
+                Alt = "Demo image 3",
+                Caption = "Responsive demo image 3",
+                Title = "Demo 3"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1026/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1026/300/200",
+                Width = 1200, Height = 800,
+                Alt = "Demo image 4",
+                Caption = "Responsive demo image 4",
+                Title = "Demo 4"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1027/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1027/300/200",
+                Width = 1200, Height = 800,
+                Alt = "Demo image 5",
+                Caption = "Responsive demo image 5",
+                Title = "Demo 5"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1028/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1028/300/200",
+                Width = 1200, Height = 800,
+                Alt = "Demo image 6",
+                Caption = "Responsive demo image 6",
+                Title = "Demo 6"
+            }
+        };
+    }
+
+    private void SetScreenSize(int width)
+    {
+        _currentScreenSize = width;
+        Logger.LogInformation("Screen size simulation set to: {Width}px", width);
+        StateHasChanged();
+    }
+
+    private string GetResponsiveContainerClass()
+    {
+        return _currentScreenSize switch
+        {
+            1200 => "responsive-demo-container screen-1200",
+            768 => "responsive-demo-container screen-768",
+            600 => "responsive-demo-container screen-600",
+            480 => "responsive-demo-container screen-480",
+            375 => "responsive-demo-container screen-375",
+            _ => "responsive-demo-container screen-1200"
+        };
+    }
+
+    private List<PhotoSwipeItem> GetResponsiveDemoItems()
+    {
+        return _responsiveDemoItems;
+    }
+
+    private int GetExpectedColumnCount()
+    {
+        return _currentScreenSize switch
+        {
+            >= 1200 => 2, // With 250px minmax and typical container width
+            >= 768 => 2,   // Tablet breakpoint
+            >= 600 => 2,   // Small tablet breakpoint
+            >= 480 => 2,   // Large phone breakpoint
+            >= 375 => 1,   // Phone breakpoint
+            _ => 1         // Very small screens
+        };
+    }
+
+    private string GetActiveBreakpoint()
+    {
+        return _currentScreenSize switch
+        {
+            >= 1200 => "No media query (base CSS)",
+            >= 768 => "@media (max-width: 768px)",
+            >= 600 => "@media (max-width: 600px)",
+            >= 480 => "@media (max-width: 480px)",
+            >= 375 => "@media (max-width: 375px)",
+            _ => "@media (max-width: 375px)"
+        };
     }
 }
 

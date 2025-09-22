@@ -493,3 +493,118 @@
         padding: 3px 6px;
     }
 }
+
+@media (max-width: 375px) {
+    .reordering-test-container {
+        padding: 10px;
+    }
+
+    .test-header {
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    .test-header h1 {
+        font-size: 1.6rem;
+        margin: 0 0 8px 0;
+    }
+
+    .test-header p {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .reordering-config-controls,
+    .test-status-panel,
+    .test-actions,
+    .reordering-summary,
+    .performance-testing,
+    .reordering-history {
+        padding: 12px;
+        margin-bottom: 15px;
+    }
+
+    /* Improved action buttons for ultra-small screens */
+    .test-actions {
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        gap: 6px;
+    }
+
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+
+    /* Better mobile typography */
+    .control-group > label:first-child {
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+
+    .radio-option,
+    .checkbox-option {
+        padding: 5px 8px;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+
+    /* Status panels optimization */
+    .status-item,
+    .perf-item {
+        padding: 8px;
+    }
+
+    .status-label,
+    .perf-label {
+        font-size: 0.8rem;
+        margin-bottom: 3px;
+    }
+
+    .status-value,
+    .perf-value {
+        font-size: 1.2rem;
+    }
+
+    /* Order list improvements */
+    .order-item {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .order-number {
+        min-width: 25px;
+        font-size: 0.9rem;
+    }
+
+    .order-title {
+        font-size: 0.9rem;
+    }
+
+    .order-badge {
+        font-size: 0.65rem;
+        padding: 2px 5px;
+    }
+
+    /* History improvements */
+    .history-item {
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        gap: 8px;
+    }
+
+    .history-timestamp {
+        min-width: 60px;
+        font-size: 0.8rem;
+    }
+
+    .history-duration {
+        font-size: 0.75rem;
+        min-width: 70px;
+    }
+}

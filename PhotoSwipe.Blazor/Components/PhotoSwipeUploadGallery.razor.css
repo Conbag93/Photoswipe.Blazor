@@ -569,6 +569,81 @@
     .gallery-item-wrapper {
         height: 100px;
     }
+
+    /* Smaller reorder controls for 2-column layout on small screens */
+    ::deep .reorder-button {
+        min-width: 24px;
+        height: 24px;
+        padding: 4px;
+        border-width: 1px;
+    }
+
+    ::deep .reorder-button svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    ::deep .index-label {
+        min-width: 28px;
+        height: 18px;
+        font-size: 9px;
+        padding: 2px 4px;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 375px) {
+    ::deep .photoswipe-gallery {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .gallery-item-wrapper {
+        height: 180px;
+        border-radius: 6px;
+    }
+
+    /* Ultra-small Reordering Controls */
+    ::deep .reorder-button {
+        min-width: 28px;
+        height: 28px;
+        padding: 4px;
+        border-width: 1px;
+    }
+
+    ::deep .reorder-button svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    ::deep .index-label {
+        min-width: 32px;
+        height: 20px;
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 10px;
+    }
+
+    /* Upload modal responsive */
+    .contained-upload-content {
+        margin: 0.5rem;
+        max-height: 90vh;
+        border-radius: 8px;
+    }
+
+    .modal-header {
+        padding: 0.75rem 1rem 0 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1rem;
+    }
+
+    .contained-upload-content ::deep .photoswipe-upload-area {
+        padding: 0 1rem 1rem 1rem;
+    }
 }
 
 /* Upload Placeholder Text */

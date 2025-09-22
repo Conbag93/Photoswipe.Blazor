@@ -1,8 +1,9 @@
 /*
  * This file is intentionally empty.
- * All PhotoSwipe overlay control styles have been moved to:
- * wwwroot/css/photoswipe-overlay-controls.css
+ * All PhotoSwipe overlay control styles have been consolidated into:
+ * wwwroot/css/photoswipe.css
  *
- * This eliminates CSS duplication and ensures both Icon-based and
- * ChildContent-based buttons work consistently with the same global styling.
+ * This simplifies the library by requiring only one CSS file for consumers
+ * while ensuring both Icon-based and ChildContent-based buttons work
+ * consistently with the same global styling.
  */
