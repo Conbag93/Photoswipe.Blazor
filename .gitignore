@@ -52,3 +52,8 @@ Thumbs.db
 .playwright-mcp/
 *.screenshot.png
 *-debug.png
+
+# NuGet package output
+nupkg/
+*.nupkg
+*.snupkg

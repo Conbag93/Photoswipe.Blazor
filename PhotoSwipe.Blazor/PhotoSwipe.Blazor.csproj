@@ -4,12 +4,30 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Package Information -->
     <PackageId>PhotoSwipe.Blazor</PackageId>
     <Version>1.0.0</Version>
-    <Authors>Your Name</Authors>
-    <Description>A Blazor component library that provides a responsive image gallery using PhotoSwipe</Description>
-    <PackageTags>blazor;photoswipe;gallery;lightbox;images</PackageTags>
+    <Authors>Connor</Authors>
+    <Company>PhotoSwipe.Blazor</Company>
+    <Product>PhotoSwipe.Blazor</Product>
+    <Description>A comprehensive Blazor component library that provides responsive image galleries with lightbox functionality using PhotoSwipe. Supports both Blazor Server and WebAssembly with features like drag &amp; drop uploads, image processing, overlay controls, and customizable layouts.</Description>
+    <Copyright>Copyright © $(Authors) $([System.DateTime]::Now.Year)</Copyright>
+
+    <!-- Package Metadata -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/conbag93/Photoswipe.Blazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/conbag93/Photoswipe.Blazor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>blazor;photoswipe;gallery;lightbox;images;responsive;upload;webassembly;server;components</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+
+    <!-- Build Configuration -->
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
 
@@ -19,6 +37,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.4" />
+  </ItemGroup>
+
+  <!-- Package Files -->
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

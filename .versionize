@@ -1,0 +1,83 @@
+{
+  "workingDirectory": ".",
+  "projectFiles": [
+    "PhotoSwipe.Blazor/PhotoSwipe.Blazor.csproj"
+  ],
+  "changelog": {
+    "header": "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\nThe format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\nand this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n",
+    "groups": [
+      {
+        "type": "feat",
+        "section": "Features"
+      },
+      {
+        "type": "fix",
+        "section": "Bug Fixes"
+      },
+      {
+        "type": "perf",
+        "section": "Performance Improvements"
+      },
+      {
+        "type": "refactor",
+        "section": "Code Refactoring"
+      },
+      {
+        "type": "docs",
+        "section": "Documentation"
+      },
+      {
+        "type": "test",
+        "section": "Tests"
+      },
+      {
+        "type": "build",
+        "section": "Build System"
+      },
+      {
+        "type": "ci",
+        "section": "Continuous Integration"
+      }
+    ]
+  },
+  "commitTypes": {
+    "feat": {
+      "bump": "minor"
+    },
+    "fix": {
+      "bump": "patch"
+    },
+    "perf": {
+      "bump": "patch"
+    },
+    "refactor": {
+      "bump": "patch"
+    },
+    "docs": {
+      "bump": "none"
+    },
+    "test": {
+      "bump": "none"
+    },
+    "build": {
+      "bump": "none"
+    },
+    "ci": {
+      "bump": "none"
+    },
+    "chore": {
+      "bump": "none"
+    },
+    "style": {
+      "bump": "none"
+    }
+  },
+  "releaseCommitMessageFormat": "chore(release): {0}",
+  "skipDirtyCheck": false,
+  "skipBuild": false,
+  "skipTest": false,
+  "preRelease": "",
+  "includeAllCommitsInChangelog": false,
+  "exitInsignificantCommits": true,
+  "commitsSinceVersionSource": "lastVersion"
+}
