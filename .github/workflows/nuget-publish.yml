@@ -142,6 +142,7 @@ jobs:
         fi
 
     - name: Create GitHub Release
+      id: create_release
       if: steps.versionize.outputs.has_changes == 'true'
       uses: actions/create-release@v1
       env:
