@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.1.2"></a>
+## [1.1.2](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.1.2) (2025-09-23)
+
+### Bug Fixes
+
+* resolve reordering button icon display issue on GitHub Pages ([358af82](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/358af82af3646e7d6c4dc6aaf5894e96962de944))
+
 <a name="1.1.1"></a>
 ## [1.1.1](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.1.1) (2025-09-23)
 
