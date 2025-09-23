@@ -66,6 +66,8 @@ The approach resolves Blazor navigation conflicts by ensuring PhotoSwipe handles
 - Renders responsive image grid using CSS isolation
 - Binds to DOM elements via `data-pswp-*` attributes
 - Supports custom templates through `ItemTemplate` RenderFragment
+- Built-in label rendering system with 9 positioning options (TopLeft, TopRight, TopCenter, etc.)
+- Automatic label overlay rendering without requiring custom templates
 - Handles gallery initialization and event binding in `OnAfterRenderAsync`
 
 **PhotoSwipeLightbox Component:**
@@ -95,7 +97,10 @@ The approach resolves Blazor navigation conflicts by ensuring PhotoSwipe handles
 - Prevents PhotoSwipe gallery navigation when clicked (via data-pswp-prevent-gallery attribute)
 
 ### Data Models
-- **PhotoSwipeItem** - Image data model with src, dimensions, thumbnails, and metadata
+- **PhotoSwipeItem** - Image data model with src, dimensions, thumbnails, metadata, and built-in label system
+  - Built-in label properties: Label, LabelPosition, LabelCssClass, LabelStyle
+  - Supports 9 positioning options using PhotoSwipeOverlayControl positioning system
+  - Labels render as overlays without requiring custom templates
 - **PhotoSwipeOptions** - Strongly-typed configuration with JSON serialization attributes
 - **PhotoSwipeEvent** - Event data structure for JavaScript-to-.NET communication
 - **PhotoSwipeUploadMode** - Enum for upload behavior (Add/Replace)

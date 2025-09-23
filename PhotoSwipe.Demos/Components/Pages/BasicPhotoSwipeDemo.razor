@@ -1,4 +1,5 @@
 @inject IJSRuntime JS
+@using PhotoSwipe.Blazor.Components
 
 <PageTitle>Basic PhotoSwipe Demo</PageTitle>
 
@@ -166,6 +167,10 @@
     private List<PhotoSwipeItem> dynamicImages = new();
 
     #region Demo 1: Basic Images
+    // Demonstrates built-in label functionality - labels are positioned overlays
+    // that display over thumbnail images without requiring custom templates.
+    // Available positions: TopLeft, TopRight, TopCenter, BottomLeft, BottomRight,
+    // BottomCenter, CenterLeft, CenterRight, Center
     private readonly List<PhotoSwipeItem> basicImages = new()
     {
         new PhotoSwipeItem
@@ -173,28 +178,36 @@
             Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg",
             ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg",
             Width = 1875, Height = 2500,
-            Alt = "Beach", Caption = "Beautiful beach landscape"
+            Alt = "Beach", Caption = "Beautiful beach landscape",
+            Label = "🏖️ Beach",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft
         },
         new PhotoSwipeItem
         {
             Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-2500.jpg",
             ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-200.jpg",
             Width = 1669, Height = 2500,
-            Alt = "Stairs", Caption = "Modern architectural stairs"
+            Alt = "Stairs", Caption = "Modern architectural stairs",
+            Label = "🏗️ Architecture",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight
         },
         new PhotoSwipeItem
         {
             Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-2500.jpg",
             ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-200.jpg",
             Width = 2500, Height = 1666,
-            Alt = "Red Chair", Caption = "Vibrant red chair against colorful wall"
+            Alt = "Red Chair", Caption = "Vibrant red chair against colorful wall",
+            Label = "🪑 Furniture",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomLeft
         },
         new PhotoSwipeItem
         {
             Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-2500.jpg",
             ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-200.jpg",
             Width = 2500, Height = 1875,
-            Alt = "Lake", Caption = "Serene lake reflection"
+            Alt = "Lake", Caption = "Serene lake reflection",
+            Label = "🌊 Nature",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight
         }
     };
 
@@ -216,20 +229,26 @@
         {
             Src = "https://dummyimage.com/1620x1080/4a90e2/fff/?text=Slide+1",
             Width = 1620, Height = 1080,
-            Alt = "Test image 1"
+            Alt = "Test image 1",
+            Label = "🔷 First",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft
         },
         new PhotoSwipeItem
         {
             Src = "https://dummyimage.com/1950x1300/e74c3c/fff/?text=Slide+2",
             Width = 1950, Height = 1300,
-            Alt = "Test image 2"
+            Alt = "Test image 2",
+            Label = "❤️ Second",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight
         },
         new PhotoSwipeItem
         {
             Src = "https://dummyimage.com/1500x1000/27ae60/fff/?text=Responsive+Slide+3",
             SrcSet = "https://dummyimage.com/1500x1000/27ae60/fff/?text=1500x1000 1500w, https://dummyimage.com/1200x800/27ae60/fff/?text=1200x800 1200w",
             Width = 1500, Height = 1000,
-            Alt = "Test image 3"
+            Alt = "Test image 3",
+            Label = "💚 Responsive",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomCenter
         }
     };
 

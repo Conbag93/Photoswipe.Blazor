@@ -1,3 +1,5 @@
+using PhotoSwipe.Blazor.Components;
+
 namespace PhotoSwipe.Blazor.Models;
 
 public class PhotoSwipeItem
@@ -36,4 +38,28 @@ public class PhotoSwipeItem
     /// Combined with ThumbnailClass for additional styling flexibility.
     /// </summary>
     public string? GridItemClass { get; set; }
+
+    /// <summary>
+    /// Label text to display as an overlay on the thumbnail image.
+    /// If null or empty, no label is displayed.
+    /// </summary>
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// Position for the label overlay. Uses the same positioning system as PhotoSwipeOverlayControl.
+    /// Default: TopRight
+    /// </summary>
+    public PhotoSwipeOverlayControl.OverlayPosition LabelPosition { get; set; } = PhotoSwipeOverlayControl.OverlayPosition.TopRight;
+
+    /// <summary>
+    /// Custom CSS class to apply to the label element.
+    /// Can be used for custom styling beyond the default label appearance.
+    /// </summary>
+    public string? LabelCssClass { get; set; }
+
+    /// <summary>
+    /// Inline styles to apply to the label element.
+    /// For advanced styling scenarios that require specific CSS properties.
+    /// </summary>
+    public string? LabelStyle { get; set; }
 }

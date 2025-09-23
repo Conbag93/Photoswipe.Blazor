@@ -15,6 +15,7 @@ PhotoSwipe.Blazor is more than just a wrapper - it's a feature-rich Blazor compo
 - **Responsive Image Galleries** - Mobile-first design with automatic grid layouts
 - **PhotoSwipe 5 Integration** - Full support for the latest PhotoSwipe version
 - **Multi-Platform Support** - Compatible with Blazor Server, WebAssembly, and Hybrid apps
+- **Built-in Label System** - Add positioned overlay labels to images without custom templates
 - **Event Handling** - Bidirectional event system between JavaScript and .NET
 - **Customizable Templates** - Support for custom item and trigger templates
 - **CSS Isolation** - Scoped styling with CSS isolation support
@@ -127,8 +128,22 @@ Add to your App.razor or index.html:
 @code {
     private List<PhotoSwipeItem> galleryItems = new()
     {
-        new() { Src = "/images/photo1.jpg", Width = 1024, Height = 768, Thumbnail = "/images/thumb1.jpg" },
-        new() { Src = "/images/photo2.jpg", Width = 1200, Height = 800, Thumbnail = "/images/thumb2.jpg" }
+        new() {
+            Src = "/images/photo1.jpg",
+            Width = 1024,
+            Height = 768,
+            ThumbnailUrl = "/images/thumb1.jpg",
+            Label = "🏖️ Beach",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft
+        },
+        new() {
+            Src = "/images/photo2.jpg",
+            Width = 1200,
+            Height = 800,
+            ThumbnailUrl = "/images/thumb2.jpg",
+            Label = "🏗️ Architecture",
+            LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight
+        }
     };
 }
 ```
@@ -336,6 +351,189 @@ test('should open lightbox when clicking image', async ({ page }) => {
 ```
 
 ## API Reference
+
+### PhotoSwipeItem Model
+
+#### Core Properties
+
+```csharp
+public class PhotoSwipeItem
+{
+    // Image properties
+    public string Src { get; set; } = string.Empty;
+    public string? ThumbnailUrl { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
+    public string? Alt { get; set; }
+    public string? Caption { get; set; }
+    public string? Title { get; set; }
+    public string? SrcSet { get; set; }
+
+    // CSS and styling
+    public string? ThumbnailClass { get; set; }
+    public string? GridItemClass { get; set; }
+
+    // Grid layout control
+    public int GridColumnSpan { get; set; } = 1;
+    public int GridRowSpan { get; set; } = 1;
+
+    // Metadata
+    public object? Data { get; set; }
+    public object? CustomData { get; set; }
+}
+```
+
+#### Built-in Label System
+
+PhotoSwipe.Blazor includes a comprehensive label system that allows you to add positioned overlay labels to gallery images without requiring custom templates:
+
+```csharp
+public class PhotoSwipeItem
+{
+    /// <summary>
+    /// Label text to display as an overlay on the thumbnail image.
+    /// If null or empty, no label is displayed.
+    /// </summary>
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// Position for the label overlay. Uses the same positioning system as PhotoSwipeOverlayControl.
+    /// Default: TopRight
+    /// </summary>
+    public PhotoSwipeOverlayControl.OverlayPosition LabelPosition { get; set; } = PhotoSwipeOverlayControl.OverlayPosition.TopRight;
+
+    /// <summary>
+    /// Custom CSS class to apply to the label element.
+    /// Can be used for custom styling beyond the default label appearance.
+    /// </summary>
+    public string? LabelCssClass { get; set; }
+
+    /// <summary>
+    /// Inline styles to apply to the label element.
+    /// For advanced styling scenarios that require specific CSS properties.
+    /// </summary>
+    public string? LabelStyle { get; set; }
+}
+```
+
+#### Available Label Positions
+
+The label positioning uses the PhotoSwipeOverlayControl positioning system:
+
+```csharp
+public enum OverlayPosition
+{
+    TopLeft,      // Top-left corner
+    TopRight,     // Top-right corner (default)
+    TopCenter,    // Top center
+    BottomLeft,   // Bottom-left corner
+    BottomRight,  // Bottom-right corner
+    BottomCenter, // Bottom center
+    CenterLeft,   // Center left
+    CenterRight,  // Center right
+    Center        // Absolute center
+}
+```
+
+#### Label Usage Examples
+
+**Basic Labels:**
+```csharp
+var galleryItems = new List<PhotoSwipeItem>
+{
+    new() {
+        Src = "/images/beach.jpg",
+        Width = 1024, Height = 768,
+        Label = "🏖️ Beach",
+        LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopLeft
+    },
+    new() {
+        Src = "/images/mountain.jpg",
+        Width = 1200, Height = 800,
+        Label = "⛰️ Mountain",
+        LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomRight
+    }
+};
+```
+
+**Custom Styled Labels:**
+```csharp
+new PhotoSwipeItem {
+    Src = "/images/architecture.jpg",
+    Width = 1024, Height = 768,
+    Label = "Featured",
+    LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.TopRight,
+    LabelCssClass = "featured-label",
+    LabelStyle = "background: linear-gradient(45deg, #ff6b6b, #4ecdc4); font-weight: bold;"
+}
+```
+
+**Complex Labels with HTML Entities:**
+```csharp
+new PhotoSwipeItem {
+    Src = "/images/sunset.jpg",
+    Width = 1024, Height = 768,
+    Label = "★★★★★", // Unicode stars
+    LabelPosition = PhotoSwipeOverlayControl.OverlayPosition.BottomCenter,
+    LabelCssClass = "rating-label"
+}
+```
+
+#### Label CSS Customization
+
+The built-in label styles provide a solid foundation that can be customized:
+
+```css
+/* Default label styles (built-in) */
+.photoswipe-item-label {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+/* Custom label styles (your application) */
+.featured-label {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.rating-label {
+    background: rgba(255, 215, 0, 0.9) !important;
+    color: #333 !important;
+    font-size: 0.875rem !important;
+}
+```
+
+#### Responsive Label Behavior
+
+Labels automatically adjust for mobile devices:
+
+- **Desktop**: Full padding and font size
+- **Tablet** (≤768px): Slightly reduced padding
+- **Mobile** (≤600px): Smaller font size and tighter spacing
+- **Small Mobile** (≤375px): Minimal font size and padding
+
+#### Label vs. Caption Comparison
+
+| Feature | Label | Caption |
+|---------|-------|---------|
+| **Position** | Overlay on thumbnail | Below image in lightbox |
+| **Visibility** | Always visible on thumbnail | Only visible in lightbox |
+| **Positioning** | 9 predefined positions | Fixed below image |
+| **Styling** | Highly customizable | PhotoSwipe's caption styling |
+| **Purpose** | Category, status, rating | Detailed description |
+| **Template Required** | No | No |
 
 ### Placeholder System Models
 

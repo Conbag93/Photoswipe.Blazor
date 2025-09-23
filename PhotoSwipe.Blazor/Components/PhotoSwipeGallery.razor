@@ -41,6 +41,13 @@
                 <img src="@(item.ThumbnailUrl ?? item.Src)"
                      alt="@item.Alt"
                      class="@item.ThumbnailClass" />
+                @if (!string.IsNullOrEmpty(item.Label))
+                {
+                    <span class="photoswipe-item-label @GetLabelPositionClass(item.LabelPosition) @item.LabelCssClass"
+                          style="@item.LabelStyle">
+                        @item.Label
+                    </span>
+                }
             </a>
             itemIndex++;
         }
@@ -228,6 +235,23 @@
         }
 
         return string.Join("; ", styles);
+    }
+
+    private string GetLabelPositionClass(PhotoSwipeOverlayControl.OverlayPosition position)
+    {
+        return position switch
+        {
+            PhotoSwipeOverlayControl.OverlayPosition.TopLeft => "label-top-left",
+            PhotoSwipeOverlayControl.OverlayPosition.TopRight => "label-top-right",
+            PhotoSwipeOverlayControl.OverlayPosition.TopCenter => "label-top-center",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomLeft => "label-bottom-left",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomRight => "label-bottom-right",
+            PhotoSwipeOverlayControl.OverlayPosition.BottomCenter => "label-bottom-center",
+            PhotoSwipeOverlayControl.OverlayPosition.CenterLeft => "label-center-left",
+            PhotoSwipeOverlayControl.OverlayPosition.CenterRight => "label-center-right",
+            PhotoSwipeOverlayControl.OverlayPosition.Center => "label-center",
+            _ => "label-top-right" // Default fallback
+        };
     }
 
     public async ValueTask DisposeAsync()
