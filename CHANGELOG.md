@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.1.4"></a>
+## [1.1.4](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.1.4) (2025-09-23)
+
+### Bug Fixes
+
+* correct NuGet package filename in GitHub Actions upload step ([7317c3a](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/7317c3a51e139ac3683d9ed605b3138e19dae08e))
+
 <a name="1.1.3"></a>
 ## [1.1.3](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.1.3) (2025-09-23)
 
