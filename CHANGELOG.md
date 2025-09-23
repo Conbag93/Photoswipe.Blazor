@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.0.1"></a>
+## [1.0.1](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.0.1) (2025-09-22)
+
+### Bug Fixes
+
+* add release step ID for upload asset reference ([3fe2ff0](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/3fe2ff0783b69eef78f59b5a568e0d18ac15521d))
+
 <a name="1.0.0"></a>
 ## [1.0.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.0.0) (2025-09-22)
 
