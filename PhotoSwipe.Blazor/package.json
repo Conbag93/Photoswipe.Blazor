@@ -7,7 +7,7 @@
     "install-photoswipe": "npm install",
     "copy-assets": "npm run copy-js && npm run copy-css",
     "copy-js": "cp node_modules/photoswipe/dist/photoswipe.esm.min.js wwwroot/js/ && cp node_modules/photoswipe/dist/photoswipe-lightbox.esm.min.js wwwroot/js/",
-    "copy-css": "cp node_modules/photoswipe/dist/photoswipe.css wwwroot/css/",
+    "copy-css": "cp node_modules/photoswipe/dist/photoswipe.css wwwroot/css/photoswipe-base.css && cat wwwroot/css/photoswipe-base.css wwwroot/css/photoswipe-blazor-custom.css > wwwroot/css/photoswipe.css",
     "build": "npm run copy-assets"
   },
   "dependencies": {
