@@ -49,6 +49,7 @@
     pointer-events: auto;
 }
 
+/* Legacy reorder-arrow class styles */
 .photoswipe-reordering-controls .reorder-arrow {
     width: 36px;
     height: 36px;
@@ -81,6 +82,39 @@
     filter: invert(1);
 }
 
+/* Modern reorder button styles for overlay controls */
+.reorder-button {
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+    padding: 0;
+    margin: 0;
+}
+
+.reorder-button:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+.reorder-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.reorder-button svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
 .photoswipe-reordering-controls .reorder-index {
     background: rgba(0, 0, 0, 0.8);
     color: white;
@@ -98,12 +132,14 @@
         padding: 0.25rem;
     }
 
-    .photoswipe-reordering-controls .reorder-arrow {
+    .photoswipe-reordering-controls .reorder-arrow,
+    .reorder-button {
         width: 32px;
         height: 32px;
     }
 
-    .photoswipe-reordering-controls .reorder-arrow img {
+    .photoswipe-reordering-controls .reorder-arrow img,
+    .reorder-button svg {
         width: 18px;
         height: 18px;
     }
@@ -115,12 +151,14 @@
 }
 
 @media (max-width: 480px) {
-    .photoswipe-reordering-controls .reorder-arrow {
+    .photoswipe-reordering-controls .reorder-arrow,
+    .reorder-button {
         width: 28px;
         height: 28px;
     }
 
-    .photoswipe-reordering-controls .reorder-arrow img {
+    .photoswipe-reordering-controls .reorder-arrow img,
+    .reorder-button svg {
         width: 16px;
         height: 16px;
     }
