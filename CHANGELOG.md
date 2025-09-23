@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.1.0"></a>
+## [1.1.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.1.0) (2025-09-23)
+
+### Features
+
+* add built-in label system for PhotoSwipe items ([cdbd3c5](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/cdbd3c57034f03ab6444182a9c226b311b00a68f))
+* add load more functionality with limit and progressive loading ([67bf9b7](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/67bf9b789c2fb9d22b0ccd26f6b52bd0584c6d20))
+
 <a name="1.0.1"></a>
 ## [1.0.1](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.0.1) (2025-09-22)
 
