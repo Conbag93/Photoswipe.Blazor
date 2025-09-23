@@ -1,6 +1,7 @@
 @using PhotoSwipe.Blazor.Models
 @using PhotoSwipe.Blazor.Services
 @using Microsoft.Extensions.Logging
+@using PhotoSwipe.Blazor.Components
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @inject ILogger<PhotoSwipeGallery> Logger
@@ -10,33 +11,85 @@
     @if (ItemTemplate != null && Items != null)
     {
         int itemIndex = 0;
-        @foreach (var item in Items)
+        var displayItems = GetDisplayItems();
+        var displayItemsList = displayItems.ToList();
+
+        @foreach (var item in displayItemsList)
         {
+            var isLastItem = itemIndex == displayItemsList.Count - 1;
+            var shouldShowOverlay = LoadMoreMode == LoadMoreMode.OverlayOnLastItem && ShouldShowLoadMore() && isLastItem;
+
             <a href="@item.Src"
                data-pswp-width="@item.Width"
                data-pswp-height="@item.Height"
                data-caption="@item.Caption"
                data-pswp-srcset="@item.SrcSet"
                data-enhance-nav="false"
-               class="photoswipe-item @GetGridItemClass(item)"
+               class="photoswipe-item @GetGridItemClass(item) @(shouldShowOverlay ? "has-load-more-overlay" : "")"
                style="@GetGridItemStyle(item, itemIndex)">
                 @ItemTemplate(item)
+                @if (shouldShowOverlay)
+                {
+                    <div class="load-more-overlay-wrapper"
+                         data-pswp-prevent-gallery="true"
+                         @onclick="HandleLoadMore"
+                         @onclick:preventDefault="true"
+                         @onclick:stopPropagation="true">
+                        <div class="load-more-overlay-backdrop"></div>
+                        <div class="load-more-overlay-content">
+                            @if (LoadMoreTemplate != null)
+                            {
+                                @LoadMoreTemplate
+                            }
+                            else
+                            {
+                                <div class="load-more-overlay-default">
+                                    <span class="load-more-overlay-icon">⊕</span>
+                                    <span class="load-more-overlay-text">@GetRemainingItemsCount() more</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             </a>
             itemIndex++;
+        }
+
+        @if (LoadMoreMode == LoadMoreMode.SeparateItem && ShouldShowLoadMore())
+        {
+            <div class="photoswipe-load-more-item" @onclick="HandleLoadMore">
+                @if (LoadMoreTemplate != null)
+                {
+                    @LoadMoreTemplate
+                }
+                else
+                {
+                    <div class="load-more-default">
+                        <span class="load-more-icon">+</span>
+                        <span class="load-more-text">Load @GetRemainingItemsCount() more</span>
+                    </div>
+                }
+            </div>
         }
     }
     else if (Items != null)
     {
         int itemIndex = 0;
-        @foreach (var item in Items)
+        var displayItems = GetDisplayItems();
+        var displayItemsList = displayItems.ToList();
+
+        @foreach (var item in displayItemsList)
         {
+            var isLastItem = itemIndex == displayItemsList.Count - 1;
+            var shouldShowOverlay = LoadMoreMode == LoadMoreMode.OverlayOnLastItem && ShouldShowLoadMore() && isLastItem;
+
             <a href="@item.Src"
                data-pswp-width="@item.Width"
                data-pswp-height="@item.Height"
                data-caption="@item.Caption"
                data-pswp-srcset="@item.SrcSet"
                data-enhance-nav="false"
-               class="photoswipe-item @GetGridItemClass(item)"
+               class="photoswipe-item @GetGridItemClass(item) @(shouldShowOverlay ? "has-load-more-overlay" : "")"
                style="@GetGridItemStyle(item, itemIndex)">
                 <img src="@(item.ThumbnailUrl ?? item.Src)"
                      alt="@item.Alt"
@@ -48,8 +101,48 @@
                         @item.Label
                     </span>
                 }
+                @if (shouldShowOverlay)
+                {
+                    <div class="load-more-overlay-wrapper"
+                         data-pswp-prevent-gallery="true"
+                         @onclick="HandleLoadMore"
+                         @onclick:preventDefault="true"
+                         @onclick:stopPropagation="true">
+                        <div class="load-more-overlay-backdrop"></div>
+                        <div class="load-more-overlay-content">
+                            @if (LoadMoreTemplate != null)
+                            {
+                                @LoadMoreTemplate
+                            }
+                            else
+                            {
+                                <div class="load-more-overlay-default">
+                                    <span class="load-more-overlay-icon">⊕</span>
+                                    <span class="load-more-overlay-text">@GetRemainingItemsCount() more</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             </a>
             itemIndex++;
+        }
+
+        @if (LoadMoreMode == LoadMoreMode.SeparateItem && ShouldShowLoadMore())
+        {
+            <div class="photoswipe-load-more-item" @onclick="HandleLoadMore">
+                @if (LoadMoreTemplate != null)
+                {
+                    @LoadMoreTemplate
+                }
+                else
+                {
+                    <div class="load-more-default">
+                        <span class="load-more-icon">+</span>
+                        <span class="load-more-text">Load @GetRemainingItemsCount() more</span>
+                    </div>
+                }
+            </div>
         }
     }
     else
@@ -70,15 +163,24 @@
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
 
+    // Load More Parameters
+    [Parameter] public int? ItemLimit { get; set; }
+    [Parameter] public int LoadMoreIncrement { get; set; } = 10;
+    [Parameter] public LoadMoreMode LoadMoreMode { get; set; } = LoadMoreMode.SeparateItem;
+    [Parameter] public RenderFragment? LoadMoreTemplate { get; set; }
+    [Parameter] public EventCallback OnLoadMore { get; set; }
+
     public string ElementId { get; private set; } = string.Empty;
     private PhotoSwipeInterop? _interop;
     private string? _instanceId;
     private IEnumerable<PhotoSwipeItem>? _previousItems;
+    private int _currentDisplayLimit;
 
     protected override void OnInitialized()
     {
         ElementId = Id ?? $"photoswipe-{Guid.NewGuid():N}";
         _interop = new PhotoSwipeInterop(JS, InteropLogger);
+        _currentDisplayLimit = ItemLimit ?? int.MaxValue;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -254,13 +356,53 @@
         };
     }
 
+    // Load More Helper Methods
+    private IEnumerable<PhotoSwipeItem> GetDisplayItems()
+    {
+        if (Items == null) return Enumerable.Empty<PhotoSwipeItem>();
+
+        return Items.Take(_currentDisplayLimit);
+    }
+
+    private bool ShouldShowLoadMore()
+    {
+        return ItemLimit.HasValue && Items != null && Items.Count() > _currentDisplayLimit;
+    }
+
+    private int GetRemainingItemsCount()
+    {
+        if (Items == null) return 0;
+        return Math.Max(0, Items.Count() - _currentDisplayLimit);
+    }
+
+    private async Task HandleLoadMore()
+    {
+        if (ShouldShowLoadMore())
+        {
+            _currentDisplayLimit = Math.Min(_currentDisplayLimit + LoadMoreIncrement, Items?.Count() ?? 0);
+
+            if (OnLoadMore.HasDelegate)
+            {
+                await OnLoadMore.InvokeAsync();
+            }
+
+            StateHasChanged();
+
+            // Refresh PhotoSwipe to include new items
+            if (_interop != null && _instanceId != null)
+            {
+                await _interop.RefreshGalleryAsync(_instanceId);
+            }
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_interop != null && _instanceId != null)
         {
             await _interop.DestroyAsync(_instanceId);
         }
-        
+
         if (_interop != null)
         {
             await _interop.DisposeAsync();

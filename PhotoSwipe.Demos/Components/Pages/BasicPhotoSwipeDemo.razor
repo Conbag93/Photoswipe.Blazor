@@ -1,5 +1,6 @@
 @inject IJSRuntime JS
 @using PhotoSwipe.Blazor.Components
+@using PhotoSwipe.Blazor.Models
 
 <PageTitle>Basic PhotoSwipe Demo</PageTitle>
 
@@ -139,6 +140,43 @@
         <PhotoSwipeGallery Items="@captionImages" Options="@captionOptions" CssClass="pswp-gallery--basic" />
     </section>
 
+    <!-- Demo 11: Load More - Separate Item -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>📄 Load More Gallery - Separate Item</h2>
+            <p>Gallery with limited items and a separate "Load More" button. Initially shows 6 images, then loads 4 more at a time. The load more button appears as a separate grid item.</p>
+        </div>
+        <PhotoSwipeGallery Items="@loadMoreImages"
+                          Options="@loadMoreOptions"
+                          CssClass="pswp-gallery--basic"
+                          ItemLimit="6"
+                          LoadMoreIncrement="4"
+                          LoadMoreMode="LoadMoreMode.SeparateItem"
+                          OnLoadMore="HandleLoadMoreSeparate" />
+    </section>
+
+    <!-- Demo 12: Load More - Overlay on Last Item -->
+    <section class="demo-section">
+        <div class="demo-info">
+            <h2>🎯 Load More Gallery - Overlay Mode</h2>
+            <p>Gallery with limited items and load more overlay on the last visible item. Initially shows 5 images, then loads 3 more at a time. The load more appears as an overlay on the last item.</p>
+        </div>
+        <PhotoSwipeGallery Items="@loadMoreImagesOverlay"
+                          Options="@loadMoreOverlayOptions"
+                          CssClass="pswp-gallery--basic"
+                          ItemLimit="5"
+                          LoadMoreIncrement="3"
+                          LoadMoreMode="LoadMoreMode.OverlayOnLastItem"
+                          OnLoadMore="HandleLoadMoreOverlay">
+            <LoadMoreTemplate>
+                <div class="custom-load-more">
+                    <span class="load-more-icon">⚡</span>
+                    <span class="load-more-text">Show More</span>
+                </div>
+            </LoadMoreTemplate>
+        </PhotoSwipeGallery>
+    </section>
+
     <!-- Demo Status -->
     <section class="demo-section">
         <div class="demo-info">
@@ -152,7 +190,7 @@
             </div>
             <div class="status-item">
                 <span class="status-label">Demo Patterns:</span>
-                <span class="status-value">10 Different Usage Examples</span>
+                <span class="status-value">12 Different Usage Examples</span>
             </div>
             <div class="status-item">
                 <span class="status-label">Framework:</span>
@@ -163,7 +201,7 @@
 </div>
 
 @code {
-    private int totalDemoCount = 10;
+    private int totalDemoCount = 12;
     private List<PhotoSwipeItem> dynamicImages = new();
 
     #region Demo 1: Basic Images
@@ -533,4 +571,209 @@
         await Task.CompletedTask;
         // This would require additional PhotoSwipe features for custom slide content
     }
+
+    #region Load More Demo Data
+    private readonly List<PhotoSwipeItem> loadMoreImages = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Beach Sunset", Caption = "Amazing beach sunset view",
+            Label = "1"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/2/img-200.jpg",
+            Width = 1669, Height = 2500,
+            Alt = "Modern Stairs", Caption = "Contemporary architectural design",
+            Label = "2"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/3/img-200.jpg",
+            Width = 2500, Height = 1666,
+            Alt = "Red Chair", Caption = "Vibrant interior design",
+            Label = "3"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/7/img-200.jpg",
+            Width = 2500, Height = 1668,
+            Alt = "Coastal View", Caption = "Breathtaking coastal landscape",
+            Label = "4"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/8/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/8/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Desert Road", Caption = "Endless desert highway",
+            Label = "5"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/9/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/9/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Mountain Peak", Caption = "Majestic mountain summit",
+            Label = "6"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/10/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/10/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "City Lights", Caption = "Urban nighttime photography",
+            Label = "7"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/11/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/11/img-200.jpg",
+            Width = 2500, Height = 1668,
+            Alt = "Forest Path", Caption = "Peaceful woodland trail",
+            Label = "8"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/12/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/12/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Ocean Wave", Caption = "Powerful ocean wave crashing",
+            Label = "9"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/13/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/13/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Golden Field", Caption = "Sunlit wheat field at sunset",
+            Label = "10"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/14/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/14/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Winter Landscape", Caption = "Snow-covered mountain vista",
+            Label = "11"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/15/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/15/img-200.jpg",
+            Width = 2500, Height = 1668,
+            Alt = "Cherry Blossoms", Caption = "Spring cherry blossom trees",
+            Label = "12"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/16/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/16/img-200.jpg",
+            Width = 1875, Height = 2500,
+            Alt = "Lighthouse", Caption = "Historic coastal lighthouse",
+            Label = "13"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/17/img-2500.jpg",
+            ThumbnailUrl = "https://cdn.photoswipe.com/photoswipe-demo-images/photos/17/img-200.jpg",
+            Width = 2500, Height = 1875,
+            Alt = "Autumn Forest", Caption = "Colorful fall foliage",
+            Label = "14"
+        }
+    };
+
+    private readonly List<PhotoSwipeItem> loadMoreImagesOverlay = new()
+    {
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/e74c3c/fff/?text=Image+1",
+            ThumbnailUrl = "https://dummyimage.com/200x150/e74c3c/fff/?text=1",
+            Width = 800, Height = 600,
+            Alt = "Red Image 1", Caption = "First image in overlay demo"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/3498db/fff/?text=Image+2",
+            ThumbnailUrl = "https://dummyimage.com/200x150/3498db/fff/?text=2",
+            Width = 800, Height = 600,
+            Alt = "Blue Image 2", Caption = "Second image in overlay demo"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/2ecc71/fff/?text=Image+3",
+            ThumbnailUrl = "https://dummyimage.com/200x150/2ecc71/fff/?text=3",
+            Width = 800, Height = 600,
+            Alt = "Green Image 3", Caption = "Third image in overlay demo"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/f39c12/fff/?text=Image+4",
+            ThumbnailUrl = "https://dummyimage.com/200x150/f39c12/fff/?text=4",
+            Width = 800, Height = 600,
+            Alt = "Orange Image 4", Caption = "Fourth image in overlay demo"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/9b59b6/fff/?text=Image+5",
+            ThumbnailUrl = "https://dummyimage.com/200x150/9b59b6/fff/?text=5",
+            Width = 800, Height = 600,
+            Alt = "Purple Image 5", Caption = "Fifth image in overlay demo"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/1abc9c/fff/?text=Image+6",
+            ThumbnailUrl = "https://dummyimage.com/200x150/1abc9c/fff/?text=6",
+            Width = 800, Height = 600,
+            Alt = "Teal Image 6", Caption = "Sixth image in overlay demo"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/34495e/fff/?text=Image+7",
+            ThumbnailUrl = "https://dummyimage.com/200x150/34495e/fff/?text=7",
+            Width = 800, Height = 600,
+            Alt = "Dark Image 7", Caption = "Seventh image in overlay demo"
+        },
+        new PhotoSwipeItem
+        {
+            Src = "https://dummyimage.com/800x600/e67e22/fff/?text=Image+8",
+            ThumbnailUrl = "https://dummyimage.com/200x150/e67e22/fff/?text=8",
+            Width = 800, Height = 600,
+            Alt = "Amber Image 8", Caption = "Eighth image in overlay demo"
+        }
+    };
+
+    private readonly PhotoSwipeOptions loadMoreOptions = new()
+    {
+        Loop = false,
+        Counter = true
+    };
+
+    private readonly PhotoSwipeOptions loadMoreOverlayOptions = new()
+    {
+        Loop = false,
+        Counter = true,
+        ArrowKeys = true
+    };
+
+    private async Task HandleLoadMoreSeparate()
+    {
+        await Task.CompletedTask;
+        // This event is triggered when load more is clicked in separate item mode
+        // You can perform additional logic here like analytics, logging, etc.
+    }
+
+    private async Task HandleLoadMoreOverlay()
+    {
+        await Task.CompletedTask;
+        // This event is triggered when load more is clicked in overlay mode
+        // You can perform additional logic here like analytics, logging, etc.
+    }
+    #endregion
 }
