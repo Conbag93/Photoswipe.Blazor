@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.2.0"></a>
+## [1.2.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.2.0) (2025-09-23)
+
+### Features
+
+* add PhotoSwipeSingleUpload component with enum-based styling ([46612fc](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/46612fc293f9707f7e30154cf57b15e3f8647e7e))
+
 <a name="1.1.4"></a>
 ## [1.1.4](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.1.4) (2025-09-23)
 
