@@ -88,7 +88,9 @@ jobs:
         if versionize --dry-run --skip-dirty; then
           echo "has_changes=true" >> $GITHUB_OUTPUT
           versionize --skip-dirty
-          echo "new_version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+          NEW_VERSION=$(git describe --tags --abbrev=0)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=${NEW_VERSION#v}" >> $GITHUB_OUTPUT
         else
           echo "has_changes=false" >> $GITHUB_OUTPUT
           echo "No version changes detected"
@@ -161,6 +163,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./nupkg/PhotoSwipe.Blazor.${{ steps.versionize.outputs.new_version }}.nupkg
-        asset_name: PhotoSwipe.Blazor.${{ steps.versionize.outputs.new_version }}.nupkg
+        asset_path: ./nupkg/PhotoSwipe.Blazor.${{ steps.versionize.outputs.version_number }}.nupkg
+        asset_name: PhotoSwipe.Blazor.${{ steps.versionize.outputs.version_number }}.nupkg
         asset_content_type: application/zip
