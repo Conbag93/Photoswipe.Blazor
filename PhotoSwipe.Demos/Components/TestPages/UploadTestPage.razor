@@ -30,6 +30,112 @@
             Options="@_galleryOptions" />
     </div>
 
+    <!-- PhotoSwipeSingleUpload Test Section -->
+    <div class="single-upload-test-section">
+        <h2>🖼️ Single Upload Component Testing</h2>
+        <p>Test the PhotoSwipeSingleUpload component for single image upload/display scenarios.</p>
+
+        <div class="single-upload-demos">
+            <!-- Default Upload -->
+            <div class="demo-item">
+                <h3>Default Single Upload</h3>
+                <PhotoSwipeSingleUpload @bind-Value="@_singleImage1"
+                                        PlaceholderText="Click to upload image"
+                                        OnImageUploaded="@HandleSingleImageUploaded"
+                                        OnImageDeleted="@HandleSingleImageDeleted"
+                                        OnError="@HandleSingleUploadError" />
+                <div class="demo-info">
+                    <small>Status: @(_singleImage1 != null ? "Image loaded" : "No image")</small>
+                </div>
+            </div>
+
+            <!-- Circular Avatar Upload -->
+            <div class="demo-item">
+                <h3>Circular Avatar Upload</h3>
+                <PhotoSwipeSingleUpload @bind-Value="@_singleImage2"
+                                        Size="PhotoSwipeSingleUploadSize.Small"
+                                        AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
+                                        Shape="PhotoSwipeSingleUploadShape.Circle"
+                                        PlaceholderText="Upload Avatar"
+                                        HelpText="150x150 recommended"
+                                        OnImageUploaded="@HandleSingleImageUploaded"
+                                        OnImageDeleted="@HandleSingleImageDeleted"
+                                        OnError="@HandleSingleUploadError" />
+                <div class="demo-info">
+                    <small>Status: @(_singleImage2 != null ? "Avatar set" : "No avatar")</small>
+                </div>
+            </div>
+
+            <!-- Large Upload Area -->
+            <div class="demo-item">
+                <h3>Large Upload Area</h3>
+                <PhotoSwipeSingleUpload @bind-Value="@_singleImage3"
+                                        Size="PhotoSwipeSingleUploadSize.Large"
+                                        PlaceholderText="Drop your image here"
+                                        HelpText="Supports JPEG, PNG, WebP up to 10MB"
+                                        MaxFileSize="@(10 * 1024 * 1024)"
+                                        OnImageUploaded="@HandleSingleImageUploaded"
+                                        OnImageDeleted="@HandleSingleImageDeleted"
+                                        OnError="@HandleSingleUploadError">
+                    <UploadTemplate>
+                        <div class="custom-upload-content">
+                            <div class="upload-icon">📷</div>
+                            <div class="upload-text">Click or drag to upload</div>
+                            <div class="upload-help">Maximum 10MB</div>
+                        </div>
+                    </UploadTemplate>
+                </PhotoSwipeSingleUpload>
+                <div class="demo-info">
+                    <small>Status: @(_singleImage3 != null ? "Large image uploaded" : "No image")</small>
+                </div>
+            </div>
+
+            <!-- Square Thumbnail -->
+            <div class="demo-item">
+                <h3>Square Thumbnail</h3>
+                <PhotoSwipeSingleUpload @bind-Value="@_singleImage4"
+                                        AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
+                                        PlaceholderText="Upload Thumbnail"
+                                        AllowDelete="true"
+                                        OnImageUploaded="@HandleSingleImageUploaded"
+                                        OnImageDeleted="@HandleSingleImageDeleted"
+                                        OnError="@HandleSingleUploadError" />
+                <div class="demo-info">
+                    <small>Status: @(_singleImage4 != null ? "Thumbnail ready" : "No thumbnail")</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Upload Actions -->
+        <div class="single-upload-actions">
+            <button type="button" class="btn btn-secondary" @onclick="ClearAllSingleUploads">Clear All Single Uploads</button>
+            <button type="button" class="btn btn-secondary" @onclick="LoadSampleSingleImages">Load Sample Images</button>
+        </div>
+
+        <!-- Single Upload Status -->
+        <div class="single-upload-status">
+            <h4>Single Upload Status</h4>
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-label">Default Upload:</div>
+                    <div class="status-value">@(_singleImage1?.Title ?? "Empty")</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Avatar Upload:</div>
+                    <div class="status-value">@(_singleImage2?.Title ?? "Empty")</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Large Upload:</div>
+                    <div class="status-value">@(_singleImage3?.Title ?? "Empty")</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Square Upload:</div>
+                    <div class="status-value">@(_singleImage4?.Title ?? "Empty")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Upload Configuration Controls -->
     <div class="upload-mode-controls">
         <div class="control-group">
@@ -242,6 +348,12 @@
 
     // Upload errors
     private List<UploadErrorEntry> _uploadErrors = new();
+
+    // Single upload component states
+    private PhotoSwipeItem? _singleImage1;
+    private PhotoSwipeItem? _singleImage2;
+    private PhotoSwipeItem? _singleImage3;
+    private PhotoSwipeItem? _singleImage4;
 
     // PhotoSwipe options
     private readonly PhotoSwipeOptions _galleryOptions = new()
@@ -462,6 +574,90 @@
         _uploadErrors.Clear();
         StateHasChanged();
         Logger.LogInformation("Upload errors cleared");
+    }
+
+    // Single upload event handlers
+    private void HandleSingleImageUploaded(PhotoSwipeItem item)
+    {
+        Logger.LogInformation("Single image uploaded: {Title}", item.Title ?? item.Alt);
+        StateHasChanged();
+    }
+
+    private void HandleSingleImageDeleted(PhotoSwipeItem item)
+    {
+        Logger.LogInformation("Single image deleted: {Title}", item.Title ?? item.Alt);
+        StateHasChanged();
+    }
+
+    private void HandleSingleUploadError(string error)
+    {
+        _uploadErrors.Add(new UploadErrorEntry
+        {
+            Timestamp = DateTime.Now,
+            Message = $"Single upload error: {error}"
+        });
+        StateHasChanged();
+        Logger.LogWarning("Single upload error: {Error}", error);
+    }
+
+    private void ClearAllSingleUploads()
+    {
+        _singleImage1 = null;
+        _singleImage2 = null;
+        _singleImage3 = null;
+        _singleImage4 = null;
+        StateHasChanged();
+        Logger.LogInformation("All single uploads cleared");
+    }
+
+    private void LoadSampleSingleImages()
+    {
+        _singleImage1 = new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1015/1200/800",
+            ThumbnailUrl = "https://picsum.photos/id/1015/300/200",
+            Width = 1200,
+            Height = 800,
+            Alt = "Sample Default Image",
+            Title = "Default Sample",
+            Caption = "Sample image for default upload"
+        };
+
+        _singleImage2 = new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1025/800/800",
+            ThumbnailUrl = "https://picsum.photos/id/1025/150/150",
+            Width = 800,
+            Height = 800,
+            Alt = "Sample Avatar",
+            Title = "Avatar Sample",
+            Caption = "Square avatar sample"
+        };
+
+        _singleImage3 = new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1035/1600/1200",
+            ThumbnailUrl = "https://picsum.photos/id/1035/400/300",
+            Width = 1600,
+            Height = 1200,
+            Alt = "Large Sample Image",
+            Title = "Large Sample",
+            Caption = "Large format sample image"
+        };
+
+        _singleImage4 = new PhotoSwipeItem
+        {
+            Src = "https://picsum.photos/id/1045/800/800",
+            ThumbnailUrl = "https://picsum.photos/id/1045/200/200",
+            Width = 800,
+            Height = 800,
+            Alt = "Square Thumbnail",
+            Title = "Thumbnail Sample",
+            Caption = "Square thumbnail sample"
+        };
+
+        StateHasChanged();
+        Logger.LogInformation("Sample single images loaded");
     }
 
     private class UploadHistoryEntry

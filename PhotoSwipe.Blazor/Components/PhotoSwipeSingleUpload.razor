@@ -1,0 +1,283 @@
+@using PhotoSwipe.Blazor.Models
+@using PhotoSwipe.Blazor.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Logging
+@using System.Collections.Generic
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject ILogger<PhotoSwipeSingleUpload> Logger
+@inject ILogger<PhotoSwipeInterop> InteropLogger
+
+<div class="@GetGeneratedCssClasses()">
+    @if (CurrentImage != null)
+    {
+        <!-- Display current image with PhotoSwipe integration -->
+        <div class="single-upload-display" @onclick="OpenLightboxAsync">
+            @if (ItemTemplate != null)
+            {
+                @ItemTemplate(CurrentImage)
+            }
+            else
+            {
+                <img src="@(CurrentImage.ThumbnailUrl ?? CurrentImage.Src)"
+                     alt="@CurrentImage.Alt"
+                     class="single-upload-image @ImageCssClass"
+                     title="Click to view full size" />
+            }
+
+            @if (AllowDelete)
+            {
+                <button type="button"
+                        class="single-upload-delete @DeleteButtonCssClass"
+                        @onclick="OnDeleteClickAsync"
+                        @onclick:stopPropagation="true"
+                        title="Delete image">
+                    @if (!string.IsNullOrEmpty(DeleteIcon))
+                    {
+                        @((MarkupString)DeleteIcon)
+                    }
+                    else
+                    {
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-6 5v6m4-6v6"
+                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    }
+                </button>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Upload area when no image is present -->
+        <div class="single-upload-area @UploadAreaCssClass">
+            <InputFile OnChange="OnFileSelectedAsync"
+                      accept="@ImageProcessingService.GetFileAcceptString()"
+                      class="single-upload-input" />
+
+            <div class="single-upload-placeholder">
+                @if (UploadTemplate != null)
+                {
+                    @UploadTemplate
+                }
+                else
+                {
+                    <div class="single-upload-content">
+                        @if (!string.IsNullOrEmpty(UploadIcon))
+                        {
+                            <div class="single-upload-icon">@((MarkupString)UploadIcon)</div>
+                        }
+                        <div class="single-upload-text">@PlaceholderText</div>
+                        @if (!string.IsNullOrEmpty(HelpText))
+                        {
+                            <div class="single-upload-help">@HelpText</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="single-upload-error">
+            @_errorMessage
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public PhotoSwipeItem? Value { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItem?> ValueChanged { get; set; }
+    // Styling parameters
+    [Parameter] public PhotoSwipeSingleUploadSize Size { get; set; } = PhotoSwipeSingleUploadSize.Default;
+    [Parameter] public PhotoSwipeSingleUploadAspectRatio AspectRatio { get; set; } = PhotoSwipeSingleUploadAspectRatio.Auto;
+    [Parameter] public PhotoSwipeSingleUploadShape Shape { get; set; } = PhotoSwipeSingleUploadShape.Rectangle;
+
+    // CSS class parameters
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public string? ImageCssClass { get; set; }
+    [Parameter] public string? UploadAreaCssClass { get; set; }
+    [Parameter] public string? DeleteButtonCssClass { get; set; }
+
+    [Parameter] public PhotoSwipeOptions? Options { get; set; }
+    [Parameter] public RenderFragment<PhotoSwipeItem>? ItemTemplate { get; set; }
+    [Parameter] public RenderFragment? UploadTemplate { get; set; }
+
+    [Parameter] public bool AllowDelete { get; set; } = true;
+    [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
+    [Parameter] public string PlaceholderText { get; set; } = "Click to upload image";
+    [Parameter] public string? HelpText { get; set; }
+    [Parameter] public string? UploadIcon { get; set; }
+    [Parameter] public string? DeleteIcon { get; set; }
+
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItem> OnImageUploaded { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItem> OnImageDeleted { get; set; }
+    [Parameter] public EventCallback<string> OnError { get; set; }
+
+    private PhotoSwipeInterop? _interop;
+    private ImageProcessingService? _imageProcessingService;
+    private string? _errorMessage;
+
+    public PhotoSwipeItem? CurrentImage => Value;
+
+    protected override void OnInitialized()
+    {
+        _interop = new PhotoSwipeInterop(JS, InteropLogger);
+        _imageProcessingService = new ImageProcessingService(JS);
+    }
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _errorMessage = null;
+
+        if (e.FileCount == 0) return;
+
+        var file = e.File;
+
+        try
+        {
+            if (_imageProcessingService == null) return;
+
+            var photoSwipeItem = await _imageProcessingService.ProcessImageFileAsync(file, MaxFileSize);
+
+            // Update the value
+            Value = photoSwipeItem;
+            await ValueChanged.InvokeAsync(Value);
+
+            // Notify upload completed
+            if (OnImageUploaded.HasDelegate)
+            {
+                await OnImageUploaded.InvokeAsync(photoSwipeItem);
+            }
+
+            StateHasChanged();
+            Logger.LogInformation("Successfully uploaded image: {FileName}", file.Name);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogWarning("Failed to upload image: {Error}", ex.Message);
+
+            if (OnError.HasDelegate)
+            {
+                await OnError.InvokeAsync(ex.Message);
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDeleteClickAsync()
+    {
+        if (CurrentImage == null) return;
+
+        var deletedImage = CurrentImage;
+        Value = null;
+        await ValueChanged.InvokeAsync(Value);
+
+        if (OnImageDeleted.HasDelegate)
+        {
+            await OnImageDeleted.InvokeAsync(deletedImage);
+        }
+
+        StateHasChanged();
+        Logger.LogInformation("Deleted image: {ImageTitle}", deletedImage.Title ?? deletedImage.Alt);
+    }
+
+    public async Task OpenLightboxAsync()
+    {
+        if (_interop == null || CurrentImage == null) return;
+
+        try
+        {
+            var instanceId = $"photoswipe-single-{Guid.NewGuid():N}";
+
+            // Set up event handlers before creating the instance
+            if (OnOpen.HasDelegate)
+            {
+                await _interop.AddEventHandlerAsync(instanceId, "openPswp", OnOpen);
+            }
+
+            if (OnClose.HasDelegate)
+            {
+                await _interop.AddEventHandlerAsync(instanceId, "closePswp", OnClose);
+            }
+
+            if (OnChange.HasDelegate)
+            {
+                await _interop.AddEventHandlerAsync(instanceId, "change", OnChange);
+            }
+
+            // Create and open PhotoSwipe instance with single image
+            await _interop.CreateFromDataAsync(instanceId, new[] { CurrentImage }, Options, 0);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error opening PhotoSwipe lightbox: {Error}", ex.Message);
+        }
+    }
+
+    public async Task SetImageAsync(PhotoSwipeItem? image)
+    {
+        Value = image;
+        await ValueChanged.InvokeAsync(Value);
+        StateHasChanged();
+    }
+
+    public async Task ClearAsync()
+    {
+        await SetImageAsync(null);
+    }
+
+    /// <summary>
+    /// Generates CSS classes based on enum parameters and CssClass
+    /// </summary>
+    private string GetGeneratedCssClasses()
+    {
+        var classes = new List<string> { "photoswipe-single-upload" };
+
+        // Size mapping
+        switch (Size)
+        {
+            case PhotoSwipeSingleUploadSize.Small:
+                classes.Add("size-small");
+                break;
+            case PhotoSwipeSingleUploadSize.Large:
+                classes.Add("size-large");
+                break;
+            // Default has no additional class
+        }
+
+        // Aspect ratio mapping
+        if (AspectRatio == PhotoSwipeSingleUploadAspectRatio.Square)
+        {
+            classes.Add("aspect-square");
+        }
+
+        // Shape mapping
+        if (Shape == PhotoSwipeSingleUploadShape.Circle)
+        {
+            classes.Add("style-circle");
+        }
+
+        // Add custom CSS classes
+        if (!string.IsNullOrEmpty(CssClass))
+        {
+            classes.Add(CssClass);
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_interop != null)
+        {
+            await _interop.DisposeAsync();
+        }
+    }
+}

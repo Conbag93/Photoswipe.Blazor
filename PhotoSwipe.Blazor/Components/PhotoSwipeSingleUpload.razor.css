@@ -1,0 +1,201 @@
+.photoswipe-single-upload {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+/* Display area when image is present */
+::deep .single-upload-display {
+    position: relative;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #f9fafb;
+}
+
+::deep .single-upload-display:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+::deep .single-upload-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    max-height: 300px;
+}
+
+/* Delete button */
+::deep .single-upload-delete {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+::deep .single-upload-delete:hover {
+    background: rgba(239, 68, 68, 0.9);
+    border-color: rgba(255, 255, 255, 1);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+::deep .single-upload-delete:active {
+    transform: scale(0.95);
+}
+
+/* Upload area when no image */
+::deep .single-upload-area {
+    position: relative;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+::deep .single-upload-area:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+::deep .single-upload-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+::deep .single-upload-placeholder {
+    pointer-events: none;
+    color: #6b7280;
+    z-index: 1;
+    position: relative;
+}
+
+::deep .single-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+::deep .single-upload-icon {
+    font-size: 24px;
+    color: #9ca3af;
+}
+
+::deep .single-upload-text {
+    font-weight: 500;
+    color: #374151;
+}
+
+::deep .single-upload-help {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+/* Error messages */
+::deep .single-upload-error {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    color: #dc2626;
+    font-size: 14px;
+}
+
+/* Responsive sizing */
+@media (max-width: 640px) {
+    .photoswipe-single-upload {
+        max-width: 100%;
+    }
+
+    ::deep .single-upload-area {
+        min-height: 120px;
+        padding: 16px;
+    }
+
+    ::deep .single-upload-delete {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+    }
+}
+
+/* Size variants */
+.photoswipe-single-upload.size-small {
+    max-width: 150px;
+}
+
+.photoswipe-single-upload.size-small ::deep .single-upload-area {
+    min-height: 100px;
+    padding: 16px;
+}
+
+.photoswipe-single-upload.size-large {
+    max-width: 500px;
+}
+
+.photoswipe-single-upload.size-large ::deep .single-upload-area {
+    min-height: 200px;
+    padding: 32px;
+}
+
+/* Square aspect ratio variant */
+.photoswipe-single-upload.aspect-square ::deep .single-upload-display,
+.photoswipe-single-upload.aspect-square ::deep .single-upload-area {
+    aspect-ratio: 1;
+}
+
+.photoswipe-single-upload.aspect-square ::deep .single-upload-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Circular variant */
+.photoswipe-single-upload.style-circle ::deep .single-upload-display,
+.photoswipe-single-upload.style-circle ::deep .single-upload-area {
+    border-radius: 50%;
+    aspect-ratio: 1;
+}
+
+.photoswipe-single-upload.style-circle ::deep .single-upload-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

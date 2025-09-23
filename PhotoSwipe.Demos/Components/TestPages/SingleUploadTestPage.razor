@@ -1,0 +1,641 @@
+@page "/test/single-upload"
+@inject ILogger<SingleUploadTestPage> Logger
+
+<PageTitle>PhotoSwipeSingleUpload Component Test</PageTitle>
+
+<div class="single-upload-test-container">
+    <!-- Header Section -->
+    <div class="test-header">
+        <h1>🖼️ PhotoSwipeSingleUpload Component</h1>
+        <p class="lead">
+            A specialized Blazor component for single image upload scenarios with integrated PhotoSwipe lightbox functionality.
+            Perfect for profile pictures, thumbnails, featured images, or any case where you need to manage a single image.
+        </p>
+    </div>
+
+    <!-- Component Overview -->
+    <section class="doc-section">
+        <h2>📋 Component Overview</h2>
+        <div class="overview-content">
+            <p>
+                The <code>PhotoSwipeSingleUpload</code> component provides a complete single-image management solution with:
+            </p>
+            <ul class="feature-list">
+                <li>✅ Drag & drop or click-to-upload interface</li>
+                <li>✅ Image preview with PhotoSwipe lightbox integration</li>
+                <li>✅ Optional delete functionality</li>
+                <li>✅ Client-side image processing and validation</li>
+                <li>✅ Customizable templates for upload and display states</li>
+                <li>✅ Multiple size and style variants</li>
+                <li>✅ Two-way data binding support</li>
+                <li>✅ Comprehensive event callbacks</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Parameters Documentation -->
+    <section class="doc-section">
+        <h2>⚙️ Component Parameters</h2>
+        <div class="parameters-table-container">
+            <table class="parameters-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Default</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="param-category">
+                        <td colspan="4"><strong>Data Binding</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>Value</code></td>
+                        <td>PhotoSwipeItem?</td>
+                        <td>null</td>
+                        <td>The current image item (supports two-way binding with @@bind-Value)</td>
+                    </tr>
+                    <tr>
+                        <td><code>ValueChanged</code></td>
+                        <td>EventCallback&lt;PhotoSwipeItem?&gt;</td>
+                        <td>-</td>
+                        <td>Callback when the value changes</td>
+                    </tr>
+
+                    <tr class="param-category">
+                        <td colspan="4"><strong>Styling (Strongly-Typed)</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>Size</code></td>
+                        <td>PhotoSwipeSingleUploadSize</td>
+                        <td>Default</td>
+                        <td>Component size variant (Default, Small, Large)</td>
+                    </tr>
+                    <tr>
+                        <td><code>AspectRatio</code></td>
+                        <td>PhotoSwipeSingleUploadAspectRatio</td>
+                        <td>Auto</td>
+                        <td>Aspect ratio constraint (Auto, Square)</td>
+                    </tr>
+                    <tr>
+                        <td><code>Shape</code></td>
+                        <td>PhotoSwipeSingleUploadShape</td>
+                        <td>Rectangle</td>
+                        <td>Component shape (Rectangle, Circle)</td>
+                    </tr>
+                    <tr>
+                        <td><code>CssClass</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>Additional CSS classes (appended to generated classes)</td>
+                    </tr>
+                    <tr>
+                        <td><code>ImageCssClass</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>CSS classes for the displayed image</td>
+                    </tr>
+                    <tr>
+                        <td><code>UploadAreaCssClass</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>CSS classes for the upload area</td>
+                    </tr>
+                    <tr>
+                        <td><code>DeleteButtonCssClass</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>CSS classes for the delete button</td>
+                    </tr>
+
+                    <tr class="param-category">
+                        <td colspan="4"><strong>Configuration</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>Options</code></td>
+                        <td>PhotoSwipeOptions?</td>
+                        <td>null</td>
+                        <td>PhotoSwipe lightbox configuration options</td>
+                    </tr>
+                    <tr>
+                        <td><code>AllowDelete</code></td>
+                        <td>bool</td>
+                        <td>true</td>
+                        <td>Whether to show the delete button</td>
+                    </tr>
+                    <tr>
+                        <td><code>MaxFileSize</code></td>
+                        <td>long</td>
+                        <td>10MB</td>
+                        <td>Maximum file size in bytes</td>
+                    </tr>
+
+                    <tr class="param-category">
+                        <td colspan="4"><strong>UI Content</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>PlaceholderText</code></td>
+                        <td>string</td>
+                        <td>"Click to upload image"</td>
+                        <td>Text shown in the upload area</td>
+                    </tr>
+                    <tr>
+                        <td><code>HelpText</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>Additional help text under the placeholder</td>
+                    </tr>
+                    <tr>
+                        <td><code>UploadIcon</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>HTML/emoji for upload area icon</td>
+                    </tr>
+                    <tr>
+                        <td><code>DeleteIcon</code></td>
+                        <td>string?</td>
+                        <td>"×"</td>
+                        <td>HTML/emoji for delete button</td>
+                    </tr>
+
+                    <tr class="param-category">
+                        <td colspan="4"><strong>Templates</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>ItemTemplate</code></td>
+                        <td>RenderFragment&lt;PhotoSwipeItem&gt;?</td>
+                        <td>null</td>
+                        <td>Custom template for displaying the image</td>
+                    </tr>
+                    <tr>
+                        <td><code>UploadTemplate</code></td>
+                        <td>RenderFragment?</td>
+                        <td>null</td>
+                        <td>Custom template for the upload area content</td>
+                    </tr>
+
+                    <tr class="param-category">
+                        <td colspan="4"><strong>Events</strong></td>
+                    </tr>
+                    <tr>
+                        <td><code>OnImageUploaded</code></td>
+                        <td>EventCallback&lt;PhotoSwipeItem&gt;</td>
+                        <td>-</td>
+                        <td>Fired when an image is successfully uploaded</td>
+                    </tr>
+                    <tr>
+                        <td><code>OnImageDeleted</code></td>
+                        <td>EventCallback&lt;PhotoSwipeItem&gt;</td>
+                        <td>-</td>
+                        <td>Fired when an image is deleted</td>
+                    </tr>
+                    <tr>
+                        <td><code>OnError</code></td>
+                        <td>EventCallback&lt;string&gt;</td>
+                        <td>-</td>
+                        <td>Fired when an upload error occurs</td>
+                    </tr>
+                    <tr>
+                        <td><code>OnOpen</code></td>
+                        <td>EventCallback&lt;PhotoSwipeEventArgs&gt;</td>
+                        <td>-</td>
+                        <td>PhotoSwipe lightbox opened</td>
+                    </tr>
+                    <tr>
+                        <td><code>OnClose</code></td>
+                        <td>EventCallback&lt;PhotoSwipeEventArgs&gt;</td>
+                        <td>-</td>
+                        <td>PhotoSwipe lightbox closed</td>
+                    </tr>
+                    <tr>
+                        <td><code>OnChange</code></td>
+                        <td>EventCallback&lt;PhotoSwipeEventArgs&gt;</td>
+                        <td>-</td>
+                        <td>PhotoSwipe slide changed</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- CSS Variants -->
+    <section class="doc-section">
+        <h2>🎨 CSS Variants & Styling</h2>
+        <div class="css-variants-content">
+            <h3>✨ Strongly-Typed Styling (New!)</h3>
+            <p>PhotoSwipeSingleUpload now uses strongly-typed enum parameters instead of magic string CSS classes, providing IntelliSense support and compile-time safety.</p>
+
+            <h4>Size Parameter</h4>
+            <ul>
+                <li><code>Size="PhotoSwipeSingleUploadSize.Small"</code> - Compact size (150px max width)</li>
+                <li><code>Size="PhotoSwipeSingleUploadSize.Large"</code> - Large size (500px max width)</li>
+                <li><code>Size="PhotoSwipeSingleUploadSize.Default"</code> - Standard size (300px max width)</li>
+            </ul>
+
+            <h4>AspectRatio Parameter</h4>
+            <ul>
+                <li><code>AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"</code> - Forces 1:1 aspect ratio</li>
+                <li><code>AspectRatio="PhotoSwipeSingleUploadAspectRatio.Auto"</code> - Natural aspect ratio (default)</li>
+            </ul>
+
+            <h4>Shape Parameter</h4>
+            <ul>
+                <li><code>Shape="PhotoSwipeSingleUploadShape.Circle"</code> - Circular shape (best with Square aspect ratio)</li>
+                <li><code>Shape="PhotoSwipeSingleUploadShape.Rectangle"</code> - Rounded rectangle (default)</li>
+            </ul>
+
+            <h4>Benefits of Enum Parameters</h4>
+            <ul>
+                <li>🎯 <strong>IntelliSense Support</strong> - See all available options while typing</li>
+                <li>🛡️ <strong>Compile-time Safety</strong> - No more typos in CSS class names</li>
+                <li>🔍 <strong>Discoverability</strong> - Easily find all styling options</li>
+                <li>🔧 <strong>Refactoring Safe</strong> - Rename detection works across your codebase</li>
+            </ul>
+
+            <h4>Example: Combining All Parameters</h4>
+            <pre><code>&lt;PhotoSwipeSingleUpload
+    Size="PhotoSwipeSingleUploadSize.Small"
+    AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
+    Shape="PhotoSwipeSingleUploadShape.Circle"
+    PlaceholderText="Upload Avatar" /&gt;</code></pre>
+
+            <h4>Custom CSS Classes</h4>
+            <p>The <code>CssClass</code> parameter is still available for additional custom styling that gets appended to the generated classes.</p>
+        </div>
+    </section>
+
+    <!-- Live Demos -->
+    <section class="doc-section">
+        <h2>🚀 Live Demonstrations</h2>
+
+        <div class="demo-grid">
+            <!-- Demo 1: Basic Upload -->
+            <div class="demo-card">
+                <h3>Basic Upload</h3>
+                <p>Default configuration with standard settings</p>
+                <div class="demo-content">
+                    <PhotoSwipeSingleUpload @bind-Value="@_basicImage"
+                                            OnImageUploaded="@HandleImageUploaded"
+                                            OnImageDeleted="@HandleImageDeleted"
+                                            OnError="@HandleUploadError" />
+                </div>
+                <div class="demo-status">
+                    Status: @(_basicImage != null ? $"Image: {_basicImage.Title ?? "Uploaded"}" : "No image")
+                </div>
+                <details class="code-example">
+                    <summary>View Code</summary>
+                    <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_basicImage"
+                        OnImageUploaded="@@HandleImageUploaded"
+                        OnImageDeleted="@@HandleImageDeleted"
+                        OnError="@@HandleUploadError" /&gt;</code></pre>
+                </details>
+            </div>
+
+            <!-- Demo 2: Avatar Upload -->
+            <div class="demo-card">
+                <h3>Avatar Upload</h3>
+                <p>Circular profile picture with small size</p>
+                <div class="demo-content">
+                    <PhotoSwipeSingleUpload @bind-Value="@_avatarImage"
+                                            Size="PhotoSwipeSingleUploadSize.Small"
+                                            AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
+                                            Shape="PhotoSwipeSingleUploadShape.Circle"
+                                            PlaceholderText="Upload Avatar"
+                                            HelpText="150×150px"
+                                            UploadIcon="👤"
+                                            OnImageUploaded="@HandleImageUploaded"
+                                            OnImageDeleted="@HandleImageDeleted"
+                                            OnError="@HandleUploadError" />
+                </div>
+                <div class="demo-status">
+                    Status: @(_avatarImage != null ? "Avatar set" : "No avatar")
+                </div>
+                <details class="code-example">
+                    <summary>View Code</summary>
+                    <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_avatarImage"
+                        Size="PhotoSwipeSingleUploadSize.Small"
+                        AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
+                        Shape="PhotoSwipeSingleUploadShape.Circle"
+                        PlaceholderText="Upload Avatar"
+                        HelpText="150×150px"
+                        UploadIcon="👤" /&gt;</code></pre>
+                </details>
+            </div>
+
+            <!-- Demo 3: Large Upload Area -->
+            <div class="demo-card">
+                <h3>Large Upload Area</h3>
+                <p>Extended drop zone with custom template</p>
+                <div class="demo-content">
+                    <PhotoSwipeSingleUpload @bind-Value="@_largeImage"
+                                            Size="PhotoSwipeSingleUploadSize.Large"
+                                            MaxFileSize="@(20 * 1024 * 1024)"
+                                            OnImageUploaded="@HandleImageUploaded"
+                                            OnImageDeleted="@HandleImageDeleted"
+                                            OnError="@HandleUploadError">
+                        <UploadTemplate>
+                            <div class="custom-upload-area">
+                                <div class="upload-icon">📸</div>
+                                <div class="upload-title">Drop your image here</div>
+                                <div class="upload-subtitle">or click to browse</div>
+                                <div class="upload-formats">JPEG, PNG, WebP • Max 20MB</div>
+                            </div>
+                        </UploadTemplate>
+                    </PhotoSwipeSingleUpload>
+                </div>
+                <div class="demo-status">
+                    Status: @(_largeImage != null ? $"Size: {_largeImage.Width}×{_largeImage.Height}" : "No image")
+                </div>
+                <details class="code-example">
+                    <summary>View Code</summary>
+                    <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_largeImage"
+                        Size="PhotoSwipeSingleUploadSize.Large"
+                        MaxFileSize="@@(20 * 1024 * 1024)"&gt;
+    &lt;UploadTemplate&gt;
+        &lt;div class="custom-upload-area"&gt;
+            &lt;div class="upload-icon"&gt;📸&lt;/div&gt;
+            &lt;div class="upload-title"&gt;Drop your image here&lt;/div&gt;
+            &lt;div class="upload-subtitle"&gt;or click to browse&lt;/div&gt;
+            &lt;div class="upload-formats"&gt;JPEG, PNG, WebP • Max 20MB&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/UploadTemplate&gt;
+&lt;/PhotoSwipeSingleUpload&gt;</code></pre>
+                </details>
+            </div>
+
+            <!-- Demo 4: Square Thumbnail -->
+            <div class="demo-card">
+                <h3>Square Thumbnail</h3>
+                <p>Fixed aspect ratio for consistent thumbnails</p>
+                <div class="demo-content">
+                    <PhotoSwipeSingleUpload @bind-Value="@_thumbnailImage"
+                                            AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
+                                            PlaceholderText="Upload Thumbnail"
+                                            DeleteIcon="🗑️"
+                                            OnImageUploaded="@HandleImageUploaded"
+                                            OnImageDeleted="@HandleImageDeleted"
+                                            OnError="@HandleUploadError" />
+                </div>
+                <div class="demo-status">
+                    Status: @(_thumbnailImage != null ? "Thumbnail set" : "No thumbnail")
+                </div>
+                <details class="code-example">
+                    <summary>View Code</summary>
+                    <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_thumbnailImage"
+                        AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
+                        PlaceholderText="Upload Thumbnail"
+                        DeleteIcon="🗑️" /&gt;</code></pre>
+                </details>
+            </div>
+
+            <!-- Demo 5: No Delete Button -->
+            <div class="demo-card">
+                <h3>No Delete Option</h3>
+                <p>Upload only, no delete button shown</p>
+                <div class="demo-content">
+                    <PhotoSwipeSingleUpload @bind-Value="@_noDeleteImage"
+                                            AllowDelete="false"
+                                            PlaceholderText="Upload Image"
+                                            HelpText="This image cannot be deleted"
+                                            OnImageUploaded="@HandleImageUploaded"
+                                            OnError="@HandleUploadError" />
+                </div>
+                <div class="demo-status">
+                    Status: @(_noDeleteImage != null ? "Image locked" : "No image")
+                </div>
+                <details class="code-example">
+                    <summary>View Code</summary>
+                    <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_noDeleteImage"
+                        AllowDelete="false"
+                        PlaceholderText="Upload Image"
+                        HelpText="This image cannot be deleted" /&gt;</code></pre>
+                </details>
+            </div>
+
+            <!-- Demo 6: Custom Display Template -->
+            <div class="demo-card">
+                <h3>Custom Display</h3>
+                <p>Custom template for image display</p>
+                <div class="demo-content">
+                    <PhotoSwipeSingleUpload @bind-Value="@_customImage"
+                                            OnImageUploaded="@HandleImageUploaded"
+                                            OnImageDeleted="@HandleImageDeleted"
+                                            OnError="@HandleUploadError">
+                        <ItemTemplate Context="item">
+                            <div class="custom-image-display">
+                                <img src="@(item.ThumbnailUrl ?? item.Src)" alt="@item.Alt" />
+                                <div class="image-overlay">
+                                    <div class="image-title">@(item.Title ?? "Custom Image")</div>
+                                    <div class="image-size">@item.Width × @item.Height</div>
+                                </div>
+                            </div>
+                        </ItemTemplate>
+                    </PhotoSwipeSingleUpload>
+                </div>
+                <div class="demo-status">
+                    Status: @(_customImage != null ? "Custom display active" : "No image")
+                </div>
+                <details class="code-example">
+                    <summary>View Code</summary>
+                    <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_customImage"&gt;
+    &lt;ItemTemplate Context="item"&gt;
+        &lt;div class="custom-image-display"&gt;
+            &lt;img src="@@(item.ThumbnailUrl ?? item.Src)" alt="@@item.Alt" /&gt;
+            &lt;div class="image-overlay"&gt;
+                &lt;div class="image-title"&gt;@@(item.Title ?? "Custom Image")&lt;/div&gt;
+                &lt;div class="image-size"&gt;@@item.Width × @@item.Height&lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/ItemTemplate&gt;
+&lt;/PhotoSwipeSingleUpload&gt;</code></pre>
+                </details>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="demo-actions">
+            <button type="button" class="btn btn-secondary" @onclick="ClearAll">Clear All Images</button>
+            <button type="button" class="btn btn-secondary" @onclick="LoadSampleImages">Load Sample Images</button>
+            <button type="button" class="btn btn-primary" @onclick="ShowCurrentState">Show Current State</button>
+        </div>
+    </section>
+
+    <!-- Error Display -->
+    @if (_errors.Any())
+    {
+        <section class="doc-section">
+            <h2>⚠️ Upload Errors</h2>
+            <div class="error-list">
+                @foreach (var error in _errors.TakeLast(5))
+                {
+                    <div class="error-item">
+                        <span class="error-time">@error.Timestamp.ToString("HH:mm:ss")</span>
+                        <span class="error-message">@error.Message</span>
+                    </div>
+                }
+            </div>
+            <button type="button" class="btn btn-sm" @onclick="ClearErrors">Clear Errors</button>
+        </section>
+    }
+
+    <!-- Usage Examples -->
+    <section class="doc-section">
+        <h2>💡 Common Use Cases</h2>
+        <div class="use-cases">
+            <div class="use-case">
+                <h3>Profile Picture</h3>
+                <p>Use <code>size-small aspect-square style-circle</code> for circular avatars</p>
+            </div>
+            <div class="use-case">
+                <h3>Product Thumbnail</h3>
+                <p>Use <code>aspect-square</code> for consistent e-commerce thumbnails</p>
+            </div>
+            <div class="use-case">
+                <h3>Featured Image</h3>
+                <p>Use <code>size-large</code> with custom template for blog headers</p>
+            </div>
+            <div class="use-case">
+                <h3>Document Preview</h3>
+                <p>Use custom <code>ItemTemplate</code> to show file information</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programmatic Control -->
+    <section class="doc-section">
+        <h2>🔧 Programmatic Control</h2>
+        <div class="programmatic-demo">
+            <p>The component exposes methods for programmatic control:</p>
+            <div class="method-list">
+                <div class="method-item">
+                    <code>SetImageAsync(PhotoSwipeItem? image)</code> - Set image programmatically
+                </div>
+                <div class="method-item">
+                    <code>ClearAsync()</code> - Clear the current image
+                </div>
+                <div class="method-item">
+                    <code>OpenLightboxAsync()</code> - Open PhotoSwipe lightbox programmatically
+                </div>
+            </div>
+
+            <div class="programmatic-controls">
+                <button type="button" class="btn" @onclick="SetProgrammaticImage">Set Image Programmatically</button>
+                <button type="button" class="btn" @onclick="ClearProgrammaticImage">Clear Programmatically</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    // Demo image states
+    private PhotoSwipeItem? _basicImage;
+    private PhotoSwipeItem? _avatarImage;
+    private PhotoSwipeItem? _largeImage;
+    private PhotoSwipeItem? _thumbnailImage;
+    private PhotoSwipeItem? _noDeleteImage;
+    private PhotoSwipeItem? _customImage;
+
+    // Error tracking
+    private List<ErrorEntry> _errors = new();
+
+    // Event handlers
+    private void HandleImageUploaded(PhotoSwipeItem item)
+    {
+        Logger.LogInformation("Image uploaded: {Title}", item.Title ?? item.Alt);
+        StateHasChanged();
+    }
+
+    private void HandleImageDeleted(PhotoSwipeItem item)
+    {
+        Logger.LogInformation("Image deleted: {Title}", item.Title ?? item.Alt);
+        StateHasChanged();
+    }
+
+    private void HandleUploadError(string error)
+    {
+        _errors.Add(new ErrorEntry
+        {
+            Timestamp = DateTime.Now,
+            Message = error
+        });
+        Logger.LogWarning("Upload error: {Error}", error);
+        StateHasChanged();
+    }
+
+    // Action methods
+    private void ClearAll()
+    {
+        _basicImage = null;
+        _avatarImage = null;
+        _largeImage = null;
+        _thumbnailImage = null;
+        _noDeleteImage = null;
+        _customImage = null;
+        StateHasChanged();
+    }
+
+    private void LoadSampleImages()
+    {
+        _basicImage = CreateSampleImage(1011, "Basic Sample");
+        _avatarImage = CreateSampleImage(1012, "Avatar", 150, 150);
+        _largeImage = CreateSampleImage(1015, "Large Image", 1600, 1200);
+        _thumbnailImage = CreateSampleImage(1018, "Thumbnail", 400, 400);
+        _noDeleteImage = CreateSampleImage(1020, "Protected Image");
+        _customImage = CreateSampleImage(1025, "Custom Display");
+        StateHasChanged();
+    }
+
+    private PhotoSwipeItem CreateSampleImage(int id, string title, int width = 800, int height = 600)
+    {
+        return new PhotoSwipeItem
+        {
+            Src = $"https://picsum.photos/id/{id}/{width}/{height}",
+            ThumbnailUrl = $"https://picsum.photos/id/{id}/400/300",
+            Width = width,
+            Height = height,
+            Alt = title,
+            Title = title,
+            Caption = $"Sample image: {title}"
+        };
+    }
+
+    private void ShowCurrentState()
+    {
+        var states = new[]
+        {
+            $"Basic: {(_basicImage != null ? "Set" : "Empty")}",
+            $"Avatar: {(_avatarImage != null ? "Set" : "Empty")}",
+            $"Large: {(_largeImage != null ? "Set" : "Empty")}",
+            $"Thumbnail: {(_thumbnailImage != null ? "Set" : "Empty")}",
+            $"No Delete: {(_noDeleteImage != null ? "Set" : "Empty")}",
+            $"Custom: {(_customImage != null ? "Set" : "Empty")}"
+        };
+
+        Logger.LogInformation("Current state: {States}", string.Join(", ", states));
+    }
+
+    private void ClearErrors()
+    {
+        _errors.Clear();
+        StateHasChanged();
+    }
+
+    private void SetProgrammaticImage()
+    {
+        _basicImage = CreateSampleImage(1050, "Programmatically Set");
+        StateHasChanged();
+    }
+
+    private void ClearProgrammaticImage()
+    {
+        _basicImage = null;
+        StateHasChanged();
+    }
+
+    private class ErrorEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+}
