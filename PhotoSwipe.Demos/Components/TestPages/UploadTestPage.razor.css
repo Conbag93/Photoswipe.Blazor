@@ -215,6 +215,142 @@
     margin-bottom: 40px;
 }
 
+/* Single Upload Test Section */
+.single-upload-test-section {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.single-upload-test-section h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    font-size: 1.5em;
+}
+
+.single-upload-test-section > p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 1em;
+}
+
+.single-upload-demos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.demo-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.demo-item h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #495057;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.demo-info {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e9ecef;
+}
+
+.demo-info small {
+    color: #6c757d;
+    font-size: 0.85em;
+}
+
+.custom-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-upload-content .upload-icon {
+    font-size: 2em;
+    margin-bottom: 5px;
+}
+
+.custom-upload-content .upload-text {
+    font-weight: 600;
+    color: #495057;
+}
+
+.custom-upload-content .upload-help {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+.single-upload-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.single-upload-status {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 20px;
+}
+
+.single-upload-status h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #495057;
+    font-size: 1.1em;
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.status-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-card .status-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9em;
+}
+
+.status-card .status-value {
+    background: #e7f3ff;
+    color: #0066cc;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.85em;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .upload-statistics {
     background: #fff;
     border: 1px solid #dee2e6;
@@ -339,6 +475,68 @@
     margin: 5px 0;
 }
 
+/* PhotoSwipeSingleUpload CSS Fixes - Override scoped CSS issues */
+.single-upload-test-section .single-upload-area {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 2px dashed #d1d5db !important;
+    border-radius: 8px !important;
+    padding: 24px !important;
+    text-align: center !important;
+    background: #f9fafb !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    min-height: 150px !important;
+    box-sizing: border-box !important;
+}
+
+.single-upload-test-section .single-upload-area:hover {
+    border-color: #3b82f6 !important;
+    background: #eff6ff !important;
+}
+
+.single-upload-test-section .single-upload-input {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+    z-index: 2 !important;
+}
+
+.single-upload-test-section .single-upload-placeholder {
+    pointer-events: none !important;
+    color: #6b7280 !important;
+    z-index: 1 !important;
+    position: relative !important;
+}
+
+.single-upload-test-section .single-upload-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.single-upload-test-section .single-upload-icon {
+    font-size: 24px !important;
+    color: #9ca3af !important;
+}
+
+.single-upload-test-section .single-upload-text {
+    font-weight: 500 !important;
+    color: #374151 !important;
+}
+
+.single-upload-test-section .single-upload-help {
+    font-size: 14px !important;
+    color: #6b7280 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .upload-test-container {
@@ -377,5 +575,36 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 5px;
+    }
+
+    /* Single Upload responsive styles */
+    .single-upload-demos {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .single-upload-test-section {
+        padding: 20px;
+    }
+
+    .single-upload-actions {
+        flex-direction: column;
+    }
+
+    .status-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .status-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .status-card .status-value {
+        max-width: none;
+        align-self: stretch;
+        text-align: center;
     }
 }

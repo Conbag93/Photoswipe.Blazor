@@ -196,6 +196,8 @@
     z-index: 1000;
 }
 
+/* Hidden edit file input - no styling needed as it's hidden */
+
 .modal-content {
     background: white;
     border-radius: 8px;

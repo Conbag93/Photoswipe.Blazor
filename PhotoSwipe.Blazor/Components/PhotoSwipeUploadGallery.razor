@@ -106,12 +106,31 @@
                         {
                             <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
                                                     ControlType="delete"
-                                                    Icon="×"
+                                                    Icon="@GetDeleteIconSvg()"
                                                     Title="Delete this image"
                                                     AriaLabel="Delete image"
                                                     CssClass="delete-overlay-control"
                                                     ButtonCssClass="size-delete btn-delete-item"
-                                                    OnClick="@(() => ShowDeleteConfirmation(new List<PhotoSwipeItem> { item }))" />
+                                                    OnClick="@(() => ShowDeleteConfirmation(new List<PhotoSwipeItem> { item }))"
+                                                    SpacingIndex="@(AllowEdit ? 1 : 0)"
+                                                    Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
+                                                    ControlGap="4" />
+                        }
+
+                        <!-- Edit Overlay using PhotoSwipeOverlayControl -->
+                        @if (AllowEdit)
+                        {
+                            <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
+                                                    ControlType="edit"
+                                                    Icon="@GetEditIconSvg()"
+                                                    Title="Replace this image"
+                                                    AriaLabel="Replace image"
+                                                    CssClass="edit-overlay-control"
+                                                    ButtonCssClass="size-edit btn-edit-item"
+                                                    OnClick="@(() => ShowEditModal(item))"
+                                                    SpacingIndex="@(AllowDelete ? 2 : 1)"
+                                                    Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
+                                                    ControlGap="4" />
                         }
 
                         <!-- Reordering Controls -->
@@ -150,7 +169,7 @@
                                                     Title="@GetDownArrowTooltip(item)"
                                                     OnClick="@(() => MoveItemDown(item))"
                                                     Disabled="@IsDownArrowDisabled(item)"
-                                                    SpacingIndex="@(AllowDelete ? 1 : 0)"
+                                                    SpacingIndex="@GetDownArrowSpacingIndex()"
                                                     Direction="PhotoSwipeOverlayControl.GrowDirection.Left"
                                                     ControlGap="4" />
                         }
@@ -237,6 +256,15 @@
             </div>
         </div>
     }
+
+    <!-- Hidden file input for edit -->
+    @if (AllowEdit)
+    {
+        <InputFile @ref="_editFileInput"
+                   OnChange="@OnEditFileSelected"
+                   accept="@ImageProcessingService.GetFileAcceptString()"
+                   style="display: none;" />
+    }
 </div>
 
 @code {
@@ -250,6 +278,7 @@
     // Upload parameters
     [Parameter] public bool AllowAdd { get; set; } = true;
     [Parameter] public bool AllowDelete { get; set; } = false;
+    [Parameter] public bool AllowEdit { get; set; } = false;
     [Parameter] public PhotoSwipeUploadMode UploadMode { get; set; } = PhotoSwipeUploadMode.Add;
     [Parameter] public PhotoSwipeUploadPosition UploadPosition { get; set; } = PhotoSwipeUploadPosition.Above;
     [Parameter] public PhotoSwipeContainedUploadPosition ContainedUploadPosition { get; set; } = PhotoSwipeContainedUploadPosition.Last;
@@ -277,6 +306,7 @@
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> SelectedItemsChanged { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> OnItemDeleted { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsDeleted { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItem> OnItemEdited { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsUploaded { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsChanged { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsReordered { get; set; }
@@ -290,6 +320,10 @@
     private List<PhotoSwipeItem> _displayItems = [];
     private List<PhotoSwipeItem> _itemsToDelete = [];
     private bool _showDeleteConfirmation = false;
+
+    // Edit functionality state
+    private PhotoSwipeItem? _itemToEdit = null;
+    private InputFile? _editFileInput;
 
     // Store the gallery ElementId for consistent PhotoSwipe interop
     private string? _galleryElementId;
@@ -854,6 +888,199 @@
 
         // Process the uploaded items the same way as regular uploads
         await OnUploadAreaItemsUploaded(uploadedItems);
+    }
+
+    // Edit functionality methods
+    private async Task ShowEditModal(PhotoSwipeItem item)
+    {
+        _itemToEdit = item;
+        StateHasChanged();
+
+        // Small delay to ensure DOM is updated
+        await Task.Delay(50);
+
+        // Trigger the file input programmatically using the element reference
+        if (_editFileInput?.Element != null)
+        {
+            await _editFileInput.Element.Value.FocusAsync();
+            await JS.InvokeVoidAsync("eval", $"document.querySelector('input[type=file][style*=none]')?.click()");
+        }
+    }
+
+    private async Task OnEditUploadCompleted(IEnumerable<PhotoSwipeItem> newItems)
+    {
+        if (_itemToEdit == null || !newItems.Any())
+        {
+            CancelEdit();
+            return;
+        }
+
+        try
+        {
+            var newItem = newItems.First();
+            var originalItem = _itemToEdit;
+
+            // Find the item in the original collections and replace it
+            var originalIndex = _originalItems.FindIndex(item => item.Src == originalItem.Src);
+            if (originalIndex >= 0)
+            {
+                _originalItems[originalIndex] = newItem;
+            }
+
+            var confirmedIndex = _confirmedItems.FindIndex(item => item.Src == originalItem.Src);
+            if (confirmedIndex >= 0)
+            {
+                _confirmedItems[confirmedIndex] = newItem;
+            }
+
+            // Update selection if the edited item was selected
+            var selectedIndex = _selectedItems.FindIndex(item => item.Src == originalItem.Src);
+            if (selectedIndex >= 0)
+            {
+                _selectedItems[selectedIndex] = newItem;
+            }
+
+            UpdateDisplayItems();
+
+            // Notify parent components
+            if (OnItemEdited.HasDelegate)
+            {
+                await OnItemEdited.InvokeAsync(newItem);
+            }
+
+            if (OnItemsChanged.HasDelegate)
+            {
+                await OnItemsChanged.InvokeAsync(_dataItems);
+            }
+
+            Logger.LogInformation("Successfully replaced image: {OldTitle} -> {NewTitle}",
+                originalItem.Title ?? originalItem.Alt,
+                newItem.Title ?? newItem.Alt);
+        }
+        finally
+        {
+            CancelEdit();
+        }
+    }
+
+    private async Task OnEditUploadError(string error)
+    {
+        Logger.LogWarning("Edit upload error: {Error}", error);
+        await Task.CompletedTask;
+    }
+
+    private async Task OnEditFileSelected(InputFileChangeEventArgs e)
+    {
+        if (_itemToEdit == null || e.FileCount == 0)
+        {
+            return;
+        }
+
+        var file = e.File;
+
+        try
+        {
+            // Create image processing service
+            var imageService = new ImageProcessingService(JS);
+
+            // Validate file type and size
+            if (!imageService.IsValidFileType(file))
+            {
+                Logger.LogWarning("Invalid file type for edit: {FileName}", file.Name);
+                return;
+            }
+
+            if (!imageService.IsValidFileSize(file, MaxFileSize))
+            {
+                Logger.LogWarning("File too large for edit: {Size} > {MaxSize}", file.Size, MaxFileSize);
+                return;
+            }
+
+            // Process the image
+            var newItem = await imageService.ProcessImageFileAsync(file, MaxFileSize);
+            var originalItem = _itemToEdit;
+
+            // Replace item in all collections
+            var originalIndex = _originalItems.FindIndex(item => item.Src == originalItem.Src);
+            if (originalIndex >= 0)
+            {
+                _originalItems[originalIndex] = newItem;
+            }
+
+            var confirmedIndex = _confirmedItems.FindIndex(item => item.Src == originalItem.Src);
+            if (confirmedIndex >= 0)
+            {
+                _confirmedItems[confirmedIndex] = newItem;
+            }
+
+            // Update selection if the edited item was selected
+            var selectedIndex = _selectedItems.FindIndex(item => item.Src == originalItem.Src);
+            if (selectedIndex >= 0)
+            {
+                _selectedItems[selectedIndex] = newItem;
+            }
+
+            UpdateDisplayItems();
+
+            // Notify parent components
+            if (OnItemEdited.HasDelegate)
+            {
+                await OnItemEdited.InvokeAsync(newItem);
+            }
+
+            if (OnItemsChanged.HasDelegate)
+            {
+                await OnItemsChanged.InvokeAsync(_dataItems);
+            }
+
+            Logger.LogInformation("Successfully replaced image: {OldTitle} -> {NewTitle}",
+                originalItem.Title ?? originalItem.Alt,
+                newItem.Title ?? newItem.Alt);
+
+            // Reset edit state
+            _itemToEdit = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error processing edit file: {Error}", ex.Message);
+            _itemToEdit = null;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelEdit()
+    {
+        _itemToEdit = null;
+        StateHasChanged();
+    }
+
+    // Helper method for down arrow spacing considering both delete and edit buttons
+    private int GetDownArrowSpacingIndex()
+    {
+        var spacing = 0;
+        if (AllowDelete) spacing++;
+        if (AllowEdit) spacing++;
+        return spacing;
+    }
+
+    // SVG icon helper methods
+    private string GetDeleteIconSvg()
+    {
+        return @"<svg width=""16"" height=""16"" viewBox=""0 0 24 24"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+                   <path d=""M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-6 5v6m4-6v6""
+                         stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""/>
+                 </svg>";
+    }
+
+    private string GetEditIconSvg()
+    {
+        return @"<svg width=""16"" height=""16"" viewBox=""0 0 24 24"" fill=""none"" xmlns=""http://www.w3.org/2000/svg"">
+                   <path d=""M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7""
+                         stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""/>
+                   <path d=""m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z""
+                         stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""/>
+                 </svg>";
     }
 
     public async ValueTask DisposeAsync()
