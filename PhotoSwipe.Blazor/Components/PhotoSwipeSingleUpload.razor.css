@@ -199,3 +199,30 @@
     height: 100%;
     object-fit: cover;
 }
+
+/* ReadOnly variant */
+.photoswipe-single-upload.readonly ::deep .single-upload-area {
+    cursor: not-allowed;
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    opacity: 0.7;
+}
+
+.photoswipe-single-upload.readonly ::deep .single-upload-area:hover {
+    border-color: #e5e7eb;
+    background: #f3f4f6;
+}
+
+.photoswipe-single-upload.readonly ::deep .single-upload-placeholder {
+    color: #9ca3af;
+}
+
+.photoswipe-single-upload.readonly ::deep .single-upload-display {
+    cursor: default;
+    opacity: 0.8;
+}
+
+.photoswipe-single-upload.readonly ::deep .single-upload-display:hover {
+    border-color: #e5e7eb;
+    box-shadow: none;
+}

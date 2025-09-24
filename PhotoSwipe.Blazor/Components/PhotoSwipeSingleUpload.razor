@@ -25,7 +25,7 @@
                      title="Click to view full size" />
             }
 
-            @if (AllowDelete)
+            @if (AllowDelete && !ReadOnly)
             {
                 <button type="button"
                         class="single-upload-delete @DeleteButtonCssClass"
@@ -50,10 +50,13 @@
     else
     {
         <!-- Upload area when no image is present -->
-        <div class="single-upload-area @UploadAreaCssClass">
-            <InputFile OnChange="OnFileSelectedAsync"
-                      accept="@ImageProcessingService.GetFileAcceptString()"
-                      class="single-upload-input" />
+        <div class="single-upload-area @UploadAreaCssClass @(ReadOnly ? "readonly" : "")">
+            @if (!ReadOnly)
+            {
+                <InputFile OnChange="OnFileSelectedAsync"
+                          accept="@ImageProcessingService.GetFileAcceptString()"
+                          class="single-upload-input" />
+            }
 
             <div class="single-upload-placeholder">
                 @if (UploadTemplate != null)
@@ -105,6 +108,7 @@
     [Parameter] public RenderFragment? UploadTemplate { get; set; }
 
     [Parameter] public bool AllowDelete { get; set; } = true;
+    [Parameter] public bool ReadOnly { get; set; } = false;
     [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
     [Parameter] public string PlaceholderText { get; set; } = "Click to upload image";
     [Parameter] public string? HelpText { get; set; }
@@ -262,6 +266,12 @@
         if (Shape == PhotoSwipeSingleUploadShape.Circle)
         {
             classes.Add("style-circle");
+        }
+
+        // ReadOnly state
+        if (ReadOnly)
+        {
+            classes.Add("readonly");
         }
 
         // Add custom CSS classes

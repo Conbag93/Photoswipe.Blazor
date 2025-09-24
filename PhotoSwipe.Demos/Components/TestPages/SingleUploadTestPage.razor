@@ -125,6 +125,12 @@
                         <td>Whether to show the delete button</td>
                     </tr>
                     <tr>
+                        <td><code>ReadOnly</code></td>
+                        <td>bool</td>
+                        <td>false</td>
+                        <td>Prevents uploads and deletions. Disables file picker and delete functionality.</td>
+                    </tr>
+                    <tr>
                         <td><code>MaxFileSize</code></td>
                         <td>long</td>
                         <td>10MB</td>
@@ -269,6 +275,24 @@
     <section class="doc-section">
         <h2>🚀 Live Demonstrations</h2>
 
+        <!-- ReadOnly Toggle Control -->
+        <div class="demo-controls">
+            <div class="control-group">
+                <label class="control-label">
+                    <input type="checkbox"
+                           @bind="_isReadOnly"
+                           @bind:after="OnReadOnlyToggled" />
+                    <strong>ReadOnly Mode</strong> - Prevent uploads and deletions
+                </label>
+                @if (_isReadOnly)
+                {
+                    <div class="control-info">
+                        <small>🔒 All components are now in read-only mode. File picker and delete buttons are disabled.</small>
+                    </div>
+                }
+            </div>
+        </div>
+
         <div class="demo-grid">
             <!-- Demo 1: Basic Upload -->
             <div class="demo-card">
@@ -276,6 +300,7 @@
                 <p>Default configuration with standard settings</p>
                 <div class="demo-content">
                     <PhotoSwipeSingleUpload @bind-Value="@_basicImage"
+                                            ReadOnly="@_isReadOnly"
                                             OnImageUploaded="@HandleImageUploaded"
                                             OnImageDeleted="@HandleImageDeleted"
                                             OnError="@HandleUploadError" />
@@ -304,6 +329,7 @@
                                             PlaceholderText="Upload Avatar"
                                             HelpText="150×150px"
                                             UploadIcon="👤"
+                                            ReadOnly="@_isReadOnly"
                                             OnImageUploaded="@HandleImageUploaded"
                                             OnImageDeleted="@HandleImageDeleted"
                                             OnError="@HandleUploadError" />
@@ -331,6 +357,7 @@
                     <PhotoSwipeSingleUpload @bind-Value="@_largeImage"
                                             Size="PhotoSwipeSingleUploadSize.Large"
                                             MaxFileSize="@(20 * 1024 * 1024)"
+                                            ReadOnly="@_isReadOnly"
                                             OnImageUploaded="@HandleImageUploaded"
                                             OnImageDeleted="@HandleImageDeleted"
                                             OnError="@HandleUploadError">
@@ -373,6 +400,7 @@
                                             AspectRatio="PhotoSwipeSingleUploadAspectRatio.Square"
                                             PlaceholderText="Upload Thumbnail"
                                             DeleteIcon="🗑️"
+                                            ReadOnly="@_isReadOnly"
                                             OnImageUploaded="@HandleImageUploaded"
                                             OnImageDeleted="@HandleImageDeleted"
                                             OnError="@HandleUploadError" />
@@ -398,6 +426,7 @@
                                             AllowDelete="false"
                                             PlaceholderText="Upload Image"
                                             HelpText="This image cannot be deleted"
+                                            ReadOnly="@_isReadOnly"
                                             OnImageUploaded="@HandleImageUploaded"
                                             OnError="@HandleUploadError" />
                 </div>
@@ -419,6 +448,7 @@
                 <p>Custom template for image display</p>
                 <div class="demo-content">
                     <PhotoSwipeSingleUpload @bind-Value="@_customImage"
+                                            ReadOnly="@_isReadOnly"
                                             OnImageUploaded="@HandleImageUploaded"
                                             OnImageDeleted="@HandleImageDeleted"
                                             OnError="@HandleUploadError">
@@ -539,6 +569,9 @@
     // Error tracking
     private List<ErrorEntry> _errors = new();
 
+    // ReadOnly toggle state
+    private bool _isReadOnly = false;
+
     // Event handlers
     private void HandleImageUploaded(PhotoSwipeItem item)
     {
@@ -618,6 +651,12 @@
     private void ClearErrors()
     {
         _errors.Clear();
+        StateHasChanged();
+    }
+
+    private void OnReadOnlyToggled()
+    {
+        Logger.LogInformation("ReadOnly mode toggled: {IsReadOnly}", _isReadOnly);
         StateHasChanged();
     }
 
