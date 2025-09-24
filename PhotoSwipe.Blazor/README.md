@@ -22,6 +22,11 @@ A comprehensive Blazor component library that wraps [PhotoSwipe](https://photosw
 - 📊 Upload progress indicators
 - ⚠️ Comprehensive error handling
 
+## Requirements
+
+- .NET 8.0 or .NET 9.0
+- Blazor Server or Blazor WebAssembly
+
 ## Installation
 
 Add the package reference to your Blazor project:
@@ -30,7 +35,13 @@ Add the package reference to your Blazor project:
 <PackageReference Include="PhotoSwipe.Blazor" Version="1.0.0" />
 ```
 
-Include the CSS in your `_Layout.cshtml` or `index.html`:
+Register the services in your `Program.cs`:
+
+```csharp
+builder.Services.AddPhotoSwipeBlazor();
+```
+
+Include the CSS in your `_Layout.cshtml` (Blazor Server) or `index.html` (Blazor WebAssembly):
 
 ```html
 <link href="_content/PhotoSwipe.Blazor/css/photoswipe.css" rel="stylesheet" />
