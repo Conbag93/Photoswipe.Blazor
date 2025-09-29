@@ -54,7 +54,7 @@
                      data-placeholder-id="@item.GetPlaceholderId()">
                     <div class="gallery-item-wrapper">
                         <!-- Upload Placeholder UI -->
-                        <div class="upload-placeholder-content" @onclick="OnUploadPlaceholderClick">
+                        <div class="upload-placeholder-content" @onclick="@(async () => await OnUploadPlaceholderClick())">
                             <div class="upload-placeholder-background">
                                 <img src="@item.ThumbnailUrl" alt="@item.Alt" class="upload-placeholder-image" />
                                 @if (!string.IsNullOrEmpty(item.Title))
@@ -265,6 +265,16 @@
                    accept="@ImageProcessingService.GetFileAcceptString()"
                    style="display: none;" />
     }
+
+    <!-- Hidden file input for contained upload -->
+    @if (UploadPosition == PhotoSwipeUploadPosition.Contained && AllowAdd)
+    {
+        <InputFile @ref="_containedUploadFileInput"
+                   OnChange="@OnContainedUploadFileSelected"
+                   accept="@ImageProcessingService.GetFileAcceptString()"
+                   multiple="@AllowMultipleFiles"
+                   style="display: none;" />
+    }
 </div>
 
 @code {
@@ -324,6 +334,9 @@
     // Edit functionality state
     private PhotoSwipeItem? _itemToEdit = null;
     private InputFile? _editFileInput;
+
+    // Contained upload state
+    private InputFile? _containedUploadFileInput;
 
     // Store the gallery ElementId for consistent PhotoSwipe interop
     private string? _galleryElementId;
@@ -861,12 +874,12 @@
 
 
     /// <summary>
-    /// Handles click on upload placeholder to show contained upload interface
+    /// Handles click on upload placeholder to directly trigger file picker
     /// </summary>
-    private void OnUploadPlaceholderClick()
+    private async Task OnUploadPlaceholderClick()
     {
-        _showContainedUpload = true;
-        StateHasChanged();
+        // Directly trigger the file picker instead of showing modal
+        await TriggerFilePickerForContainedUpload();
     }
 
     /// <summary>
@@ -888,6 +901,69 @@
 
         // Process the uploaded items the same way as regular uploads
         await OnUploadAreaItemsUploaded(uploadedItems);
+    }
+
+    /// <summary>
+    /// Triggers the file picker for contained upload
+    /// </summary>
+    private async Task TriggerFilePickerForContainedUpload()
+    {
+        if (_containedUploadFileInput?.Element != null)
+        {
+            await Task.Delay(50); // Small delay to ensure DOM is updated
+            await _containedUploadFileInput.Element.Value.FocusAsync();
+            await JS.InvokeVoidAsync("eval", $"document.querySelector('input[type=file][multiple][style*=none]')?.click()");
+        }
+    }
+
+    /// <summary>
+    /// Handles file selection for contained upload
+    /// </summary>
+    private async Task OnContainedUploadFileSelected(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount == 0) return;
+
+        try
+        {
+            var imageService = new ImageProcessingService(JS);
+            var uploadedItems = new List<PhotoSwipeItem>();
+
+            var filesToProcess = AllowMultipleFiles
+                ? e.GetMultipleFiles(MaxFiles)
+                : new[] { e.File };
+
+            foreach (var file in filesToProcess)
+            {
+                // Validate file type and size
+                if (!imageService.IsValidFileType(file))
+                {
+                    Logger.LogWarning("Invalid file type for contained upload: {FileName}", file.Name);
+                    continue;
+                }
+
+                if (!imageService.IsValidFileSize(file, MaxFileSize))
+                {
+                    Logger.LogWarning("File too large for contained upload: {Size} > {MaxSize}", file.Size, MaxFileSize);
+                    continue;
+                }
+
+                // Process the image
+                var newItem = await imageService.ProcessImageFileAsync(file, MaxFileSize);
+                uploadedItems.Add(newItem);
+            }
+
+            if (uploadedItems.Any())
+            {
+                // Process the uploaded items the same way as regular uploads
+                await OnUploadAreaItemsUploaded(uploadedItems);
+            }
+
+            Logger.LogInformation("Successfully processed {Count} files via contained upload", uploadedItems.Count);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error processing contained upload files: {Error}", ex.Message);
+        }
     }
 
     // Edit functionality methods

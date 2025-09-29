@@ -10,7 +10,17 @@
 
     @if (ChildContent != null)
     {
-        @ChildContent
+        <button type="button"
+                class="overlay-control-button @ButtonCssClass"
+                @onclick="OnClick"
+                @onclick:preventDefault="PreventDefault"
+                @onclick:stopPropagation="StopPropagation"
+                style="@GetButtonSizeStyle()"
+                disabled="@Disabled"
+                title="@Title"
+                aria-label="@(AriaLabel ?? Title)">
+            @ChildContent
+        </button>
     }
     else if (!string.IsNullOrEmpty(Icon))
     {

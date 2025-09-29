@@ -212,3 +212,37 @@
     background: #e5e7eb;
     border-color: #9ca3af;
 }
+
+/* Overlay Control Button Styles */
+.overlay-control-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--pswp-overlay-control-color, white);
+    background: var(--pswp-overlay-control-bg, rgba(0, 0, 0, 0.6));
+    border: none;
+    border-radius: var(--pswp-overlay-control-border-radius, 8px);
+    padding: var(--pswp-overlay-control-padding, 8px);
+    font-size: inherit;
+    font-family: inherit;
+    line-height: 1;
+}
+
+.overlay-control-button:hover:not(:disabled) {
+    background: var(--pswp-overlay-control-bg-hover, rgba(0, 0, 0, 0.8));
+    transform: scale(1.05);
+}
+
+.overlay-control-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.overlay-control-button:focus {
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+}

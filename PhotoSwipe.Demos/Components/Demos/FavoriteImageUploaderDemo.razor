@@ -1,0 +1,374 @@
+@using PhotoSwipe.Blazor.Models
+@using PhotoSwipe.Blazor.Components
+@using PhotoSwipe.Blazor.Extensions
+@using Microsoft.Extensions.Logging
+@using Microsoft.AspNetCore.Components.Web
+@inject ILogger<FavoriteImageUploaderDemo> Logger
+
+<!-- Favorite Image Uploader Demo -->
+<div class="favorite-uploader-section">
+    <h2>⭐ Favorite Image Uploader Demo</h2>
+    <p>An advanced PhotoSwipe uploader that shows only the first image with favorite functionality and load more capability.</p>
+
+    <!-- Demo Controls -->
+    <div class="demo-controls">
+        <div class="control-group">
+            <label class="control-label">
+                <strong>View Mode:</strong>
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="viewMode" checked="@(!_showAllImages)" @onchange="@(() => SetViewMode(false))" />
+                Single Image View
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="viewMode" checked="@_showAllImages" @onchange="@(() => SetViewMode(true))" />
+                All Images View
+            </label>
+        </div>
+
+        <div class="control-group">
+            <button type="button" class="btn btn-secondary" @onclick="AddSampleImages">Add Sample Images</button>
+            <button type="button" class="btn btn-secondary" @onclick="ClearGallery">Clear Gallery</button>
+            <button type="button" class="btn btn-secondary" @onclick="ToggleRandomFavorites">Toggle Random Favorites</button>
+        </div>
+    </div>
+
+    <!-- Stats Panel -->
+    @if (_allImages.Any())
+    {
+        <div class="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">Total Images:</span>
+                <span class="stat-value">@_allImages.Count</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Favorites:</span>
+                <span class="stat-value">@_allImages.Count(x => x.GetFavoriteStatus())</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Displayed:</span>
+                <span class="stat-value">@DisplayedImages.Count</span>
+            </div>
+            @if (!_showAllImages && _allImages.Count > 1)
+            {
+                <div class="stat-item">
+                    <span class="stat-label">Hidden:</span>
+                    <span class="stat-value">@(_allImages.Count - 1)</span>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Main Gallery Display with Contained Upload -->
+    <div class="favorite-gallery-container">
+        <PhotoSwipeUploadGallery Id="@_galleryId"
+                               Items="@DisplayedImages"
+                               UploadMode="PhotoSwipeUploadMode.Add"
+                               MaxFileSize="@(10 * 1024 * 1024)"
+                               MaxFiles="10"
+                               AllowMultipleFiles="true"
+                               UploadPosition="PhotoSwipeUploadPosition.Contained"
+                               OnItemsUploaded="@OnItemsUploaded"
+                               CssClass="favorite-uploader-gallery">
+            <ItemTemplate Context="item">
+                <div class="gallery-item-wrapper">
+                    <!-- Main Image -->
+                    <img src="@(item.ThumbnailUrl ?? item.Src)"
+                         alt="@item.Alt"
+                         class="gallery-image" />
+
+                    <!-- Star Overlay Control -->
+                    <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.TopRight"
+                                            ControlType="favorite"
+                                            PreventGallery="true"
+                                            CssClass="favorite-star-control"
+                                            OnClick="@(() => ToggleFavorite(item))">
+                        @if (item.GetFavoriteStatus())
+                        {
+                            @((MarkupString)PhotoSwipeItemExtensions.GetFilledStarIcon())
+                        }
+                        else
+                        {
+                            @((MarkupString)PhotoSwipeItemExtensions.GetEmptyStarIcon())
+                        }
+                    </PhotoSwipeOverlayControl>
+
+                    <!-- Load More Overlay (only show on first image in single view mode) -->
+                    @if (!_showAllImages && _allImages.IndexOf(item) == 0 && _allImages.Count > 1)
+                    {
+                        <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomRight"
+                                                ControlType="load-more"
+                                                PreventGallery="true"
+                                                CssClass="load-more-control"
+                                                OnClick="@((args) => ShowAllImages(args))">
+                            <div class="load-more-content">
+                                <span class="load-more-icon">📸</span>
+                                <span class="load-more-text">+@(_allImages.Count - 1) more</span>
+                            </div>
+                        </PhotoSwipeOverlayControl>
+                    }
+
+                    <!-- Image Metadata Overlay -->
+                    @if (!string.IsNullOrEmpty(item.Title))
+                    {
+                        <PhotoSwipeOverlayControl Position="PhotoSwipeOverlayControl.OverlayPosition.BottomLeft"
+                                                ControlType="metadata"
+                                                PreventGallery="true"
+                                                CssClass="metadata-overlay">
+                            <div class="metadata-content">
+                                <div class="image-title">@item.Title</div>
+                                @if (item.GetFavoriteStatus())
+                                {
+                                    <div class="favorite-indicator">⭐ Favorite</div>
+                                }
+                            </div>
+                        </PhotoSwipeOverlayControl>
+                    }
+                </div>
+            </ItemTemplate>
+        </PhotoSwipeUploadGallery>
+    </div>
+
+    @if (_allImages.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-state-content">
+                <div class="empty-state-icon">📷</div>
+                <h3>No Images Yet</h3>
+                <p>Upload some images to get started with the favorite functionality!</p>
+            </div>
+        </div>
+    }
+
+    <!-- Instructions -->
+    <div class="instructions-panel">
+        <h3>🎯 How to Use This Demo</h3>
+        <ul>
+            <li><strong>Upload Images:</strong> Use the upload dropzone within the gallery to add images to your collection</li>
+            <li><strong>Toggle Favorites:</strong> Click the star ⭐ icon to favorite/unfavorite images</li>
+            <li><strong>View Modes:</strong> Switch between "Single Image View" (shows only first) and "All Images View"</li>
+            <li><strong>Load More:</strong> In single view mode, click "+X more" to expand and see all images</li>
+            <li><strong>Automatic Reordering:</strong> Favorite images automatically move to the top of the collection</li>
+            <li><strong>PhotoSwipe Lightbox:</strong> Click on images (not overlays) to open the full lightbox experience</li>
+        </ul>
+    </div>
+
+    <!-- Error Display -->
+    @if (_errors.Any())
+    {
+        <div class="error-panel">
+            <h4>Upload Errors:</h4>
+            @foreach (var error in _errors.TakeLast(3))
+            {
+                <div class="error-item">
+                    <span class="error-time">@error.Timestamp.ToString("HH:mm:ss")</span>
+                    <span class="error-message">@error.Message</span>
+                </div>
+            }
+            <button type="button" class="btn btn-sm" @onclick="ClearErrors">Clear Errors</button>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly string _galleryId = $"favorite-gallery-{Guid.NewGuid():N}";
+
+    // Core state
+    private List<PhotoSwipeItem> _allImages = new();
+    private bool _showAllImages = false;
+    private List<ErrorEntry> _errors = new();
+
+    // Computed properties
+    private List<PhotoSwipeItem> DisplayedImages => _showAllImages
+        ? _allImages.OrderByFavorites().ToList()
+        : _allImages.OrderByFavorites().Take(1).ToList();
+
+    protected override void OnInitialized()
+    {
+        InitializeWithSampleImages();
+        Logger.LogInformation("Favorite Image Uploader Demo initialized");
+    }
+
+    private void InitializeWithSampleImages()
+    {
+        _allImages = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1025/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1025/400/300",
+                Width = 1200,
+                Height = 800,
+                Alt = "Urban Landscape",
+                Caption = "Beautiful cityscape at golden hour with modern architecture",
+                Title = "City at Sunset"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1016/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1016/400/300",
+                Width = 1200,
+                Height = 900,
+                Alt = "Mountain Vista",
+                Caption = "Spectacular mountain range with snow-capped peaks",
+                Title = "Mountain Majesty"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1020/1200/700",
+                ThumbnailUrl = "https://picsum.photos/id/1020/400/300",
+                Width = 1200,
+                Height = 700,
+                Alt = "Ocean Waves",
+                Caption = "Peaceful ocean waves meeting the sandy shore",
+                Title = "Coastal Serenity"
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1018/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1018/400/300",
+                Width = 1200,
+                Height = 800,
+                Alt = "Forest Path",
+                Caption = "Winding path through a lush green forest",
+                Title = "Forest Walk"
+            }
+        };
+
+        // Mark some as favorites initially
+        _allImages[1].SetFavoriteStatus(true, 1); // Mountain Vista - favorite
+        _allImages[3].SetFavoriteStatus(true, 2); // Forest Walk - favorite
+
+        // Reorder by favorites
+        _allImages = _allImages.OrderByFavorites().ToList();
+    }
+
+    // Event Handlers
+    private void ToggleFavorite(PhotoSwipeItem item)
+    {
+        var currentStatus = item.GetFavoriteStatus();
+        var newStatus = !currentStatus;
+
+        // Set favorite status with order based on current time for simple ordering
+        var favoriteOrder = newStatus ? DateTime.Now.Millisecond : (int?)null;
+        item.SetFavoriteStatus(newStatus, favoriteOrder);
+
+        // Reorder the collection
+        _allImages = _allImages.OrderByFavorites().ToList();
+
+        Logger.LogInformation("Toggled favorite for {Title}: {Status}",
+            item.Title ?? item.Alt, newStatus ? "Favorited" : "Unfavorited");
+
+        StateHasChanged();
+    }
+
+    private void SetViewMode(bool showAll)
+    {
+        _showAllImages = showAll;
+        Logger.LogInformation("View mode changed to: {Mode}", showAll ? "All Images" : "Single Image");
+        StateHasChanged();
+    }
+
+    private void ShowAllImages(MouseEventArgs args)
+    {
+        _showAllImages = true;
+        Logger.LogInformation("Expanded to show all images");
+        StateHasChanged();
+    }
+
+    private void OnItemsUploaded(IEnumerable<PhotoSwipeItem> uploadedItems)
+    {
+        var items = uploadedItems.ToList();
+        _allImages.AddRange(items);
+
+        // Reorder to maintain favorite ordering
+        _allImages = _allImages.OrderByFavorites().ToList();
+
+        Logger.LogInformation("Uploaded {Count} new images", items.Count);
+        StateHasChanged();
+    }
+
+    private void OnUploadError(string error)
+    {
+        _errors.Add(new ErrorEntry
+        {
+            Timestamp = DateTime.Now,
+            Message = error
+        });
+        Logger.LogWarning("Upload error: {Error}", error);
+        StateHasChanged();
+    }
+
+    // Demo Actions
+    private void AddSampleImages()
+    {
+        var newImages = new[]
+        {
+            new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{Random.Shared.Next(100, 200)}/1200/800",
+                ThumbnailUrl = $"https://picsum.photos/id/{Random.Shared.Next(100, 200)}/400/300",
+                Width = 1200,
+                Height = 800,
+                Alt = $"Sample Image {DateTime.Now:HHmmss}",
+                Caption = "Randomly generated sample image",
+                Title = $"Sample {DateTime.Now:HHmmss}"
+            },
+            new PhotoSwipeItem
+            {
+                Src = $"https://picsum.photos/id/{Random.Shared.Next(200, 300)}/1200/900",
+                ThumbnailUrl = $"https://picsum.photos/id/{Random.Shared.Next(200, 300)}/400/300",
+                Width = 1200,
+                Height = 900,
+                Alt = $"Another Sample {DateTime.Now:HHmmss}",
+                Caption = "Another test image for demonstration",
+                Title = $"Demo {DateTime.Now:HHmmss}"
+            }
+        };
+
+        _allImages.AddRange(newImages);
+        _allImages = _allImages.OrderByFavorites().ToList();
+
+        Logger.LogInformation("Added {Count} sample images", newImages.Length);
+        StateHasChanged();
+    }
+
+    private void ToggleRandomFavorites()
+    {
+        var nonFavorites = _allImages.Where(x => !x.GetFavoriteStatus()).ToList();
+        var toFavorite = Math.Min(2, nonFavorites.Count);
+
+        for (int i = 0; i < toFavorite; i++)
+        {
+            var randomItem = nonFavorites[Random.Shared.Next(nonFavorites.Count)];
+            randomItem.SetFavoriteStatus(true, i);
+            nonFavorites.Remove(randomItem);
+        }
+
+        _allImages = _allImages.OrderByFavorites().ToList();
+        Logger.LogInformation("Randomly favorited {Count} items", toFavorite);
+        StateHasChanged();
+    }
+
+    private void ClearGallery()
+    {
+        _allImages.Clear();
+        _errors.Clear();
+        _showAllImages = false;
+        Logger.LogInformation("Gallery cleared");
+        StateHasChanged();
+    }
+
+    private void ClearErrors()
+    {
+        _errors.Clear();
+        StateHasChanged();
+    }
+
+    // Helper classes
+    private class ErrorEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+}
