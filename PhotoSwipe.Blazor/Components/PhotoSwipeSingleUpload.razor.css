@@ -30,11 +30,19 @@
     max-height: 300px;
 }
 
-/* Delete button */
-::deep .single-upload-delete {
+/* Control buttons container */
+::deep .single-upload-controls {
     position: absolute;
     top: 8px;
     right: 8px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+}
+
+/* Base button styles */
+::deep .single-upload-edit,
+::deep .single-upload-delete {
     width: 32px;
     height: 32px;
     border: 2px solid rgba(255, 255, 255, 0.9);
@@ -50,10 +58,18 @@
     font-weight: 600;
     line-height: 1;
     transition: all 0.2s ease;
-    z-index: 10;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* Edit button specific styling */
+::deep .single-upload-edit:hover {
+    background: rgba(59, 130, 246, 0.9);
+    border-color: rgba(255, 255, 255, 1);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Delete button specific styling */
 ::deep .single-upload-delete:hover {
     background: rgba(239, 68, 68, 0.9);
     border-color: rgba(255, 255, 255, 1);
@@ -61,6 +77,8 @@
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+/* Active state for both buttons */
+::deep .single-upload-edit:active,
 ::deep .single-upload-delete:active {
     transform: scale(0.95);
 }
@@ -149,6 +167,7 @@
         padding: 16px;
     }
 
+    ::deep .single-upload-edit,
     ::deep .single-upload-delete {
         width: 36px;
         height: 36px;

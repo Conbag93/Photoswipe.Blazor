@@ -25,25 +25,48 @@
                      title="Click to view full size" />
             }
 
-            @if (AllowDelete && !ReadOnly)
+            @if (!ReadOnly && (AllowEdit || AllowDelete))
             {
-                <button type="button"
-                        class="single-upload-delete @DeleteButtonCssClass"
-                        @onclick="OnDeleteClickAsync"
-                        @onclick:stopPropagation="true"
-                        title="Delete image">
-                    @if (!string.IsNullOrEmpty(DeleteIcon))
+                <div class="single-upload-controls">
+                    @if (AllowEdit)
                     {
-                        @((MarkupString)DeleteIcon)
+                        <button type="button"
+                                class="single-upload-edit @EditButtonCssClass"
+                                @onclick="OnEditClickAsync"
+                                @onclick:stopPropagation="true"
+                                title="Edit image">
+                            @if (!string.IsNullOrEmpty(EditIcon))
+                            {
+                                @((MarkupString)EditIcon)
+                            }
+                            else
+                            {
+                                @((MarkupString)_editService.GetEditIconSvg())
+                            }
+                        </button>
                     }
-                    else
+
+                    @if (AllowDelete)
                     {
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-6 5v6m4-6v6"
-                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                        <button type="button"
+                                class="single-upload-delete @DeleteButtonCssClass"
+                                @onclick="OnDeleteClickAsync"
+                                @onclick:stopPropagation="true"
+                                title="Delete image">
+                            @if (!string.IsNullOrEmpty(DeleteIcon))
+                            {
+                                @((MarkupString)DeleteIcon)
+                            }
+                            else
+                            {
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2m-6 5v6m4-6v6"
+                                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            }
+                        </button>
                     }
-                </button>
+                </div>
             }
         </div>
     }
@@ -87,6 +110,16 @@
             @_errorMessage
         </div>
     }
+
+    @* Hidden file input for edit functionality *@
+    @if (AllowEdit)
+    {
+        <InputFile @ref="_editFileInput"
+                   OnChange="OnEditFileSelectedAsync"
+                   accept="@ImageProcessingService.GetFileAcceptString()"
+                   id="@_editFileInputId"
+                   style="display: none;" />
+    }
 </div>
 
 @code {
@@ -102,29 +135,38 @@
     [Parameter] public string? ImageCssClass { get; set; }
     [Parameter] public string? UploadAreaCssClass { get; set; }
     [Parameter] public string? DeleteButtonCssClass { get; set; }
+    [Parameter] public string? EditButtonCssClass { get; set; }
 
     [Parameter] public PhotoSwipeOptions? Options { get; set; }
     [Parameter] public RenderFragment<PhotoSwipeItem>? ItemTemplate { get; set; }
     [Parameter] public RenderFragment? UploadTemplate { get; set; }
 
     [Parameter] public bool AllowDelete { get; set; } = true;
+    [Parameter] public bool AllowEdit { get; set; } = false;
     [Parameter] public bool ReadOnly { get; set; } = false;
     [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
     [Parameter] public string PlaceholderText { get; set; } = "Click to upload image";
     [Parameter] public string? HelpText { get; set; }
     [Parameter] public string? UploadIcon { get; set; }
     [Parameter] public string? DeleteIcon { get; set; }
+    [Parameter] public string? EditIcon { get; set; }
 
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> OnImageUploaded { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> OnImageDeleted { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItem> OnImageEdited { get; set; }
     [Parameter] public EventCallback<string> OnError { get; set; }
 
     private PhotoSwipeInterop? _interop;
     private ImageProcessingService? _imageProcessingService;
+    private ImageEditService _editService = null!;
     private string? _errorMessage;
+
+    // Edit functionality fields
+    private InputFile? _editFileInput;
+    private readonly string _editFileInputId = $"edit-input-{Guid.NewGuid():N}";
 
     public PhotoSwipeItem? CurrentImage => Value;
 
@@ -132,6 +174,7 @@
     {
         _interop = new PhotoSwipeInterop(JS, InteropLogger);
         _imageProcessingService = new ImageProcessingService(JS);
+        _editService = new ImageEditService(JS, Logger);
     }
 
     private async Task OnFileSelectedAsync(InputFileChangeEventArgs e)
@@ -235,6 +278,73 @@
     public async Task ClearAsync()
     {
         await SetImageAsync(null);
+    }
+
+    /// <summary>
+    /// Handles edit button click by triggering the file picker dialog.
+    /// </summary>
+    private async Task OnEditClickAsync()
+    {
+        if (CurrentImage == null || ReadOnly) return;
+
+        try
+        {
+            await _editService.TriggerFilePickerAsync(_editFileInputId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Failed to open file picker.";
+            Logger.LogError(ex, "Error triggering edit file picker");
+            if (OnError.HasDelegate)
+            {
+                await OnError.InvokeAsync(_errorMessage);
+            }
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Handles file selection for editing the current image.
+    /// </summary>
+    private async Task OnEditFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        if (CurrentImage == null || e.FileCount == 0) return;
+
+        _errorMessage = null;
+        var originalImage = CurrentImage;
+
+        try
+        {
+            var file = e.File;
+            var newItem = await _editService.ProcessEditFileAsync(file, MaxFileSize);
+
+            // Replace current image
+            Value = newItem;
+            await ValueChanged.InvokeAsync(Value);
+
+            // Notify edit completed
+            if (OnImageEdited.HasDelegate)
+            {
+                await OnImageEdited.InvokeAsync(newItem);
+            }
+
+            StateHasChanged();
+            Logger.LogInformation("Successfully edited image: {OldTitle} -> {NewTitle}",
+                originalImage.Title ?? originalImage.Alt,
+                newItem.Title ?? newItem.Alt);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            Logger.LogWarning("Failed to edit image: {Error}", ex.Message);
+
+            if (OnError.HasDelegate)
+            {
+                await OnError.InvokeAsync(ex.Message);
+            }
+
+            StateHasChanged();
+        }
     }
 
     /// <summary>

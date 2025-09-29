@@ -23,6 +23,7 @@
             <ul class="feature-list">
                 <li>✅ Drag & drop or click-to-upload interface</li>
                 <li>✅ Image preview with PhotoSwipe lightbox integration</li>
+                <li>✅ Optional edit functionality for replacing existing images</li>
                 <li>✅ Optional delete functionality</li>
                 <li>✅ Client-side image processing and validation</li>
                 <li>✅ Customizable templates for upload and display states</li>
@@ -125,6 +126,12 @@
                         <td>Whether to show the delete button</td>
                     </tr>
                     <tr>
+                        <td><code>AllowEdit</code></td>
+                        <td>bool</td>
+                        <td>false</td>
+                        <td>Whether to show the edit button for replacing existing images</td>
+                    </tr>
+                    <tr>
                         <td><code>ReadOnly</code></td>
                         <td>bool</td>
                         <td>false</td>
@@ -164,6 +171,18 @@
                         <td>"×"</td>
                         <td>HTML/emoji for delete button</td>
                     </tr>
+                    <tr>
+                        <td><code>EditIcon</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>HTML/emoji for edit button (uses SVG by default)</td>
+                    </tr>
+                    <tr>
+                        <td><code>EditButtonCssClass</code></td>
+                        <td>string?</td>
+                        <td>null</td>
+                        <td>CSS classes for the edit button</td>
+                    </tr>
 
                     <tr class="param-category">
                         <td colspan="4"><strong>Templates</strong></td>
@@ -195,6 +214,12 @@
                         <td>EventCallback&lt;PhotoSwipeItem&gt;</td>
                         <td>-</td>
                         <td>Fired when an image is deleted</td>
+                    </tr>
+                    <tr>
+                        <td><code>OnImageEdited</code></td>
+                        <td>EventCallback&lt;PhotoSwipeItem&gt;</td>
+                        <td>-</td>
+                        <td>Fired when an image is successfully edited/replaced</td>
                     </tr>
                     <tr>
                         <td><code>OnError</code></td>
@@ -300,9 +325,11 @@
                 <p>Default configuration with standard settings</p>
                 <div class="demo-content">
                     <PhotoSwipeSingleUpload @bind-Value="@_basicImage"
+                                            AllowEdit="true"
                                             ReadOnly="@_isReadOnly"
                                             OnImageUploaded="@HandleImageUploaded"
                                             OnImageDeleted="@HandleImageDeleted"
+                                            OnImageEdited="@HandleImageEdited"
                                             OnError="@HandleUploadError" />
                 </div>
                 <div class="demo-status">
@@ -311,8 +338,10 @@
                 <details class="code-example">
                     <summary>View Code</summary>
                     <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_basicImage"
+                        AllowEdit="true"
                         OnImageUploaded="@@HandleImageUploaded"
                         OnImageDeleted="@@HandleImageDeleted"
+                        OnImageEdited="@@HandleImageEdited"
                         OnError="@@HandleUploadError" /&gt;</code></pre>
                 </details>
             </div>
@@ -442,7 +471,40 @@
                 </details>
             </div>
 
-            <!-- Demo 6: Custom Display Template -->
+            <!-- Demo 6: Edit Functionality -->
+            <div class="demo-card">
+                <h3>Edit Functionality</h3>
+                <p>Upload image with edit and delete capabilities enabled</p>
+                <div class="demo-content">
+                    <PhotoSwipeSingleUpload @bind-Value="@_editableImage"
+                                            AllowEdit="true"
+                                            AllowDelete="true"
+                                            PlaceholderText="Upload image to test editing"
+                                            HelpText="Upload an image, then click the edit button to replace it"
+                                            ReadOnly="@_isReadOnly"
+                                            OnImageUploaded="@HandleImageUploaded"
+                                            OnImageDeleted="@HandleImageDeleted"
+                                            OnImageEdited="@HandleImageEdited"
+                                            OnError="@HandleUploadError" />
+                </div>
+                <div class="demo-status">
+                    Status: @(_editableImage != null ? $"Ready to edit: {_editableImage.Title ?? "Image"}" : "Upload image to enable editing")
+                </div>
+                <details class="code-example">
+                    <summary>View Code</summary>
+                    <pre><code>&lt;PhotoSwipeSingleUpload @@bind-Value="@@_editableImage"
+                        AllowEdit="true"
+                        AllowDelete="true"
+                        PlaceholderText="Upload image to test editing"
+                        HelpText="Upload an image, then click the edit button to replace it"
+                        OnImageUploaded="@@HandleImageUploaded"
+                        OnImageDeleted="@@HandleImageDeleted"
+                        OnImageEdited="@@HandleImageEdited"
+                        OnError="@@HandleUploadError" /&gt;</code></pre>
+                </details>
+            </div>
+
+            <!-- Demo 7: Custom Display Template -->
             <div class="demo-card">
                 <h3>Custom Display</h3>
                 <p>Custom template for image display</p>
@@ -564,6 +626,7 @@
     private PhotoSwipeItem? _largeImage;
     private PhotoSwipeItem? _thumbnailImage;
     private PhotoSwipeItem? _noDeleteImage;
+    private PhotoSwipeItem? _editableImage;
     private PhotoSwipeItem? _customImage;
 
     // Error tracking
@@ -582,6 +645,12 @@
     private void HandleImageDeleted(PhotoSwipeItem item)
     {
         Logger.LogInformation("Image deleted: {Title}", item.Title ?? item.Alt);
+        StateHasChanged();
+    }
+
+    private void HandleImageEdited(PhotoSwipeItem item)
+    {
+        Logger.LogInformation("Image edited: {Title}", item.Title ?? item.Alt);
         StateHasChanged();
     }
 
@@ -604,6 +673,7 @@
         _largeImage = null;
         _thumbnailImage = null;
         _noDeleteImage = null;
+        _editableImage = null;
         _customImage = null;
         StateHasChanged();
     }
@@ -615,6 +685,7 @@
         _largeImage = CreateSampleImage(1015, "Large Image", 1600, 1200);
         _thumbnailImage = CreateSampleImage(1018, "Thumbnail", 400, 400);
         _noDeleteImage = CreateSampleImage(1020, "Protected Image");
+        _editableImage = CreateSampleImage(1022, "Editable Image");
         _customImage = CreateSampleImage(1025, "Custom Display");
         StateHasChanged();
     }
@@ -642,6 +713,7 @@
             $"Large: {(_largeImage != null ? "Set" : "Empty")}",
             $"Thumbnail: {(_thumbnailImage != null ? "Set" : "Empty")}",
             $"No Delete: {(_noDeleteImage != null ? "Set" : "Empty")}",
+            $"Editable: {(_editableImage != null ? "Set" : "Empty")}",
             $"Custom: {(_customImage != null ? "Set" : "Empty")}"
         };
 
