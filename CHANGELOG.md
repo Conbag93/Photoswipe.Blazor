@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.4.0"></a>
+## [1.4.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.4.0) (2025-09-29)
+
+### Features
+
+* add edit functionality to PhotoSwipeSingleUpload component ([b482e46](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/b482e46aeda7138f713ce52cadbf1e70df4d3602))
+* add ReadOnly parameter to PhotoSwipeSingleUpload component ([0a70e4e](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/0a70e4eba8266a49565a914bd3f591a58dc372cc))
+* implement direct file input for image editing functionality ([c39ae82](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/c39ae82134b80ea5e74a38078aeeb8c308cee501))
+* implement favorite image uploader demo with enhanced functionality ([9df52bd](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/9df52bd3e6ef49d7d937ac47c7046432a37a9da2))
+
 <a name="1.3.0"></a>
 ## [1.3.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.3.0) (2025-09-24)
 
