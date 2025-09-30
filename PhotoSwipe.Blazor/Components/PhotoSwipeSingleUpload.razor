@@ -12,7 +12,7 @@
     @if (CurrentImage != null)
     {
         <!-- Display current image with PhotoSwipe integration -->
-        <div class="single-upload-display" @onclick="OpenLightboxAsync">
+        <div class="single-upload-display" @onclick="HandleDisplayClickAsync">
             @if (ItemTemplate != null)
             {
                 @ItemTemplate(CurrentImage)
@@ -175,6 +175,7 @@
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItemClickEventArgs> OnItemClick { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> OnImageUploaded { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> OnImageDeleted { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> OnImageEdited { get; set; }
@@ -256,6 +257,27 @@
 
         StateHasChanged();
         Logger.LogInformation("Deleted image: {ImageTitle}", deletedImage.Title ?? deletedImage.Alt);
+    }
+
+    private async Task HandleDisplayClickAsync()
+    {
+        if (CurrentImage == null) return;
+
+        // If OnItemClick has a handler, invoke it first
+        if (OnItemClick.HasDelegate)
+        {
+            var args = new PhotoSwipeItemClickEventArgs(CurrentImage, 0);
+            await OnItemClick.InvokeAsync(args);
+
+            // If PreventDefault is true, don't open the lightbox
+            if (args.PreventDefault)
+            {
+                return;
+            }
+        }
+
+        // Otherwise, open the lightbox with default behavior
+        await OpenLightboxAsync();
     }
 
     public async Task OpenLightboxAsync()

@@ -320,6 +320,68 @@
             </div>
         </div>
     </div>
+
+    <!-- OnItemClick Custom Handling Demo -->
+    <div class="custom-click-demo-section">
+        <h2>🖱️ Custom Click Handling (OnItemClick)</h2>
+        <p>Demonstrates custom click behavior for documents - click documents to "download", images open lightbox normally.</p>
+
+        <div class="custom-click-gallery">
+            <PhotoSwipeUploadGallery
+                Id="custom-click-gallery"
+                Items="@_customClickItems"
+                AllowAdd="false"
+                AllowDelete="false"
+                AllowDocuments="true"
+                OnItemClick="@HandleCustomItemClick"
+                Options="@_galleryOptions" />
+        </div>
+
+        <div class="custom-click-info">
+            <h4>Test Instructions:</h4>
+            <ul>
+                <li>✅ Click <strong>images</strong> → PhotoSwipe lightbox opens normally</li>
+                <li>📄 Click <strong>documents</strong> → Custom handler prevents lightbox and simulates download</li>
+                <li>💡 Check the event log below to see what happens</li>
+            </ul>
+        </div>
+
+        <!-- Event Log -->
+        <div class="custom-click-log">
+            <h4>Click Event Log:</h4>
+            <div class="log-controls">
+                <button type="button" class="btn btn-sm btn-secondary" @onclick="ClearClickLog">Clear Log</button>
+                <button type="button" class="btn btn-sm btn-secondary" @onclick="AddMixedSampleFiles">Add Mixed Sample Files</button>
+            </div>
+            <div class="log-entries">
+                @if (!_clickLog.Any())
+                {
+                    <div class="log-empty">No clicks yet. Try clicking on items in the gallery above.</div>
+                }
+                else
+                {
+                    @foreach (var entry in _clickLog.TakeLast(10).Reverse())
+                    {
+                        <div class="log-entry @(entry.IsDocument ? "log-document" : "log-image")">
+                            <span class="log-time">@entry.Timestamp.ToString("HH:mm:ss.fff")</span>
+                            <span class="log-icon">@(entry.IsDocument ? "📄" : "🖼️")</span>
+                            <span class="log-file">@entry.FileName</span>
+                            <span class="log-action">@entry.Action</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- Download Simulation Status -->
+        @if (!string.IsNullOrEmpty(_lastDownloadedFile))
+        {
+            <div class="download-simulation alert alert-success">
+                <strong>✅ Download Simulated:</strong> @_lastDownloadedFile
+                <small>(In real app, this would trigger actual file download)</small>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
@@ -357,6 +419,11 @@
     private PhotoSwipeItem? _singleImage3;
     private PhotoSwipeItem? _singleImage4;
 
+    // Custom click handling demo
+    private List<PhotoSwipeItem> _customClickItems = new();
+    private List<ClickLogEntry> _clickLog = new();
+    private string? _lastDownloadedFile;
+
     // PhotoSwipe options
     private readonly PhotoSwipeOptions _galleryOptions = new()
     {
@@ -368,7 +435,68 @@
     protected override void OnInitialized()
     {
         InitializeTestGallery();
+        InitializeCustomClickDemo();
         Logger.LogInformation("Upload Test Page initialized");
+    }
+
+    private void InitializeCustomClickDemo()
+    {
+        // Create a mixed gallery with images and documents
+        _customClickItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1018/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1018/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "Sample Image 1",
+                Caption = "Beach Sunset",
+                Title = "beach-sunset.jpg",
+                IsImage = true,
+                OriginalFileName = "beach-sunset.jpg"
+            },
+            new()
+            {
+                Src = "data:application/pdf;base64,", // Dummy PDF
+                ThumbnailUrl = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA2NDAgNjQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0zODQgNjRINzJDNTQuNCAxIDQgMTQgOCA0MCA2MzJjMCAxNy42IDE0LjQgMzIgMzIgMzJoNDk2YzE3LjYgMCAzMi0xNC40IDMyLTMyVjE2MGMwLTE3LjYtMTQuNC0zMi0zMi0zMmgtMTEyVjY0eiIgZmlsbD0iI2U1NDM0MyIvPjxwYXRoIGQ9Ik0yMDggMjgwaDIyNHYxNkgyMDh6TTIwOCAzNDRoMjI0djE2SDIwOHpNMjA4IDQwOGgxNjB2MTZIMjA4eiIgZmlsbD0id2hpdGUiLz48L3N2Zz4=",
+                Width = 80,
+                Height = 80,
+                Alt = "Annual Report PDF",
+                Caption = "PDF - Annual Report 2024",
+                Title = "annual-report-2024.pdf",
+                IsImage = false,
+                FileExtension = ".pdf",
+                OriginalFileName = "annual-report-2024.pdf",
+                PreventLightbox = true  // Prevent lightbox for documents
+            },
+            new()
+            {
+                Src = "https://picsum.photos/id/1019/1200/900",
+                ThumbnailUrl = "https://picsum.photos/id/1019/300/225",
+                Width = 1200,
+                Height = 900,
+                Alt = "Sample Image 2",
+                Caption = "Mountain View",
+                Title = "mountain-view.jpg",
+                IsImage = true,
+                OriginalFileName = "mountain-view.jpg"
+            },
+            new()
+            {
+                Src = "data:text/csv;base64,", // Dummy CSV
+                ThumbnailUrl = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA2NDAgNjQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0zODQgNjRINzJDNTQuNCAxIDQgMTQgOCA0MCA2MzJjMCAxNy42IDE0LjQgMzIgMzIgMzJoNDk2YzE3LjYgMCAzMi0xNC40IDMyLTMyVjE2MGMwLTE3LjYtMTQuNC0zMi0zMi0zMmgtMTEyVjY0eiIgZmlsbD0iIzIxYTM2NiIvPjxwYXRoIGQ9Ik0xNjAgMjI0aDMyMHYzMkgxNjB6TTE2MCAyODhoMzIwdjMySDE2MHpNMTYwIDM1MmgzMjB2MzJIMTYwek0xNjAgNDE2aDMyMHYzMkgxNjB6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==",
+                Width = 80,
+                Height = 80,
+                Alt = "Sales Data CSV",
+                Caption = "CSV - Sales Data Q4",
+                Title = "sales-data-q4.csv",
+                IsImage = false,
+                FileExtension = ".csv",
+                OriginalFileName = "sales-data-q4.csv",
+                PreventLightbox = true  // Prevent lightbox for documents
+            }
+        };
     }
 
     private void InitializeTestGallery()
@@ -674,5 +802,90 @@
     {
         public DateTime Timestamp { get; set; }
         public string Message { get; set; } = "";
+    }
+
+    // Custom click handling methods
+    private async Task HandleCustomItemClick(PhotoSwipeItemClickEventArgs args)
+    {
+        var logEntry = new ClickLogEntry
+        {
+            Timestamp = DateTime.Now,
+            FileName = args.Item.OriginalFileName ?? args.Item.Title ?? "Unknown",
+            IsDocument = !args.Item.IsImage
+        };
+
+        if (!args.Item.IsImage)
+        {
+            // For documents, prevent lightbox and simulate download
+            args.PreventDefault = true;
+            logEntry.Action = "🔽 Download prevented lightbox (custom handler)";
+
+            // Simulate download
+            _lastDownloadedFile = args.Item.OriginalFileName ?? args.Item.Title;
+            await Task.Delay(100); // Simulate slight delay
+
+            Logger.LogInformation("Custom click: Document clicked - {FileName}, lightbox prevented", logEntry.FileName);
+        }
+        else
+        {
+            // For images, allow default lightbox behavior
+            logEntry.Action = "🖼️ Allowed lightbox to open";
+            Logger.LogInformation("Custom click: Image clicked - {FileName}, lightbox will open", logEntry.FileName);
+        }
+
+        _clickLog.Add(logEntry);
+        StateHasChanged();
+    }
+
+    private void ClearClickLog()
+    {
+        _clickLog.Clear();
+        _lastDownloadedFile = null;
+        StateHasChanged();
+        Logger.LogInformation("Click log cleared");
+    }
+
+    private void AddMixedSampleFiles()
+    {
+        var newItems = new List<PhotoSwipeItem>
+        {
+            new()
+            {
+                Src = "https://picsum.photos/id/1020/1200/800",
+                ThumbnailUrl = "https://picsum.photos/id/1020/300/200",
+                Width = 1200,
+                Height = 800,
+                Alt = "City Skyline",
+                Caption = "Urban Photography",
+                Title = "city-skyline.jpg",
+                IsImage = true,
+                OriginalFileName = "city-skyline.jpg"
+            },
+            new()
+            {
+                Src = "data:application/vnd.ms-excel;base64,",
+                ThumbnailUrl = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA2NDAgNjQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0zODQgNjRINzJDNTQuNCAxIDQgMTQgOCA0MCA2MzJjMCAxNy42IDE0LjQgMzIgMzIgMzJoNDk2YzE3LjYgMCAzMi0xNC40IDMyLTMyVjE2MGMwLTE3LjYtMTQuNC0zMi0zMi0zMmgtMTEyVjY0eiIgZmlsbD0iIzIxNzM0NiIvPjxwYXRoIGQ9Ik0yMDAgMjQwaDI0MHYzMkgyMDB6TTIwMCAyODhoMjQwdjMySDE2MHpNMjAwIDMzNmgyNDB2MzJIMjAwek0yMDAgMzg0aDI0MHYzMkgyMDB6IiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==",
+                Width = 80,
+                Height = 80,
+                Alt = "Budget Spreadsheet",
+                Caption = "Excel - Budget 2024",
+                Title = "budget-2024.xlsx",
+                IsImage = false,
+                FileExtension = ".xlsx",
+                OriginalFileName = "budget-2024.xlsx"
+            }
+        };
+
+        _customClickItems.AddRange(newItems);
+        StateHasChanged();
+        Logger.LogInformation("Added {Count} mixed sample files", newItems.Count);
+    }
+
+    private class ClickLogEntry
+    {
+        public DateTime Timestamp { get; set; }
+        public string FileName { get; set; } = "";
+        public string Action { get; set; } = "";
+        public bool IsDocument { get; set; }
     }
 }

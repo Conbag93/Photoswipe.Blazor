@@ -76,7 +76,10 @@
                    data-caption="@item.Caption"
                    data-pswp-srcset="@item.SrcSet"
                    data-enhance-nav="false"
-                   class="photoswipe-item">
+                   class="photoswipe-item"
+                   @onclick="@(e => HandleItemClick(item, GetItemIndex(item), e))"
+                   @onclick:preventDefault="@(OnItemClick.HasDelegate)"
+                   data-pswp-prevent-gallery="@(item.PreventLightbox ? "true" : null)">
                     <div class="gallery-item-wrapper">
                         <!-- Selection Overlay with configurable position -->
                         @if (EnableSelection)
@@ -333,6 +336,7 @@
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItemClickEventArgs> OnItemClick { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> SelectedItemChanged { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> SelectedItemsChanged { get; set; }
     [Parameter] public EventCallback<PhotoSwipeItem> OnItemDeleted { get; set; }
@@ -1190,6 +1194,24 @@
                    <path d=""m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z""
                          stroke=""currentColor"" stroke-width=""2"" stroke-linecap=""round"" stroke-linejoin=""round""/>
                  </svg>";
+    }
+
+    private async Task HandleItemClick(PhotoSwipeItem item, int index, Microsoft.AspNetCore.Components.Web.MouseEventArgs mouseEvent)
+    {
+        if (OnItemClick.HasDelegate)
+        {
+            var args = new PhotoSwipeItemClickEventArgs(item, index);
+            await OnItemClick.InvokeAsync(args);
+
+            // If PreventDefault is true, we've already prevented it via @onclick:preventDefault
+            // The data-pswp-prevent-gallery attribute also helps JavaScript side
+        }
+    }
+
+    private int GetItemIndex(PhotoSwipeItem item)
+    {
+        var dataItems = _dataItems.ToList();
+        return dataItems.FindIndex(i => i.Src == item.Src);
     }
 
     public async ValueTask DisposeAsync()

@@ -88,4 +88,11 @@ public class PhotoSwipeItem
     /// The size of the file in bytes.
     /// </summary>
     public long FileSizeBytes { get; set; }
+
+    /// <summary>
+    /// When true, prevents the PhotoSwipe lightbox from opening when this item is clicked.
+    /// Useful for document files or custom click handlers that should not trigger the lightbox.
+    /// Works in combination with OnItemClick event handler.
+    /// </summary>
+    public bool PreventLightbox { get; set; } = false;
 }

@@ -26,7 +26,10 @@
                data-pswp-srcset="@item.SrcSet"
                data-enhance-nav="false"
                class="photoswipe-item @GetGridItemClass(item) @(shouldShowOverlay ? "has-load-more-overlay" : "")"
-               style="@GetGridItemStyle(item, itemIndex)">
+               style="@GetGridItemStyle(item, itemIndex)"
+               @onclick="@(e => HandleItemClick(item, itemIndex, e))"
+               @onclick:preventDefault="@(OnItemClick.HasDelegate)"
+               data-pswp-prevent-gallery="@(item.PreventLightbox ? "true" : null)">
                 @ItemTemplate(item)
                 @if (shouldShowOverlay)
                 {
@@ -90,7 +93,10 @@
                data-pswp-srcset="@item.SrcSet"
                data-enhance-nav="false"
                class="photoswipe-item @GetGridItemClass(item) @(shouldShowOverlay ? "has-load-more-overlay" : "")"
-               style="@GetGridItemStyle(item, itemIndex)">
+               style="@GetGridItemStyle(item, itemIndex)"
+               @onclick="@(e => HandleItemClick(item, itemIndex, e))"
+               @onclick:preventDefault="@(OnItemClick.HasDelegate)"
+               data-pswp-prevent-gallery="@(item.PreventLightbox ? "true" : null)">
                 <img src="@(item.ThumbnailUrl ?? item.Src)"
                      alt="@item.Alt"
                      class="@item.ThumbnailClass" />
@@ -162,6 +168,7 @@
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnOpen { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnClose { get; set; }
     [Parameter] public EventCallback<PhotoSwipeEventArgs> OnChange { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeItemClickEventArgs> OnItemClick { get; set; }
 
     // Load More Parameters
     [Parameter] public int? ItemLimit { get; set; }
@@ -393,6 +400,18 @@
             {
                 await _interop.RefreshGalleryAsync(_instanceId);
             }
+        }
+    }
+
+    private async Task HandleItemClick(PhotoSwipeItem item, int index, Microsoft.AspNetCore.Components.Web.MouseEventArgs mouseEvent)
+    {
+        if (OnItemClick.HasDelegate)
+        {
+            var args = new PhotoSwipeItemClickEventArgs(item, index);
+            await OnItemClick.InvokeAsync(args);
+
+            // If PreventDefault is true, we've already prevented it via @onclick:preventDefault
+            // The data-pswp-prevent-gallery attribute also helps JavaScript side
         }
     }
 
