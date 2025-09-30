@@ -5,34 +5,69 @@ using PhotoSwipe.Blazor.Models;
 namespace PhotoSwipe.Blazor.Services;
 
 /// <summary>
-/// Service for processing uploaded image files and creating PhotoSwipe items
+/// Service for processing uploaded files (images and documents) and creating PhotoSwipe items
 /// </summary>
 public class ImageProcessingService
 {
     private readonly IJSRuntime _jsRuntime;
-    private readonly string[] _supportedTypes = { "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp" };
+    private readonly FileTypeService _fileTypeService;
+    private readonly string[] _supportedImageTypes = { "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp" };
+    private readonly string[] _supportedDocumentTypes =
+    {
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/csv",
+        "text/plain",
+        "application/zip"
+    };
 
     public ImageProcessingService(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;
+        _fileTypeService = new FileTypeService();
     }
 
     /// <summary>
-    /// Gets the file accept string for HTML file input
+    /// Gets the file accept string for HTML file input (images only)
     /// </summary>
     public static string GetFileAcceptString() => "image/jpeg,image/jpg,image/png,image/gif,image/webp";
 
     /// <summary>
-    /// Gets supported file types as a readable string
+    /// Gets the file accept string for HTML file input (all supported types)
+    /// </summary>
+    public static string GetAllFilesAcceptString() =>
+        "image/jpeg,image/jpg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/csv,text/plain,application/zip";
+
+    /// <summary>
+    /// Gets supported image file types as a readable string
     /// </summary>
     public static string[] GetSupportedTypes() => ["JPEG", "PNG", "GIF", "WebP"];
 
     /// <summary>
-    /// Validates if the file type is supported
+    /// Gets all supported file types as a readable string
+    /// </summary>
+    public static string[] GetAllSupportedTypes() => ["JPEG", "PNG", "GIF", "WebP", "PDF", "Word", "Excel", "PowerPoint", "CSV", "Text", "ZIP"];
+
+    /// <summary>
+    /// Validates if the file type is a supported image
     /// </summary>
     public bool IsValidFileType(IBrowserFile file)
     {
-        return _supportedTypes.Contains(file.ContentType.ToLower());
+        return _supportedImageTypes.Contains(file.ContentType.ToLower());
+    }
+
+    /// <summary>
+    /// Validates if the file type is supported (image or document)
+    /// </summary>
+    public bool IsValidFileTypeAny(IBrowserFile file)
+    {
+        var contentType = file.ContentType.ToLower();
+        return _supportedImageTypes.Contains(contentType) || _supportedDocumentTypes.Contains(contentType);
     }
 
     /// <summary>
@@ -44,7 +79,7 @@ public class ImageProcessingService
     }
 
     /// <summary>
-    /// Processes an uploaded file and creates a PhotoSwipeItem
+    /// Processes an uploaded image file and creates a PhotoSwipeItem
     /// </summary>
     public async Task<PhotoSwipeItem> ProcessImageFileAsync(IBrowserFile file, long maxSizeBytes = 10 * 1024 * 1024)
     {
@@ -79,12 +114,81 @@ public class ImageProcessingService
                 Height = dimensions.Height,
                 Alt = file.Name,
                 Caption = file.Name,
-                Title = file.Name
+                Title = file.Name,
+                IsImage = true,
+                FileExtension = Path.GetExtension(file.Name),
+                OriginalFileName = file.Name,
+                FileSizeBytes = file.Size
             };
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException($"Failed to process image file {file.Name}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Processes any supported file (image or document) and creates a PhotoSwipeItem
+    /// </summary>
+    public async Task<PhotoSwipeItem> ProcessFileAsync(IBrowserFile file, long maxSizeBytes = 10 * 1024 * 1024)
+    {
+        if (!IsValidFileTypeAny(file))
+        {
+            throw new ArgumentException($"File type {file.ContentType} is not supported. Supported types: {string.Join(", ", GetAllSupportedTypes())}");
+        }
+
+        if (!IsValidFileSize(file, maxSizeBytes))
+        {
+            throw new ArgumentException($"File size {FormatFileSize(file.Size)} exceeds maximum allowed size {FormatFileSize(maxSizeBytes)}");
+        }
+
+        // Check if it's an image
+        var isImage = _fileTypeService.IsImageFile(file.Name);
+
+        if (isImage)
+        {
+            // Process as image
+            return await ProcessImageFileAsync(file, maxSizeBytes);
+        }
+        else
+        {
+            // Process as document
+            return await ProcessDocumentFileAsync(file, maxSizeBytes);
+        }
+    }
+
+    /// <summary>
+    /// Processes a document file and creates a PhotoSwipeItem with file type icon
+    /// </summary>
+    private async Task<PhotoSwipeItem> ProcessDocumentFileAsync(IBrowserFile file, long maxSizeBytes)
+    {
+        try
+        {
+            var fileType = _fileTypeService.GetFileType(file.Name);
+            var fileExtension = Path.GetExtension(file.Name);
+            var iconDataUrl = _fileTypeService.GetFileIconDataUrl(file.Name);
+
+            // For documents, we create a placeholder icon as the thumbnail
+            // The actual file content is not displayed in the lightbox
+            return new PhotoSwipeItem
+            {
+                Src = iconDataUrl,
+                ThumbnailUrl = iconDataUrl,
+                Width = 80,
+                Height = 80,
+                Alt = file.Name,
+                Caption = $"{_fileTypeService.GetFileTypeDisplayName(fileType)} - {file.Name}",
+                Title = file.Name,
+                IsImage = false,
+                FileExtension = fileExtension,
+                FileType = fileType.ToString(),
+                OriginalFileName = file.Name,
+                FileSizeBytes = file.Size
+            };
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to process document file {file.Name}: {ex.Message}", ex);
         }
     }
 
@@ -133,12 +237,13 @@ public class ImageProcessingService
     /// Processes multiple files and returns results with error information
     /// </summary>
     public async Task<ProcessingResult> ProcessMultipleFilesAsync(
-        IReadOnlyList<IBrowserFile> files, 
+        IReadOnlyList<IBrowserFile> files,
         long maxSizeBytes = 10 * 1024 * 1024,
-        Action<int, int>? progressCallback = null)
+        Action<int, int>? progressCallback = null,
+        bool allowDocuments = false)
     {
         var result = new ProcessingResult();
-        
+
         for (int i = 0; i < files.Count; i++)
         {
             var file = files[i];
@@ -146,7 +251,9 @@ public class ImageProcessingService
 
             try
             {
-                var photoSwipeItem = await ProcessImageFileAsync(file, maxSizeBytes);
+                var photoSwipeItem = allowDocuments
+                    ? await ProcessFileAsync(file, maxSizeBytes)
+                    : await ProcessImageFileAsync(file, maxSizeBytes);
                 result.SuccessfulItems.Add(photoSwipeItem);
             }
             catch (Exception ex)

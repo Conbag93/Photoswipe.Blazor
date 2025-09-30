@@ -18,6 +18,7 @@
                             MaxFileSize="@MaxFileSize"
                             MaxFiles="@MaxFiles"
                             AllowMultipleFiles="@AllowMultipleFiles"
+                            AllowDocuments="@AllowDocuments"
                             OnItemsUploaded="@OnUploadAreaItemsUploaded"
                             OnUploadModeChanged="@OnUploadAreaModeChanged"
                             OnUploadError="@OnUploadAreaError" />
@@ -187,7 +188,24 @@
                         }
                         else
                         {
-                            <img src="@item.ThumbnailUrl" alt="@item.Alt" class="gallery-image" />
+                            @if (item.IsImage)
+                            {
+                                <img src="@item.ThumbnailUrl" alt="@item.Alt" class="gallery-image" />
+                            }
+                            else
+                            {
+                                <div class="document-thumbnail">
+                                    <img src="@item.ThumbnailUrl" alt="@item.Alt" class="document-icon" />
+                                    @if (!string.IsNullOrEmpty(item.FileExtension))
+                                    {
+                                        <div class="file-extension-badge">@item.FileExtension.TrimStart('.')</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(item.OriginalFileName))
+                                    {
+                                        <div class="file-name-label">@item.OriginalFileName</div>
+                                    }
+                                </div>
+                            }
                         }
                     </div>
                 </a>
@@ -203,6 +221,7 @@
                             MaxFileSize="@MaxFileSize"
                             MaxFiles="@MaxFiles"
                             AllowMultipleFiles="@AllowMultipleFiles"
+                            AllowDocuments="@AllowDocuments"
                             OnItemsUploaded="@OnUploadAreaItemsUploaded"
                             OnUploadModeChanged="@OnUploadAreaModeChanged"
                             OnUploadError="@OnUploadAreaError" />
@@ -250,6 +269,7 @@
                                     MaxFileSize="@MaxFileSize"
                                     MaxFiles="@MaxFiles"
                                     AllowMultipleFiles="@AllowMultipleFiles"
+                                    AllowDocuments="@AllowDocuments"
                                     OnItemsUploaded="@OnContainedUploadCompleted"
                                     OnUploadModeChanged="@OnUploadAreaModeChanged"
                                     OnUploadError="@OnUploadAreaError" />
@@ -262,7 +282,7 @@
     {
         <InputFile @ref="_editFileInput"
                    OnChange="@OnEditFileSelected"
-                   accept="@ImageProcessingService.GetFileAcceptString()"
+                   accept="@(AllowDocuments ? ImageProcessingService.GetAllFilesAcceptString() : ImageProcessingService.GetFileAcceptString())"
                    style="display: none;" />
     }
 
@@ -271,7 +291,7 @@
     {
         <InputFile @ref="_containedUploadFileInput"
                    OnChange="@OnContainedUploadFileSelected"
-                   accept="@ImageProcessingService.GetFileAcceptString()"
+                   accept="@(AllowDocuments ? ImageProcessingService.GetAllFilesAcceptString() : ImageProcessingService.GetFileAcceptString())"
                    multiple="@AllowMultipleFiles"
                    style="display: none;" />
     }
@@ -289,6 +309,7 @@
     [Parameter] public bool AllowAdd { get; set; } = true;
     [Parameter] public bool AllowDelete { get; set; } = false;
     [Parameter] public bool AllowEdit { get; set; } = false;
+    [Parameter] public bool AllowDocuments { get; set; } = false;
     [Parameter] public PhotoSwipeUploadMode UploadMode { get; set; } = PhotoSwipeUploadMode.Add;
     [Parameter] public PhotoSwipeUploadPosition UploadPosition { get; set; } = PhotoSwipeUploadPosition.Above;
     [Parameter] public PhotoSwipeContainedUploadPosition ContainedUploadPosition { get; set; } = PhotoSwipeContainedUploadPosition.Last;
@@ -935,7 +956,11 @@
             foreach (var file in filesToProcess)
             {
                 // Validate file type and size
-                if (!imageService.IsValidFileType(file))
+                var isValidType = AllowDocuments
+                    ? imageService.IsValidFileTypeAny(file)
+                    : imageService.IsValidFileType(file);
+
+                if (!isValidType)
                 {
                     Logger.LogWarning("Invalid file type for contained upload: {FileName}", file.Name);
                     continue;
@@ -947,8 +972,10 @@
                     continue;
                 }
 
-                // Process the image
-                var newItem = await imageService.ProcessImageFileAsync(file, MaxFileSize);
+                // Process the file
+                var newItem = AllowDocuments
+                    ? await imageService.ProcessFileAsync(file, MaxFileSize)
+                    : await imageService.ProcessImageFileAsync(file, MaxFileSize);
                 uploadedItems.Add(newItem);
             }
 
@@ -1060,7 +1087,11 @@
             var imageService = new ImageProcessingService(JS);
 
             // Validate file type and size
-            if (!imageService.IsValidFileType(file))
+            var isValidType = AllowDocuments
+                ? imageService.IsValidFileTypeAny(file)
+                : imageService.IsValidFileType(file);
+
+            if (!isValidType)
             {
                 Logger.LogWarning("Invalid file type for edit: {FileName}", file.Name);
                 return;
@@ -1072,8 +1103,10 @@
                 return;
             }
 
-            // Process the image
-            var newItem = await imageService.ProcessImageFileAsync(file, MaxFileSize);
+            // Process the file
+            var newItem = AllowDocuments
+                ? await imageService.ProcessFileAsync(file, MaxFileSize)
+                : await imageService.ProcessImageFileAsync(file, MaxFileSize);
             var originalItem = _itemToEdit;
 
             // Replace item in all collections

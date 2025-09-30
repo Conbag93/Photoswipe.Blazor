@@ -19,10 +19,30 @@
             }
             else
             {
-                <img src="@(CurrentImage.ThumbnailUrl ?? CurrentImage.Src)"
-                     alt="@CurrentImage.Alt"
-                     class="single-upload-image @ImageCssClass"
-                     title="Click to view full size" />
+                @if (CurrentImage.IsImage)
+                {
+                    <img src="@(CurrentImage.ThumbnailUrl ?? CurrentImage.Src)"
+                         alt="@CurrentImage.Alt"
+                         class="single-upload-image @ImageCssClass"
+                         title="Click to view full size" />
+                }
+                else
+                {
+                    <div class="single-upload-document">
+                        <img src="@(CurrentImage.ThumbnailUrl ?? CurrentImage.Src)"
+                             alt="@CurrentImage.Alt"
+                             class="document-icon @ImageCssClass"
+                             title="@CurrentImage.OriginalFileName" />
+                        @if (!string.IsNullOrEmpty(CurrentImage.FileExtension))
+                        {
+                            <div class="file-extension-badge">@CurrentImage.FileExtension.TrimStart('.')</div>
+                        }
+                        @if (!string.IsNullOrEmpty(CurrentImage.OriginalFileName))
+                        {
+                            <div class="file-name-label">@CurrentImage.OriginalFileName</div>
+                        }
+                    </div>
+                }
             }
 
             @if (!ReadOnly && (AllowEdit || AllowDelete))
@@ -77,7 +97,7 @@
             @if (!ReadOnly)
             {
                 <InputFile OnChange="OnFileSelectedAsync"
-                          accept="@ImageProcessingService.GetFileAcceptString()"
+                          accept="@(AllowDocuments ? ImageProcessingService.GetAllFilesAcceptString() : ImageProcessingService.GetFileAcceptString())"
                           class="single-upload-input" />
             }
 
@@ -116,7 +136,7 @@
     {
         <InputFile @ref="_editFileInput"
                    OnChange="OnEditFileSelectedAsync"
-                   accept="@ImageProcessingService.GetFileAcceptString()"
+                   accept="@(AllowDocuments ? ImageProcessingService.GetAllFilesAcceptString() : ImageProcessingService.GetFileAcceptString())"
                    id="@_editFileInputId"
                    style="display: none;" />
     }
@@ -143,6 +163,7 @@
 
     [Parameter] public bool AllowDelete { get; set; } = true;
     [Parameter] public bool AllowEdit { get; set; } = false;
+    [Parameter] public bool AllowDocuments { get; set; } = false;
     [Parameter] public bool ReadOnly { get; set; } = false;
     [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10MB
     [Parameter] public string PlaceholderText { get; set; } = "Click to upload image";
@@ -189,7 +210,9 @@
         {
             if (_imageProcessingService == null) return;
 
-            var photoSwipeItem = await _imageProcessingService.ProcessImageFileAsync(file, MaxFileSize);
+            var photoSwipeItem = AllowDocuments
+                ? await _imageProcessingService.ProcessFileAsync(file, MaxFileSize)
+                : await _imageProcessingService.ProcessImageFileAsync(file, MaxFileSize);
 
             // Update the value
             Value = photoSwipeItem;
@@ -202,7 +225,7 @@
             }
 
             StateHasChanged();
-            Logger.LogInformation("Successfully uploaded image: {FileName}", file.Name);
+            Logger.LogInformation("Successfully uploaded file: {FileName}", file.Name);
         }
         catch (Exception ex)
         {
@@ -316,7 +339,13 @@
         try
         {
             var file = e.File;
-            var newItem = await _editService.ProcessEditFileAsync(file, MaxFileSize);
+
+            // Use ImageProcessingService directly instead of ImageEditService
+            if (_imageProcessingService == null) return;
+
+            var newItem = AllowDocuments
+                ? await _imageProcessingService.ProcessFileAsync(file, MaxFileSize)
+                : await _imageProcessingService.ProcessImageFileAsync(file, MaxFileSize);
 
             // Replace current image
             Value = newItem;
@@ -329,7 +358,7 @@
             }
 
             StateHasChanged();
-            Logger.LogInformation("Successfully edited image: {OldTitle} -> {NewTitle}",
+            Logger.LogInformation("Successfully edited file: {OldTitle} -> {NewTitle}",
                 originalImage.Title ?? originalImage.Alt,
                 newItem.Title ?? newItem.Alt);
         }

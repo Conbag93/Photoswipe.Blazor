@@ -62,4 +62,30 @@ public class PhotoSwipeItem
     /// For advanced styling scenarios that require specific CSS properties.
     /// </summary>
     public string? LabelStyle { get; set; }
+
+    /// <summary>
+    /// Indicates whether this item represents an image file (true) or a document/other file type (false).
+    /// </summary>
+    public bool IsImage { get; set; } = true;
+
+    /// <summary>
+    /// The file extension (e.g., ".pdf", ".docx", ".csv").
+    /// Used to determine file type icon when IsImage is false.
+    /// </summary>
+    public string? FileExtension { get; set; }
+
+    /// <summary>
+    /// The file type category for non-image files (e.g., PDF, Word, Excel, CSV, etc.).
+    /// </summary>
+    public string? FileType { get; set; }
+
+    /// <summary>
+    /// The original file name of the uploaded file.
+    /// </summary>
+    public string? OriginalFileName { get; set; }
+
+    /// <summary>
+    /// The size of the file in bytes.
+    /// </summary>
+    public long FileSizeBytes { get; set; }
 }
