@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.6.0"></a>
+## [1.6.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.6.0) (2025-09-30)
+
+### Features
+
+* add custom click handling with OnItemClick event and PreventLightbox property ([0cad851](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/0cad85103518d4fcf34b1ee74220f6cc89082830))
+
 <a name="1.5.0"></a>
 ## [1.5.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.5.0) (2025-09-30)
 
