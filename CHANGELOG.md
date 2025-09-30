@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<a name="1.5.0"></a>
+## [1.5.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.5.0) (2025-09-30)
+
+### Features
+
+* add support for non-image file uploads with styled icons ([2273c9c](https://www.github.com/Conbag93/Photoswipe.Blazor/commit/2273c9ceb8de76b3e93cca374b51c2bb73c755f9))
+
 <a name="1.4.0"></a>
 ## [1.4.0](https://www.github.com/Conbag93/Photoswipe.Blazor/releases/tag/v1.4.0) (2025-09-29)
 
