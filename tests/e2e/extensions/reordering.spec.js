@@ -426,6 +426,127 @@ test.describe('PhotoSwipe Reordering Comprehensive Tests', () => {
         });
     });
 
+    test.describe('Drag and Drop Reordering', () => {
+        test('should reorder items via drag and drop', async ({ page }) => {
+            const initialOrder = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+
+            // Drag first item to third position
+            await items.nth(0).dragTo(items.nth(2));
+            await page.waitForTimeout(300);
+
+            const newOrder = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            expect(newOrder[0]).toBe(initialOrder[1]);
+            expect(newOrder[2]).toBe(initialOrder[0]);
+        });
+
+        test('should not change order when dragging item onto itself', async ({ page }) => {
+            const initialOrder = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+
+            // Drag first item onto itself
+            await items.nth(0).dragTo(items.nth(0));
+            await page.waitForTimeout(200);
+
+            const newOrder = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            expect(newOrder).toEqual(initialOrder);
+
+            // Moves counter should not increment
+            const totalMoves = page.locator('.status-item').filter({ hasText: 'Moves Performed' }).locator('.status-value');
+            await expect(totalMoves).toContainText('0');
+        });
+
+        test('should update index labels after drag reorder', async ({ page }) => {
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+
+            // Drag first to third
+            await items.nth(0).dragTo(items.nth(2));
+            await page.waitForTimeout(300);
+
+            // Verify index labels still show correct positions
+            const indexLabels = page.locator('#reordering-test-gallery [data-pswp-control-type="index"]');
+            await expect(indexLabels.nth(0)).toContainText('1/4');
+            await expect(indexLabels.nth(1)).toContainText('2/4');
+            await expect(indexLabels.nth(2)).toContainText('3/4');
+            await expect(indexLabels.nth(3)).toContainText('4/4');
+        });
+
+        test('should increment moves counter after drag reorder', async ({ page }) => {
+            const totalMoves = page.locator('.status-item').filter({ hasText: 'Moves Performed' }).locator('.status-value');
+            await expect(totalMoves).toContainText('0');
+
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+            await items.nth(0).dragTo(items.nth(2));
+            await page.waitForTimeout(300);
+
+            const movesText = await totalMoves.textContent();
+            expect(parseInt(movesText)).toBeGreaterThanOrEqual(1);
+        });
+
+        test('should not open PhotoSwipe lightbox after drag', async ({ page }) => {
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+
+            await items.nth(0).dragTo(items.nth(1));
+            await page.waitForTimeout(300);
+
+            await expect(page.locator('.pswp')).not.toBeVisible();
+        });
+
+        test('should have draggable attribute on gallery items', async ({ page }) => {
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+            await expect(items.first()).toHaveAttribute('draggable', 'true');
+        });
+
+        test('should not have draggable on placeholder items', async ({ page }) => {
+            const placeholders = page.locator('#reordering-test-gallery [data-placeholder-type]');
+            if (await placeholders.count() > 0) {
+                await expect(placeholders.first()).not.toHaveAttribute('draggable', 'true');
+            }
+        });
+
+        test('should work with large gallery drag reorder', async ({ page }) => {
+            // Switch to large gallery
+            const largeGalleryRadio = page.locator('input[name="gallery-size"]').nth(2);
+            await largeGalleryRadio.click();
+            await page.waitForTimeout(500);
+
+            const initialOrder = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            expect(initialOrder).toHaveLength(10);
+
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+
+            // Drag first to last
+            await items.nth(0).dragTo(items.nth(9));
+            await page.waitForTimeout(300);
+
+            const newOrder = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            // First item should now be at the end
+            expect(newOrder[9]).toBe(initialOrder[0]);
+            expect(newOrder[0]).toBe(initialOrder[1]);
+        });
+
+        test('should work with combined button and drag reorder', async ({ page }) => {
+            const initialOrder = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+
+            // Button-move second item up
+            await page.locator('#reordering-test-gallery [data-pswp-control-type="reorder-up"] button').nth(1).click();
+            await page.waitForTimeout(200);
+
+            const afterButton = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            expect(afterButton[0]).toBe(initialOrder[1]);
+            expect(afterButton[1]).toBe(initialOrder[0]);
+
+            // Now drag third item to first position
+            const items = page.locator('#reordering-test-gallery .photoswipe-item:not([data-placeholder-type])');
+            await items.nth(2).dragTo(items.nth(0));
+            await page.waitForTimeout(300);
+
+            const afterDrag = await page.locator('.reordering-summary .order-item .order-title').allTextContents();
+            // Third item (initialOrder[2]) should now be first
+            expect(afterDrag[0]).toBe(initialOrder[2]);
+        });
+    });
+
     test.describe('Edge Cases', () => {
         test('should handle index label toggle correctly', async ({ page }) => {
             // Initially index labels should be visible

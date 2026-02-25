@@ -8,7 +8,7 @@
      style="@GetPositionStyle()"
      @attributes="AdditionalAttributes">
 
-    @if (ChildContent != null)
+    @if (ChildContent != null && OnClick.HasDelegate)
     {
         <button type="button"
                 class="overlay-control-button @ButtonCssClass"
@@ -21,6 +21,15 @@
                 aria-label="@(AriaLabel ?? Title)">
             @ChildContent
         </button>
+    }
+    else if (ChildContent != null)
+    {
+        <div class="overlay-control-content @ButtonCssClass"
+             style="@GetButtonSizeStyle()"
+             title="@Title"
+             aria-label="@(AriaLabel ?? Title)">
+            @ChildContent
+        </div>
     }
     else if (!string.IsNullOrEmpty(Icon))
     {

@@ -1,0 +1,320 @@
+@page "/error-handling-demo"
+@using PhotoSwipe.Blazor.Models
+@using PhotoSwipe.Blazor.Services
+@using PhotoSwipe.Blazor.Components
+@using Microsoft.AspNetCore.Components.Forms
+@inject IJSRuntime JS
+
+<PageTitle>Error Handling Demo</PageTitle>
+
+<h1>Error Handling Demo</h1>
+
+<p>This demo showcases the comprehensive error handling capabilities of PhotoSwipe.Blazor, including special detection for cloud storage issues.</p>
+
+<div class="demo-section">
+    <h2>Upload with Error Handling</h2>
+
+    <div class="error-stats" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 4px;">
+        <h3>Session Statistics</h3>
+        <p><strong>Total Uploads Attempted:</strong> @_totalFilesAttempted</p>
+        <p><strong>Successful:</strong> <span style="color: green;">@_successfulUploads</span></p>
+        <p><strong>Failed:</strong> <span style="color: red;">@_failedUploads</span></p>
+        <p><strong>Success Rate:</strong> @(_totalFilesAttempted > 0 ? $"{(_successfulUploads * 100.0 / _totalFilesAttempted):F1}%" : "N/A")</p>
+    </div>
+
+    <PhotoSwipeUploadGallery Items="@_items"
+                             AllowAdd="true"
+                             AllowDelete="true"
+                             AllowDocuments="true"
+                             MaxFileSize="@(5 * 1024 * 1024)"
+                             OnFileError="@HandleFileError"
+                             OnUploadComplete="@HandleUploadComplete"
+                             OnItemsUploaded="@HandleItemsUploaded"
+                             UploadPosition="PhotoSwipeUploadPosition.Above" />
+</div>
+
+<div class="demo-section" style="margin-top: 30px;">
+    <h2>Simulate Errors</h2>
+    <p>Click these buttons to simulate different types of upload errors:</p>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+        <button class="demo-button" @onclick="SimulateInvalidFileType">
+            ❌ Invalid File Type
+        </button>
+        <button class="demo-button" @onclick="SimulateFileTooLarge">
+            📏 File Too Large
+        </button>
+        <button class="demo-button" @onclick="SimulateStreamReadFailure">
+            ☁️ Stream Read Failure (Cloud Storage)
+        </button>
+        <button class="demo-button" @onclick="SimulateProcessingFailure">
+            ⚠️ Processing Failure
+        </button>
+        <button class="demo-button" @onclick="SimulateBatchWithMixedResults">
+            📊 Batch Upload (Mixed Results)
+        </button>
+    </div>
+</div>
+
+<div class="demo-section" style="margin-top: 30px;">
+    <h2>Error Log</h2>
+    <div style="max-height: 400px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 4px; font-family: 'Courier New', monospace;">
+        @if (_errorLog.Any())
+        {
+            @foreach (var log in _errorLog.OrderByDescending(l => l.Timestamp))
+            {
+                <div style="margin-bottom: 15px; padding: 10px; border-left: 3px solid @GetErrorColor(log.ErrorType); background: #2d2d2d;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">
+                        <span style="color: @GetErrorColor(log.ErrorType);">[@log.ErrorType]</span> @log.FileName
+                        <span style="float: right; font-size: 0.9em; color: #888;">@log.Timestamp.ToString("HH:mm:ss")</span>
+                    </div>
+                    <div style="font-size: 0.9em; margin-left: 10px;">
+                        <div><strong>Message:</strong> @log.Message</div>
+                        @if (!string.IsNullOrEmpty(log.SuggestedAction))
+                        {
+                            <div style="color: #4CAF50;"><strong>💡 Suggested Action:</strong> @log.SuggestedAction</div>
+                        }
+                        @if (log.IsCloudStorageIssue)
+                        {
+                            <div style="color: #2196F3; margin-top: 5px;">
+                                ☁️ <strong>Cloud Storage Detected:</strong> This file appears to be in OneDrive, Google Drive, or similar cloud storage.
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(log.ExceptionType))
+                        {
+                            <div style="color: #888; margin-top: 5px;"><strong>Exception:</strong> @log.ExceptionType</div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p style="color: #888; font-style: italic;">No errors logged yet. Try uploading some files or simulating errors.</p>
+        }
+    </div>
+
+    @if (_errorLog.Any())
+    {
+        <button class="demo-button" @onclick="ClearErrorLog" style="margin-top: 10px;">
+            🗑️ Clear Error Log
+        </button>
+    }
+</div>
+
+<style>
+    .demo-section {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+
+    .demo-button {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s;
+    }
+
+    .demo-button:hover {
+        background: #0056b3;
+    }
+
+    .demo-button:active {
+        transform: scale(0.98);
+    }
+</style>
+
+@code {
+    private List<PhotoSwipeItem> _items = new();
+    private List<PhotoSwipeFileError> _errorLog = new();
+
+    // Statistics
+    private int _totalFilesAttempted = 0;
+    private int _successfulUploads = 0;
+    private int _failedUploads = 0;
+
+    private void HandleFileError(PhotoSwipeFileError error)
+    {
+        // Add to error log
+        _errorLog.Add(error);
+        _failedUploads++;
+        _totalFilesAttempted++;
+
+        // Log to console
+        Console.WriteLine($"❌ Error: {error.FileName} - {error.ErrorType}: {error.Message}");
+
+        if (error.IsCloudStorageIssue)
+        {
+            Console.WriteLine($"☁️ Cloud storage issue detected for {error.FileName}");
+        }
+
+        StateHasChanged();
+    }
+
+    private void HandleUploadComplete(PhotoSwipeUploadResult result)
+    {
+        Console.WriteLine($"Upload complete: {result.SuccessfulItems.Count} succeeded, {result.Errors.Count} failed");
+        Console.WriteLine($"Success rate: {result.SuccessRate:F1}%");
+
+        StateHasChanged();
+    }
+
+    private void HandleItemsUploaded(IEnumerable<PhotoSwipeItem> items)
+    {
+        _items.AddRange(items);
+        _successfulUploads += items.Count();
+        _totalFilesAttempted += items.Count();
+        StateHasChanged();
+    }
+
+    // Error simulation methods
+    private void SimulateInvalidFileType()
+    {
+        var error = PhotoSwipeFileError.Create(
+            fileName: "document.exe",
+            fileSize: 1024 * 500,
+            contentType: "application/x-msdownload",
+            errorType: PhotoSwipeErrorType.InvalidFileType,
+            message: "File type application/x-msdownload is not supported. Supported types: JPEG, PNG, GIF, WebP, PDF, Word, Excel, PowerPoint, CSV, Text, ZIP"
+        );
+
+        HandleFileError(error);
+    }
+
+    private void SimulateFileTooLarge()
+    {
+        var error = PhotoSwipeFileError.Create(
+            fileName: "huge-image.jpg",
+            fileSize: 25 * 1024 * 1024, // 25MB
+            contentType: "image/jpeg",
+            errorType: PhotoSwipeErrorType.FileSizeTooLarge,
+            message: "File size 25.0 MB exceeds maximum allowed size 5.0 MB"
+        );
+
+        HandleFileError(error);
+    }
+
+    private void SimulateStreamReadFailure()
+    {
+        var error = PhotoSwipeFileError.Create(
+            fileName: "OneDrive - Personal/vacation.jpg",
+            fileSize: 2 * 1024 * 1024,
+            contentType: "image/jpeg",
+            errorType: PhotoSwipeErrorType.StreamReadFailure,
+            message: "Failed to read file stream: Stream was too long",
+            additionalData: new Dictionary<string, object>
+            {
+                ["SuggestedCause"] = "File may be stored in cloud storage (OneDrive, Google Drive) or access permissions issue"
+            }
+        );
+
+        error.AdditionalData["SuggestedCause"] = "File may be stored in cloud storage (OneDrive, Google Drive) or access permissions issue";
+
+        HandleFileError(error);
+    }
+
+    private void SimulateProcessingFailure()
+    {
+        var error = PhotoSwipeFileError.Create(
+            fileName: "corrupted-image.png",
+            fileSize: 1024 * 300,
+            contentType: "image/png",
+            errorType: PhotoSwipeErrorType.ProcessingFailure,
+            message: "Failed to process image file: Invalid image format"
+        );
+
+        HandleFileError(error);
+    }
+
+    private void SimulateBatchWithMixedResults()
+    {
+        // Simulate 3 successful uploads
+        var successfulItems = new List<PhotoSwipeItem>
+        {
+            new PhotoSwipeItem
+            {
+                Src = "https://picsum.photos/800/600?random=1",
+                ThumbnailUrl = "https://picsum.photos/200/150?random=1",
+                Width = 800,
+                Height = 600,
+                Alt = "success-1.jpg",
+                Title = "success-1.jpg",
+                IsImage = true
+            },
+            new PhotoSwipeItem
+            {
+                Src = "https://picsum.photos/800/600?random=2",
+                ThumbnailUrl = "https://picsum.photos/200/150?random=2",
+                Width = 800,
+                Height = 600,
+                Alt = "success-2.jpg",
+                Title = "success-2.jpg",
+                IsImage = true
+            },
+            new PhotoSwipeItem
+            {
+                Src = "https://picsum.photos/800/600?random=3",
+                ThumbnailUrl = "https://picsum.photos/200/150?random=3",
+                Width = 800,
+                Height = 600,
+                Alt = "success-3.jpg",
+                Title = "success-3.jpg",
+                IsImage = true
+            }
+        };
+
+        // Simulate 2 errors
+        var errors = new List<PhotoSwipeFileError>
+        {
+            PhotoSwipeFileError.Create(
+                fileName: "too-large.jpg",
+                fileSize: 15 * 1024 * 1024,
+                contentType: "image/jpeg",
+                errorType: PhotoSwipeErrorType.FileSizeTooLarge,
+                message: "File size 15.0 MB exceeds maximum allowed size 5.0 MB"
+            ),
+            PhotoSwipeFileError.Create(
+                fileName: "Google Drive/photo.jpg",
+                fileSize: 3 * 1024 * 1024,
+                contentType: "image/jpeg",
+                errorType: PhotoSwipeErrorType.StreamReadFailure,
+                message: "Failed to read file stream: Access denied"
+            )
+        };
+
+        // Add successful items to gallery
+        HandleItemsUploaded(successfulItems);
+
+        // Add errors to log
+        foreach (var error in errors)
+        {
+            HandleFileError(error);
+        }
+
+        // Invoke upload complete
+        var result = PhotoSwipeUploadResult.Create(successfulItems, errors);
+        HandleUploadComplete(result);
+    }
+
+    private void ClearErrorLog()
+    {
+        _errorLog.Clear();
+        StateHasChanged();
+    }
+
+    private string GetErrorColor(PhotoSwipeErrorType errorType) => errorType switch
+    {
+        PhotoSwipeErrorType.InvalidFileType => "#ff9800",
+        PhotoSwipeErrorType.FileSizeTooLarge => "#f44336",
+        PhotoSwipeErrorType.StreamReadFailure => "#2196F3",
+        PhotoSwipeErrorType.ProcessingFailure => "#9c27b0",
+        PhotoSwipeErrorType.DimensionDetectionFailure => "#ffeb3b",
+        _ => "#999"
+    };
+}

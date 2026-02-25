@@ -81,16 +81,56 @@ public class ImageProcessingService
     /// <summary>
     /// Processes an uploaded image file and creates a PhotoSwipeItem
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown when file type or size is invalid</exception>
+    /// <exception cref="InvalidOperationException">Thrown when processing fails</exception>
     public async Task<PhotoSwipeItem> ProcessImageFileAsync(IBrowserFile file, long maxSizeBytes = 10 * 1024 * 1024)
     {
-        if (!IsValidFileType(file))
+        var result = await TryProcessImageFileAsync(file, maxSizeBytes);
+
+        if (result.Error != null)
         {
-            throw new ArgumentException($"File type {file.ContentType} is not supported. Supported types: {string.Join(", ", GetSupportedTypes())}");
+            throw result.Error.ErrorType switch
+            {
+                PhotoSwipeErrorType.InvalidFileType => new ArgumentException(result.Error.Message),
+                PhotoSwipeErrorType.FileSizeTooLarge => new ArgumentException(result.Error.Message),
+                _ => new InvalidOperationException(result.Error.Message)
+            };
         }
 
+        return result.Item!;
+    }
+
+    /// <summary>
+    /// Attempts to process an uploaded image file and returns either a PhotoSwipeItem or an error
+    /// </summary>
+    public async Task<(PhotoSwipeItem? Item, PhotoSwipeFileError? Error)> TryProcessImageFileAsync(
+        IBrowserFile file,
+        long maxSizeBytes = 10 * 1024 * 1024)
+    {
+        // Validate file type
+        if (!IsValidFileType(file))
+        {
+            var error = PhotoSwipeFileError.Create(
+                fileName: file.Name,
+                fileSize: file.Size,
+                contentType: file.ContentType,
+                errorType: PhotoSwipeErrorType.InvalidFileType,
+                message: $"File type {file.ContentType} is not supported. Supported types: {string.Join(", ", GetSupportedTypes())}"
+            );
+            return (null, error);
+        }
+
+        // Validate file size
         if (!IsValidFileSize(file, maxSizeBytes))
         {
-            throw new ArgumentException($"File size {FormatFileSize(file.Size)} exceeds maximum allowed size {FormatFileSize(maxSizeBytes)}");
+            var error = PhotoSwipeFileError.Create(
+                fileName: file.Name,
+                fileSize: file.Size,
+                contentType: file.ContentType,
+                errorType: PhotoSwipeErrorType.FileSizeTooLarge,
+                message: $"File size {FormatFileSize(file.Size)} exceeds maximum allowed size {FormatFileSize(maxSizeBytes)}"
+            );
+            return (null, error);
         }
 
         try
@@ -98,7 +138,24 @@ public class ImageProcessingService
             // Create data URL for the image
             var buffer = new byte[file.Size];
             using var stream = file.OpenReadStream(maxSizeBytes);
-            await stream.ReadExactlyAsync(buffer);
+
+            try
+            {
+                await stream.ReadExactlyAsync(buffer);
+            }
+            catch (Exception streamEx)
+            {
+                // Specific handling for stream read failures (often cloud storage issues)
+                var error = PhotoSwipeFileError.FromException(
+                    fileName: file.Name,
+                    fileSize: file.Size,
+                    contentType: file.ContentType,
+                    exception: streamEx,
+                    errorType: PhotoSwipeErrorType.StreamReadFailure
+                );
+                error.AdditionalData["SuggestedCause"] = "File may be stored in cloud storage (OneDrive, Google Drive) or access permissions issue";
+                return (null, error);
+            }
 
             var base64String = Convert.ToBase64String(buffer);
             var dataUrl = $"data:{file.ContentType};base64,{base64String}";
@@ -106,7 +163,7 @@ public class ImageProcessingService
             // Try to get image dimensions using JavaScript
             var dimensions = await GetImageDimensionsAsync(dataUrl);
 
-            return new PhotoSwipeItem
+            var item = new PhotoSwipeItem
             {
                 Src = dataUrl,
                 ThumbnailUrl = dataUrl,
@@ -120,26 +177,75 @@ public class ImageProcessingService
                 OriginalFileName = file.Name,
                 FileSizeBytes = file.Size
             };
+
+            return (item, null);
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to process image file {file.Name}: {ex.Message}", ex);
+            var error = PhotoSwipeFileError.FromException(
+                fileName: file.Name,
+                fileSize: file.Size,
+                contentType: file.ContentType,
+                exception: ex,
+                errorType: PhotoSwipeErrorType.ProcessingFailure
+            );
+            return (null, error);
         }
     }
 
     /// <summary>
     /// Processes any supported file (image or document) and creates a PhotoSwipeItem
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown when file type or size is invalid</exception>
+    /// <exception cref="InvalidOperationException">Thrown when processing fails</exception>
     public async Task<PhotoSwipeItem> ProcessFileAsync(IBrowserFile file, long maxSizeBytes = 10 * 1024 * 1024)
     {
-        if (!IsValidFileTypeAny(file))
+        var result = await TryProcessFileAsync(file, maxSizeBytes);
+
+        if (result.Error != null)
         {
-            throw new ArgumentException($"File type {file.ContentType} is not supported. Supported types: {string.Join(", ", GetAllSupportedTypes())}");
+            throw result.Error.ErrorType switch
+            {
+                PhotoSwipeErrorType.InvalidFileType => new ArgumentException(result.Error.Message),
+                PhotoSwipeErrorType.FileSizeTooLarge => new ArgumentException(result.Error.Message),
+                _ => new InvalidOperationException(result.Error.Message)
+            };
         }
 
+        return result.Item!;
+    }
+
+    /// <summary>
+    /// Attempts to process any supported file (image or document) and returns either a PhotoSwipeItem or an error
+    /// </summary>
+    public async Task<(PhotoSwipeItem? Item, PhotoSwipeFileError? Error)> TryProcessFileAsync(
+        IBrowserFile file,
+        long maxSizeBytes = 10 * 1024 * 1024)
+    {
+        // Validate file type
+        if (!IsValidFileTypeAny(file))
+        {
+            var error = PhotoSwipeFileError.Create(
+                fileName: file.Name,
+                fileSize: file.Size,
+                contentType: file.ContentType,
+                errorType: PhotoSwipeErrorType.InvalidFileType,
+                message: $"File type {file.ContentType} is not supported. Supported types: {string.Join(", ", GetAllSupportedTypes())}"
+            );
+            return (null, error);
+        }
+
+        // Validate file size
         if (!IsValidFileSize(file, maxSizeBytes))
         {
-            throw new ArgumentException($"File size {FormatFileSize(file.Size)} exceeds maximum allowed size {FormatFileSize(maxSizeBytes)}");
+            var error = PhotoSwipeFileError.Create(
+                fileName: file.Name,
+                fileSize: file.Size,
+                contentType: file.ContentType,
+                errorType: PhotoSwipeErrorType.FileSizeTooLarge,
+                message: $"File size {FormatFileSize(file.Size)} exceeds maximum allowed size {FormatFileSize(maxSizeBytes)}"
+            );
+            return (null, error);
         }
 
         // Check if it's an image
@@ -148,12 +254,12 @@ public class ImageProcessingService
         if (isImage)
         {
             // Process as image
-            return await ProcessImageFileAsync(file, maxSizeBytes);
+            return await TryProcessImageFileAsync(file, maxSizeBytes);
         }
         else
         {
             // Process as document
-            return await ProcessDocumentFileAsync(file, maxSizeBytes);
+            return await TryProcessDocumentFileAsync(file, maxSizeBytes);
         }
     }
 
@@ -161,6 +267,23 @@ public class ImageProcessingService
     /// Processes a document file and creates a PhotoSwipeItem with file type icon
     /// </summary>
     private async Task<PhotoSwipeItem> ProcessDocumentFileAsync(IBrowserFile file, long maxSizeBytes)
+    {
+        var result = await TryProcessDocumentFileAsync(file, maxSizeBytes);
+
+        if (result.Error != null)
+        {
+            throw new InvalidOperationException(result.Error.Message);
+        }
+
+        return result.Item!;
+    }
+
+    /// <summary>
+    /// Attempts to process a document file and returns either a PhotoSwipeItem or an error
+    /// </summary>
+    private Task<(PhotoSwipeItem? Item, PhotoSwipeFileError? Error)> TryProcessDocumentFileAsync(
+        IBrowserFile file,
+        long maxSizeBytes)
     {
         try
         {
@@ -170,7 +293,7 @@ public class ImageProcessingService
 
             // For documents, we create a placeholder icon as the thumbnail
             // The actual file content is not displayed in the lightbox
-            return new PhotoSwipeItem
+            var item = new PhotoSwipeItem
             {
                 Src = iconDataUrl,
                 ThumbnailUrl = iconDataUrl,
@@ -185,10 +308,19 @@ public class ImageProcessingService
                 OriginalFileName = file.Name,
                 FileSizeBytes = file.Size
             };
+
+            return Task.FromResult<(PhotoSwipeItem? Item, PhotoSwipeFileError? Error)>((item, null));
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Failed to process document file {file.Name}: {ex.Message}", ex);
+            var error = PhotoSwipeFileError.FromException(
+                fileName: file.Name,
+                fileSize: file.Size,
+                contentType: file.ContentType,
+                exception: ex,
+                errorType: PhotoSwipeErrorType.ProcessingFailure
+            );
+            return Task.FromResult<(PhotoSwipeItem? Item, PhotoSwipeFileError? Error)>((null, error));
         }
     }
 
@@ -236,45 +368,34 @@ public class ImageProcessingService
     /// <summary>
     /// Processes multiple files and returns results with error information
     /// </summary>
-    public async Task<ProcessingResult> ProcessMultipleFilesAsync(
+    public async Task<PhotoSwipeUploadResult> ProcessMultipleFilesAsync(
         IReadOnlyList<IBrowserFile> files,
         long maxSizeBytes = 10 * 1024 * 1024,
         Action<int, int>? progressCallback = null,
         bool allowDocuments = false)
     {
-        var result = new ProcessingResult();
+        var successfulItems = new List<PhotoSwipeItem>();
+        var errors = new List<PhotoSwipeFileError>();
 
         for (int i = 0; i < files.Count; i++)
         {
             var file = files[i];
             progressCallback?.Invoke(i + 1, files.Count);
 
-            try
+            var result = allowDocuments
+                ? await TryProcessFileAsync(file, maxSizeBytes)
+                : await TryProcessImageFileAsync(file, maxSizeBytes);
+
+            if (result.Item != null)
             {
-                var photoSwipeItem = allowDocuments
-                    ? await ProcessFileAsync(file, maxSizeBytes)
-                    : await ProcessImageFileAsync(file, maxSizeBytes);
-                result.SuccessfulItems.Add(photoSwipeItem);
+                successfulItems.Add(result.Item);
             }
-            catch (Exception ex)
+            else if (result.Error != null)
             {
-                result.Errors.Add($"{file.Name}: {ex.Message}");
+                errors.Add(result.Error);
             }
         }
 
-        return result;
+        return PhotoSwipeUploadResult.Create(successfulItems, errors);
     }
-}
-
-/// <summary>
-/// Result of processing multiple files
-/// </summary>
-public class ProcessingResult
-{
-    public List<PhotoSwipeItem> SuccessfulItems { get; } = [];
-    public List<string> Errors { get; } = [];
-    
-    public bool HasErrors => Errors.Count > 0;
-    public bool HasSuccessfulItems => SuccessfulItems.Count > 0;
-    public int TotalProcessed => SuccessfulItems.Count + Errors.Count;
 }

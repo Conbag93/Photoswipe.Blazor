@@ -297,6 +297,35 @@
     background: #5a6268;
 }
 
+/* Drag-and-Drop Reordering */
+::deep .photoswipe-item[draggable="true"] {
+    cursor: grab;
+}
+
+::deep .photoswipe-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+::deep .photoswipe-item.dragging {
+    opacity: 0.4;
+    border: 2px dashed #6c757d;
+    border-radius: 8px;
+    transform: scale(0.95);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+::deep .photoswipe-item.dragging .gallery-item-wrapper {
+    pointer-events: none;
+}
+
+::deep .photoswipe-item.drag-over {
+    border: 2px solid #0d6efd;
+    border-radius: 8px;
+    transform: scale(1.02);
+    box-shadow: 0 0 12px rgba(13, 110, 253, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
 /* Reordering Controls */
 ::deep .reorder-button {
     background: rgba(0, 0, 0, 0.6);

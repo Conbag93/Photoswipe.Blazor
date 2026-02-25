@@ -148,6 +148,229 @@ Add to your App.razor or index.html:
 }
 ```
 
+## Error Handling
+
+PhotoSwipe.Blazor provides comprehensive error handling for file uploads and processing, with special detection for common issues like cloud storage files (OneDrive, Google Drive).
+
+### Error Types
+
+The library categorizes errors to help you provide better user experiences:
+
+```csharp
+public enum PhotoSwipeErrorType
+{
+    InvalidFileType,        // Unsupported file format
+    FileSizeTooLarge,       // File exceeds size limit
+    StreamReadFailure,      // Cannot read file (often cloud storage)
+    ProcessingFailure,      // Error during image processing
+    DimensionDetectionFailure, // Cannot detect image dimensions (non-fatal)
+    Unknown                 // Uncategorized error
+}
+```
+
+### Handling Upload Errors
+
+PhotoSwipe.Blazor provides two callback mechanisms for error handling:
+
+1. **Per-File Error Callback** - Invoked immediately when each file fails
+2. **Upload Complete Callback** - Invoked when all files are processed, with full results
+
+```csharp
+<PhotoSwipeUploadGallery Items="@_items"
+                         AllowAdd="true"
+                         OnFileError="@HandleFileError"
+                         OnUploadComplete="@HandleUploadComplete"
+                         OnItemsUploaded="@HandleItemsUploaded" />
+
+@code {
+    private List<PhotoSwipeItem> _items = new();
+
+    private void HandleFileError(PhotoSwipeFileError error)
+    {
+        // Handle individual file errors as they occur
+        Console.WriteLine($"❌ {error.FileName}: {error.Message}");
+
+        // Check for cloud storage issues
+        if (error.IsCloudStorageIssue)
+        {
+            ShowToast("Please download the file locally first before uploading.");
+        }
+
+        // Show suggested action to user
+        Console.WriteLine($"💡 {error.SuggestedAction}");
+    }
+
+    private void HandleUploadComplete(PhotoSwipeUploadResult result)
+    {
+        // Handle batch upload results
+        Console.WriteLine($"Upload complete: {result.SuccessfulItems.Count} succeeded, {result.Errors.Count} failed");
+
+        if (result.HasErrors)
+        {
+            // Display summary of errors
+            foreach (var error in result.Errors)
+            {
+                Console.WriteLine($"  - {error.FileName}: {error.ErrorType}");
+            }
+        }
+
+        // Success rate
+        Console.WriteLine($"Success rate: {result.SuccessRate:F1}%");
+    }
+
+    private void HandleItemsUploaded(IEnumerable<PhotoSwipeItem> items)
+    {
+        // Handle successfully uploaded items
+        _items.AddRange(items);
+    }
+}
+```
+
+### PhotoSwipeFileError Properties
+
+Each error provides detailed context for debugging and user messaging:
+
+```csharp
+public class PhotoSwipeFileError
+{
+    public string FileName { get; }           // Original file name
+    public long FileSize { get; }             // File size in bytes
+    public string ContentType { get; }        // MIME type
+    public PhotoSwipeErrorType ErrorType { get; }
+    public string Message { get; }            // User-friendly message
+    public string? ExceptionType { get; }     // C# exception type (for debugging)
+    public string? StackTrace { get; }        // Full stack trace (for debugging)
+    public Dictionary<string, object> AdditionalData { get; }
+    public DateTime Timestamp { get; }
+
+    // Helper properties
+    public bool IsCloudStorageIssue { get; }  // Detected cloud storage issue
+    public string SuggestedAction { get; }    // Recommended user action
+}
+```
+
+### Cloud Storage Detection
+
+The library automatically detects when files fail due to cloud storage issues (common with OneDrive, Google Drive):
+
+```csharp
+private void HandleFileError(PhotoSwipeFileError error)
+{
+    if (error.IsCloudStorageIssue)
+    {
+        // Show specific guidance for cloud storage files
+        await ShowDialog(
+            title: "Cloud Storage File Detected",
+            message: "This file appears to be stored in cloud storage (OneDrive, Google Drive, etc.). " +
+                     "Please download it to your local computer first, then try uploading again.",
+            icon: "☁️"
+        );
+    }
+}
+```
+
+### Upload Result Summary
+
+The `PhotoSwipeUploadResult` provides a complete summary of batch uploads:
+
+```csharp
+public class PhotoSwipeUploadResult
+{
+    public IReadOnlyList<PhotoSwipeItem> SuccessfulItems { get; }
+    public IReadOnlyList<PhotoSwipeFileError> Errors { get; }
+    public int TotalProcessed { get; }       // Total files processed
+    public bool HasErrors { get; }           // Any errors occurred
+    public bool HasSuccessfulItems { get; }  // Any files succeeded
+    public double SuccessRate { get; }       // Percentage (0-100)
+}
+```
+
+### Programmatic Error Handling with Try* Methods
+
+For advanced scenarios, you can use the `ImageProcessingService` Try* methods directly:
+
+```csharp
+@inject ImageProcessingService ImageProcessor
+
+private async Task ProcessFileWithCustomHandling(IBrowserFile file)
+{
+    var (item, error) = await ImageProcessor.TryProcessImageFileAsync(file, maxSizeBytes: 5_000_000);
+
+    if (item != null)
+    {
+        // Success - add to gallery
+        _items.Add(item);
+        Console.WriteLine($"✅ Processed: {item.Title}");
+    }
+    else if (error != null)
+    {
+        // Handle specific error types
+        switch (error.ErrorType)
+        {
+            case PhotoSwipeErrorType.StreamReadFailure:
+                await HandleCloudStorageError(error);
+                break;
+            case PhotoSwipeErrorType.FileSizeTooLarge:
+                await OfferCompression(file);
+                break;
+            case PhotoSwipeErrorType.InvalidFileType:
+                await ShowSupportedFormats();
+                break;
+            default:
+                await ShowGenericError(error.Message);
+                break;
+        }
+    }
+}
+```
+
+### Error Display in UI
+
+The `PhotoSwipeUploadArea` component displays errors with helpful context automatically:
+
+- **Error icon and filename** - Clear visual identification
+- **Error type badge** - Shows the category of error
+- **User-friendly message** - Plain English explanation
+- **Suggested action** - What the user should do next
+- **Cloud storage hint** - Special guidance for detected cloud storage issues
+
+Errors can be cleared individually or all at once via the UI.
+
+### Troubleshooting Common Issues
+
+#### OneDrive/Google Drive Files
+
+**Problem:** Files stored in cloud storage fail with `StreamReadFailure`
+
+**Solution:**
+- Download files to local computer first
+- Use the "Save to Downloads" option before uploading
+- Check if file shows a cloud icon in File Explorer
+
+#### Large Files
+
+**Problem:** `FileSizeTooLarge` errors
+
+**Solution:**
+```csharp
+<PhotoSwipeUploadGallery MaxFileSize="@(20 * 1024 * 1024)" /> <!-- 20MB -->
+```
+
+#### Unsupported File Types
+
+**Problem:** `InvalidFileType` errors
+
+**Solution:**
+```csharp
+<PhotoSwipeUploadGallery AllowDocuments="true" /> <!-- Allow PDF, DOCX, etc. -->
+```
+
+Or check supported types:
+```csharp
+var supportedTypes = ImageProcessingService.GetSupportedTypes(); // ["JPEG", "PNG", "GIF", "WebP"]
+var allSupportedTypes = ImageProcessingService.GetAllSupportedTypes(); // Includes documents
+```
+
 ## Platform-Specific Notes
 
 ### Blazor Server

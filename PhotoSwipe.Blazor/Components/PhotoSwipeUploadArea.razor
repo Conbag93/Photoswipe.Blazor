@@ -85,7 +85,27 @@
         <div class="error-messages">
             @foreach (var error in _errorMessages)
             {
-                <div class="error-message">⚠️ @error</div>
+                <div class="error-message @(error.IsCloudStorageIssue ? "cloud-storage-error" : "")">
+                    <div class="error-header">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-filename">@error.FileName</span>
+                        <span class="error-type">(@error.ErrorType)</span>
+                    </div>
+                    <div class="error-body">
+                        <p class="error-main-message">@error.Message</p>
+                        @if (!string.IsNullOrEmpty(error.SuggestedAction))
+                        {
+                            <p class="error-suggestion">💡 @error.SuggestedAction</p>
+                        }
+                        @if (error.IsCloudStorageIssue)
+                        {
+                            <p class="error-cloud-storage-hint">
+                                ☁️ <strong>Cloud Storage Detected:</strong> This file may be stored in OneDrive, Google Drive, or similar cloud storage.
+                                Please download it to your local computer first, then try uploading again.
+                            </p>
+                        }
+                    </div>
+                </div>
             }
             <button class="btn-clear-errors" @onclick="ClearErrors">Clear Errors</button>
         </div>
@@ -128,13 +148,14 @@
     // Event callbacks
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsUploaded { get; set; }
     [Parameter] public EventCallback<PhotoSwipeUploadMode> OnUploadModeChanged { get; set; }
-    [Parameter] public EventCallback<string> OnUploadError { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeFileError> OnFileError { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeUploadResult> OnUploadComplete { get; set; }
 
     // Internal state
     private ImageProcessingService? _imageProcessor;
     private InputFile? inputFileRef;
     private readonly List<PhotoSwipeItem> _uploadedItems = [];
-    private readonly List<string> _errorMessages = [];
+    private readonly List<PhotoSwipeFileError> _errorMessages = [];
     private bool _isProcessing = false;
     private bool _isDragOver = false;
     private int _processingCount = 0;
@@ -177,63 +198,50 @@
         {
             Logger.LogInformation("Processing {FileCount} uploaded files", _totalFiles);
 
-            var results = new List<PhotoSwipeItem>();
+            var successfulItems = new List<PhotoSwipeItem>();
+            var errors = new List<PhotoSwipeFileError>();
 
             foreach (var file in files)
             {
                 _processingCount++;
                 StateHasChanged(); // Update progress
 
-                try
+                // Use Try* methods for proper error handling
+                var result = AllowDocuments
+                    ? await _imageProcessor!.TryProcessFileAsync(file, MaxFileSize)
+                    : await _imageProcessor!.TryProcessImageFileAsync(file, MaxFileSize);
+
+                if (result.Item != null)
                 {
-                    // Validate file type based on AllowDocuments setting
-                    var isValidType = AllowDocuments
-                        ? _imageProcessor!.IsValidFileTypeAny(file)
-                        : _imageProcessor!.IsValidFileType(file);
-
-                    if (!isValidType)
-                    {
-                        var error = $"{file.Name}: Unsupported file type. Supported: {string.Join(", ", GetSupportedTypes())}";
-                        _errorMessages.Add(error);
-                        if (OnUploadError.HasDelegate)
-                        {
-                            await OnUploadError.InvokeAsync(error);
-                        }
-                        continue;
-                    }
-
-                    if (!_imageProcessor.IsValidFileSize(file, MaxFileSize))
-                    {
-                        var error = $"{file.Name}: File too large ({ImageProcessingService.FormatFileSize(file.Size)}). Max: {FormatFileSize(MaxFileSize)}";
-                        _errorMessages.Add(error);
-                        if (OnUploadError.HasDelegate)
-                        {
-                            await OnUploadError.InvokeAsync(error);
-                        }
-                        continue;
-                    }
-
-                    // Process file based on AllowDocuments setting
-                    var photoSwipeItem = AllowDocuments
-                        ? await _imageProcessor.ProcessFileAsync(file, MaxFileSize)
-                        : await _imageProcessor.ProcessImageFileAsync(file, MaxFileSize);
-                    results.Add(photoSwipeItem);
+                    successfulItems.Add(result.Item);
                     Logger.LogDebug("Processed file: {FileName}", file.Name);
                 }
-                catch (Exception ex)
+                else if (result.Error != null)
                 {
-                    var error = $"{file.Name}: {ex.Message}";
-                    _errorMessages.Add(error);
-                    if (OnUploadError.HasDelegate)
+                    errors.Add(result.Error);
+                    _errorMessages.Add(result.Error);
+
+                    // Invoke per-file error callback
+                    if (OnFileError.HasDelegate)
                     {
-                        await OnUploadError.InvokeAsync(error);
+                        await OnFileError.InvokeAsync(result.Error);
                     }
-                    Logger.LogError(ex, "Error processing file: {FileName}", file.Name);
+
+                    Logger.LogWarning("Error processing file {FileName}: {ErrorType} - {Message}",
+                        file.Name, result.Error.ErrorType, result.Error.Message);
                 }
             }
 
-            _uploadedItems.AddRange(results);
-            Logger.LogInformation("Successfully processed {SuccessCount}/{TotalCount} files, _uploadedItems now has {UploadedCount} items", results.Count, _totalFiles, _uploadedItems.Count);
+            _uploadedItems.AddRange(successfulItems);
+            Logger.LogInformation("Successfully processed {SuccessCount}/{TotalCount} files, _uploadedItems now has {UploadedCount} items",
+                successfulItems.Count, _totalFiles, _uploadedItems.Count);
+
+            // Invoke upload complete callback with full result
+            if (OnUploadComplete.HasDelegate)
+            {
+                var uploadResult = PhotoSwipeUploadResult.Create(successfulItems, errors);
+                await OnUploadComplete.InvokeAsync(uploadResult);
+            }
         }
         finally
         {

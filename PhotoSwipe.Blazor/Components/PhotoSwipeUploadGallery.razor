@@ -21,7 +21,8 @@
                             AllowDocuments="@AllowDocuments"
                             OnItemsUploaded="@OnUploadAreaItemsUploaded"
                             OnUploadModeChanged="@OnUploadAreaModeChanged"
-                            OnUploadError="@OnUploadAreaError" />
+                            OnFileError="@OnUploadAreaFileError"
+                            OnUploadComplete="@OnUploadAreaComplete" />
     }
 
     <!-- Selection Controls -->
@@ -76,7 +77,15 @@
                    data-caption="@item.Caption"
                    data-pswp-srcset="@item.SrcSet"
                    data-enhance-nav="false"
-                   class="photoswipe-item"
+                   class="photoswipe-item @GetDragCssClass(item)"
+                   draggable="@(AllowReorder ? "true" : "false")"
+                   @ondragstart="@(e => OnDragStart(item, e))"
+                   @ondragover="@(e => OnDragOver(item, e))"
+                   @ondragover:preventDefault="true"
+                   @ondragleave="@(e => OnDragLeave(item, e))"
+                   @ondrop="@(e => OnDrop(item, e))"
+                   @ondrop:preventDefault="true"
+                   @ondragend="@(e => OnDragEnd(e))"
                    @onclick="@(e => HandleItemClick(item, GetItemIndex(item), e))"
                    @onclick:preventDefault="@(OnItemClick.HasDelegate)"
                    data-pswp-prevent-gallery="@(item.PreventLightbox ? "true" : null)">
@@ -227,7 +236,8 @@
                             AllowDocuments="@AllowDocuments"
                             OnItemsUploaded="@OnUploadAreaItemsUploaded"
                             OnUploadModeChanged="@OnUploadAreaModeChanged"
-                            OnUploadError="@OnUploadAreaError" />
+                            OnFileError="@OnUploadAreaFileError"
+                            OnUploadComplete="@OnUploadAreaComplete" />
     }
 
     <!-- Empty State -->
@@ -275,7 +285,8 @@
                                     AllowDocuments="@AllowDocuments"
                                     OnItemsUploaded="@OnContainedUploadCompleted"
                                     OnUploadModeChanged="@OnUploadAreaModeChanged"
-                                    OnUploadError="@OnUploadAreaError" />
+                                    OnFileError="@OnUploadAreaFileError"
+                                    OnUploadComplete="@OnUploadAreaComplete" />
             </div>
         </div>
     }
@@ -345,6 +356,8 @@
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsUploaded { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsChanged { get; set; }
     [Parameter] public EventCallback<IEnumerable<PhotoSwipeItem>> OnItemsReordered { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeFileError> OnFileError { get; set; }
+    [Parameter] public EventCallback<PhotoSwipeUploadResult> OnUploadComplete { get; set; }
 
     private readonly List<PhotoSwipeItem> _originalItems = [];
     private readonly List<PhotoSwipeItem> _confirmedItems = [];
@@ -596,10 +609,28 @@
         await Task.CompletedTask;
     }
 
-    private async Task OnUploadAreaError(string error)
+    private async Task OnUploadAreaFileError(PhotoSwipeFileError error)
     {
-        Logger.LogWarning("Upload error: {Error}", error);
-        await Task.CompletedTask;
+        Logger.LogWarning("Upload error for {FileName}: {ErrorType} - {Message}",
+            error.FileName, error.ErrorType, error.Message);
+
+        // Propagate error to parent component
+        if (OnFileError.HasDelegate)
+        {
+            await OnFileError.InvokeAsync(error);
+        }
+    }
+
+    private async Task OnUploadAreaComplete(PhotoSwipeUploadResult result)
+    {
+        Logger.LogInformation("Upload complete: {SuccessCount} successful, {ErrorCount} errors",
+            result.SuccessfulItems.Count, result.Errors.Count);
+
+        // Propagate result to parent component
+        if (OnUploadComplete.HasDelegate)
+        {
+            await OnUploadComplete.InvokeAsync(result);
+        }
     }
 
 
@@ -742,6 +773,106 @@
         _showDeleteConfirmation = false;
         _itemsToDelete.Clear();
         StateHasChanged();
+    }
+
+    // Drag-and-drop reordering state
+    private PhotoSwipeItem? _draggedItem;
+    private PhotoSwipeItem? _dragOverItem;
+    private bool _isDragging;
+
+    private void OnDragStart(PhotoSwipeItem item, DragEventArgs e)
+    {
+        if (!AllowReorder || item.IsPlaceholder()) return;
+
+        _draggedItem = item;
+        _isDragging = true;
+        StateHasChanged();
+    }
+
+    private void OnDragOver(PhotoSwipeItem item, DragEventArgs e)
+    {
+        if (!_isDragging || _draggedItem == null || item.IsPlaceholder()) return;
+
+        if (_dragOverItem != item)
+        {
+            _dragOverItem = item;
+            StateHasChanged();
+        }
+    }
+
+    private void OnDragLeave(PhotoSwipeItem item, DragEventArgs e)
+    {
+        if (_dragOverItem == item)
+        {
+            _dragOverItem = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnDrop(PhotoSwipeItem targetItem, DragEventArgs e)
+    {
+        if (!_isDragging || _draggedItem == null || targetItem.IsPlaceholder()) return;
+        if (_draggedItem == targetItem)
+        {
+            ResetDragState();
+            return;
+        }
+
+        var dataItems = _dataItems.ToList();
+        var sourceIndex = dataItems.FindIndex(i => i.Src == _draggedItem.Src);
+        var targetIndex = dataItems.FindIndex(i => i.Src == targetItem.Src);
+
+        if (sourceIndex < 0 || targetIndex < 0)
+        {
+            ResetDragState();
+            return;
+        }
+
+        // Remove from source and insert at target
+        var movedItem = dataItems[sourceIndex];
+        dataItems.RemoveAt(sourceIndex);
+        dataItems.Insert(targetIndex, movedItem);
+
+        UpdateDataCollections(dataItems);
+        UpdateDisplayItems();
+        ResetDragState();
+        StateHasChanged();
+
+        Logger.LogInformation("Image drag-reordered: {Title} from position {OldPos} to {NewPos}",
+            movedItem.Title ?? movedItem.Alt, sourceIndex + 1, targetIndex + 1);
+
+        if (OnItemsReordered.HasDelegate)
+        {
+            await OnItemsReordered.InvokeAsync(dataItems);
+        }
+
+        if (OnItemsChanged.HasDelegate)
+        {
+            await OnItemsChanged.InvokeAsync(dataItems);
+        }
+    }
+
+    private void OnDragEnd(DragEventArgs e)
+    {
+        ResetDragState();
+        StateHasChanged();
+    }
+
+    private void ResetDragState()
+    {
+        _draggedItem = null;
+        _dragOverItem = null;
+        _isDragging = false;
+    }
+
+    private string GetDragCssClass(PhotoSwipeItem item)
+    {
+        if (!AllowReorder || !_isDragging) return string.Empty;
+
+        if (_draggedItem == item) return "dragging";
+        if (_dragOverItem == item) return "drag-over";
+
+        return string.Empty;
     }
 
     // Reordering methods
@@ -948,53 +1079,54 @@
     {
         if (e.FileCount == 0) return;
 
-        try
+        var imageService = new ImageProcessingService(JS);
+        var uploadedItems = new List<PhotoSwipeItem>();
+        var errors = new List<PhotoSwipeFileError>();
+
+        var filesToProcess = AllowMultipleFiles
+            ? e.GetMultipleFiles(MaxFiles)
+            : new[] { e.File };
+
+        foreach (var file in filesToProcess)
         {
-            var imageService = new ImageProcessingService(JS);
-            var uploadedItems = new List<PhotoSwipeItem>();
+            // Use Try* methods for proper error handling
+            var result = AllowDocuments
+                ? await imageService.TryProcessFileAsync(file, MaxFileSize)
+                : await imageService.TryProcessImageFileAsync(file, MaxFileSize);
 
-            var filesToProcess = AllowMultipleFiles
-                ? e.GetMultipleFiles(MaxFiles)
-                : new[] { e.File };
-
-            foreach (var file in filesToProcess)
+            if (result.Item != null)
             {
-                // Validate file type and size
-                var isValidType = AllowDocuments
-                    ? imageService.IsValidFileTypeAny(file)
-                    : imageService.IsValidFileType(file);
-
-                if (!isValidType)
-                {
-                    Logger.LogWarning("Invalid file type for contained upload: {FileName}", file.Name);
-                    continue;
-                }
-
-                if (!imageService.IsValidFileSize(file, MaxFileSize))
-                {
-                    Logger.LogWarning("File too large for contained upload: {Size} > {MaxSize}", file.Size, MaxFileSize);
-                    continue;
-                }
-
-                // Process the file
-                var newItem = AllowDocuments
-                    ? await imageService.ProcessFileAsync(file, MaxFileSize)
-                    : await imageService.ProcessImageFileAsync(file, MaxFileSize);
-                uploadedItems.Add(newItem);
+                uploadedItems.Add(result.Item);
             }
-
-            if (uploadedItems.Any())
+            else if (result.Error != null)
             {
-                // Process the uploaded items the same way as regular uploads
-                await OnUploadAreaItemsUploaded(uploadedItems);
-            }
+                errors.Add(result.Error);
+                Logger.LogWarning("Error processing contained upload file {FileName}: {ErrorType} - {Message}",
+                    file.Name, result.Error.ErrorType, result.Error.Message);
 
-            Logger.LogInformation("Successfully processed {Count} files via contained upload", uploadedItems.Count);
+                // Propagate error to parent component
+                if (OnFileError.HasDelegate)
+                {
+                    await OnFileError.InvokeAsync(result.Error);
+                }
+            }
         }
-        catch (Exception ex)
+
+        if (uploadedItems.Any())
         {
-            Logger.LogError(ex, "Error processing contained upload files: {Error}", ex.Message);
+            // Process the uploaded items the same way as regular uploads
+            await OnUploadAreaItemsUploaded(uploadedItems);
         }
+
+        // Propagate upload complete result
+        if (OnUploadComplete.HasDelegate)
+        {
+            var uploadResult = PhotoSwipeUploadResult.Create(uploadedItems, errors);
+            await OnUploadComplete.InvokeAsync(uploadResult);
+        }
+
+        Logger.LogInformation("Successfully processed {SuccessCount}/{TotalCount} files via contained upload",
+            uploadedItems.Count, uploadedItems.Count + errors.Count);
     }
 
     // Edit functionality methods
@@ -1070,12 +1202,6 @@
         }
     }
 
-    private async Task OnEditUploadError(string error)
-    {
-        Logger.LogWarning("Edit upload error: {Error}", error);
-        await Task.CompletedTask;
-    }
-
     private async Task OnEditFileSelected(InputFileChangeEventArgs e)
     {
         if (_itemToEdit == null || e.FileCount == 0)
@@ -1084,34 +1210,19 @@
         }
 
         var file = e.File;
+        var originalItem = _itemToEdit;
 
-        try
+        // Create image processing service
+        var imageService = new ImageProcessingService(JS);
+
+        // Use Try* methods for proper error handling
+        var result = AllowDocuments
+            ? await imageService.TryProcessFileAsync(file, MaxFileSize)
+            : await imageService.TryProcessImageFileAsync(file, MaxFileSize);
+
+        if (result.Item != null)
         {
-            // Create image processing service
-            var imageService = new ImageProcessingService(JS);
-
-            // Validate file type and size
-            var isValidType = AllowDocuments
-                ? imageService.IsValidFileTypeAny(file)
-                : imageService.IsValidFileType(file);
-
-            if (!isValidType)
-            {
-                Logger.LogWarning("Invalid file type for edit: {FileName}", file.Name);
-                return;
-            }
-
-            if (!imageService.IsValidFileSize(file, MaxFileSize))
-            {
-                Logger.LogWarning("File too large for edit: {Size} > {MaxSize}", file.Size, MaxFileSize);
-                return;
-            }
-
-            // Process the file
-            var newItem = AllowDocuments
-                ? await imageService.ProcessFileAsync(file, MaxFileSize)
-                : await imageService.ProcessImageFileAsync(file, MaxFileSize);
-            var originalItem = _itemToEdit;
+            var newItem = result.Item;
 
             // Replace item in all collections
             var originalIndex = _originalItems.FindIndex(item => item.Src == originalItem.Src);
@@ -1149,17 +1260,22 @@
             Logger.LogInformation("Successfully replaced image: {OldTitle} -> {NewTitle}",
                 originalItem.Title ?? originalItem.Alt,
                 newItem.Title ?? newItem.Alt);
-
-            // Reset edit state
-            _itemToEdit = null;
-            StateHasChanged();
         }
-        catch (Exception ex)
+        else if (result.Error != null)
         {
-            Logger.LogError(ex, "Error processing edit file: {Error}", ex.Message);
-            _itemToEdit = null;
-            StateHasChanged();
+            Logger.LogError("Error processing edit file {FileName}: {ErrorType} - {Message}",
+                file.Name, result.Error.ErrorType, result.Error.Message);
+
+            // Propagate error to parent component
+            if (OnFileError.HasDelegate)
+            {
+                await OnFileError.InvokeAsync(result.Error);
+            }
         }
+
+        // Reset edit state
+        _itemToEdit = null;
+        StateHasChanged();
     }
 
     private void CancelEdit()
